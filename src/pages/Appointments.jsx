@@ -3,7 +3,8 @@ import { Search, Calendar, Check } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 
 const Appointments = () => {
-  const [bookingIdSearch, setBookingIdSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState("bookingId"); // bookingId, patientName, doctorName
   const [selectedBookingId, setSelectedBookingId] = useState("001");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddBooking, setShowAddBooking] = useState(false);
@@ -50,9 +51,17 @@ const Appointments = () => {
   };
 
   const filteredAppointments = appointments.filter(appointment => {
-    // Filter by booking ID if search is active
-    if (bookingIdSearch && !appointment.id.includes(bookingIdSearch)) {
-      return false;
+    // Filter by search term based on selected search type
+    if (searchTerm) {
+      if (searchType === "bookingId" && !appointment.id.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      if (searchType === "patientName" && !appointment.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      if (searchType === "doctorName" && !appointment.doctor.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
     }
     
     // Filter by selected doctors
@@ -83,6 +92,11 @@ const Appointments = () => {
     console.log("Selected date:", date);
   };
 
+  const handleSearchTypeChange = (type) => {
+    setSearchType(type);
+    setSearchTerm(""); // Clear search term when changing type
+  };
+
   return (
     <>
       <div className="flex min-h-screen bg-gray-50">
@@ -94,14 +108,27 @@ const Appointments = () => {
           <h1 className="text-2xl font-bold mb-4">Appointments</h1>
           
           <div className="flex items-center justify-between mb-6">
-            {/* Booking ID Search */}
+            {/* Enhanced Search with Dropdown */}
             <div className="flex items-center bg-white rounded-lg p-2 border border-gray-300 w-96">
+              <div className="relative inline-block text-left mr-2">
+                <select
+                  value={searchType}
+                  onChange={(e) => handleSearchTypeChange(e.target.value)}
+                  className="appearance-none bg-gray-100 px-3 py-1 rounded text-sm font-medium outline-none"
+                >
+                  <option value="bookingId">Booking ID</option>
+                  <option value="patientName">Patient Name</option>
+                  <option value="doctorName">Doctor Name</option>
+                </select>
+              </div>
               <input
                 type="text"
-                placeholder="Booking ID"
+                placeholder={searchType === "bookingId" ? "Search by Booking ID" : 
+                            searchType === "patientName" ? "Search by Patient Name" : 
+                            "Search by Doctor Name"}
                 className="outline-none w-full"
-                value={bookingIdSearch}
-                onChange={(e) => setBookingIdSearch(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
               <Search className="text-gray-500 ml-2" size={20} />
             </div>
@@ -131,6 +158,12 @@ const Appointments = () => {
                 onClick={handleEdit}
               >
                 Edit
+              </button>
+              <button
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg"
+                onClick={() => setShowAddBooking(true)}
+              >
+                New Booking
               </button>
             </div>
           </div>
@@ -201,18 +234,24 @@ const Appointments = () => {
         </div>
       </div>
 
-      {/* New Booking Modal (would be implemented here) */}
+      {/* New Booking Modal */}
       {showAddBooking && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 shadow-lg w-[500px] max-h-screen overflow-y-auto flex flex-col rounded-lg">
+          <div className="bg-white p-6 shadow-lg w-96 max-h-screen overflow-y-auto flex flex-col rounded-lg">
             <h2 className="text-xl font-bold mb-4 text-center">New Booking</h2>
 
             {/* Form fields would go here */}
             
-            {/* Submit Button */}
-            <div className="flex justify-center mt-auto">
+            {/* Modal Action Buttons */}
+            <div className="flex justify-between mt-6">
               <button
-                className="bg-teal-600 text-white px-6 py-2 rounded-lg"
+                className="bg-gray-300 px-4 py-2 rounded-lg"
+                onClick={() => setShowAddBooking(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-teal-600 text-white px-4 py-2 rounded-lg"
                 onClick={() => setShowAddBooking(false)}
               >
                 Create Booking

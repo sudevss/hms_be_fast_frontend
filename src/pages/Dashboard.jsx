@@ -64,9 +64,9 @@ function Dashboard() {
   
   // Add state for check-in form fields
   const [checkInForm, setCheckInForm] = useState({
-    bookingId: '001',
-    patientName: 'First Name Last Name',
-    phone: '6197553996',
+    bookingId: '',
+    patientName: '',
+    phone: '',
     date: new Date(),
     timeSlot: '9am-10am',
     consultationFee: '',
