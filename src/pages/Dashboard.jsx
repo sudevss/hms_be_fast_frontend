@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Search, Calendar, Users, UserCog, Settings, LogOut, LayoutGrid, Clock, Check } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -74,30 +73,35 @@ function Dashboard() {
     paymentMethod: ''
   });
   
-  // Available time slots
-  const timeSlots = [
-    '9am-10am',
-    '10am-11am',
-    '11am-12pm',
-    '12pm-1pm',
-    '1pm-2pm',
-    '2pm-3pm',
-    '3pm-4pm'
-  ];
+  // Appointment counts state
+  const [appointmentCounts, setAppointmentCounts] = useState({});
   
-  // Payment methods
-  const paymentMethods = [
-    'Cash',
-    'Credit Card',
-    'Debit Card',
-    'UPI',
-    'Insurance'
-  ];
+  // Generate mock appointment counts for demonstration
+  useEffect(() => {
+    const generateAppointmentCounts = () => {
+      const counts = {};
+      const currentDate = new Date();
+      for (let i = -15; i < 15; i++) {
+        const date = new Date();
+        date.setDate(currentDate.getDate() + i);
+        counts[date.toISOString().split('T')[0]] = Math.floor(Math.random() * 50);
+      }
+      setAppointmentCounts(counts);
+    };
+    generateAppointmentCounts();
+  }, []);
   
-  // Create refs for modals to handle outside clicks
-  const patientModalRef = useRef(null);
-  const bookingModalRef = useRef(null);
-  const checkInModalRef = useRef(null);
+  // Function to get color based on appointment count
+  const getDateColor = (date) => {
+    if (!date) return 'bg-white';
+    const dateStr = date.toISOString().split('T')[0];
+    const count = appointmentCounts[dateStr] || 0;
+    if (count === 0) return 'bg-white';
+    if (count < 10) return 'bg-teal-100';
+    if (count < 20) return 'bg-teal-200';
+    if (count < 30) return 'bg-teal-300';
+    return 'bg-teal-400';
+  };
 
   const doctors = [
     { name: 'Dr.Ranjith', role: 'Physician', status: 'On Duty' },
@@ -269,6 +273,7 @@ function Dashboard() {
               className="pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 w-72 text-sm"
             />
           </div>
+          
           <div className="flex items-center gap-3">
             <button 
               className="bg-white px-4 py-2 rounded-lg shadow border border-gray-300"
@@ -396,7 +401,41 @@ function Dashboard() {
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
             inline
+            calendarClassName="heatmap-calendar"
+            dayClassName={date => `rounded-full w-8 h-8 ${getDateColor(date)}`}
+            renderDayContents={(day, date) => (
+              <div className="w-full h-full flex items-center justify-center">
+                {day}
+                {date && appointmentCounts[date.toISOString().split('T')[0]] && (
+                  <div className="text-[8px] absolute bottom-0 text-gray-500">
+                    {appointmentCounts[date.toISOString().split('T')[0]]}
+                  </div>
+                )}
+              </div>
+            )}
           />
+          <div className="flex items-center justify-center mt-2 text-xs gap-2">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-white border rounded mr-1"></div>
+              <span>0</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-100 rounded mr-1"></div>
+              <span>1-10</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-200 rounded mr-1"></div>
+              <span>11-20</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-300 rounded mr-1"></div>
+              <span>21-30</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-400 rounded mr-1"></div>
+              <span>30+</span>
+            </div>
+          </div>
         </div>
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
