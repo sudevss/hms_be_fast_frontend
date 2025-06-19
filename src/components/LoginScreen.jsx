@@ -9,7 +9,10 @@ const LoginScreen = ({ onLogin }) => {
     e.preventDefault();
     // In a real app, you would validate credentials here
     if (username && password && role) {
-      onLogin({ username, role });
+      // Store user data in localStorage
+      const userData = { username, role };
+      localStorage.setItem('userData', JSON.stringify(userData));
+      onLogin(userData);
     } else {
       alert('Please fill in all fields');
     }

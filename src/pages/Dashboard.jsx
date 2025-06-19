@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Search, Calendar, Users, UserCog, Settings, LogOut, LayoutGrid, Clock, Check } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -24,6 +23,14 @@ const data = [
 ];
 
 function Dashboard() {
+  // Add refs for modals
+  const patientModalRef = useRef(null);
+  const bookingModalRef = useRef(null);
+  const checkInModalRef = useRef(null);
+
+  // Add payment methods array
+  const paymentMethods = ["Cash", "Card", "UPI", "Insurance"];
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [checkedRows, setCheckedRows] = useState({
     'A1': true,
@@ -39,6 +46,8 @@ function Dashboard() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   // Add state for check-in modal
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  // Add state for doctor dropdown visibility
+  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
   
   // Add state for patient form fields
   const [patientForm, setPatientForm] = useState({
@@ -74,30 +83,53 @@ function Dashboard() {
     paymentMethod: ''
   });
   
-  // Available time slots
-  const timeSlots = [
-    '9am-10am',
-    '10am-11am',
-    '11am-12pm',
-    '12pm-1pm',
-    '1pm-2pm',
-    '2pm-3pm',
-    '3pm-4pm'
-  ];
+  // Appointment counts state
+  const [appointmentCounts, setAppointmentCounts] = useState({});
+  // Update appointment data structure with status
+  const [appointments, setAppointments] = useState([
+    { 
+      id: 'A1', 
+      token: 'A1', 
+      name: 'Sujith', 
+      time: '8:45 AM', 
+      doctor: 'Dr.Jamsheed',
+      status: 'Waiting',
+      paid: false
+    },
+    { id: 'A2', token: 'A2', name: 'Rejith', age: 42, time: '8:50 Am', doctor: 'Dr.Jamsheed' },
+    { id: 'W1', token: 'W1', name: 'Anoop', age: 42, time: '9:00 Am', doctor: 'Dr.Jamsheed' },
+    { id: 'A3', token: 'A3', name: 'Shiva', age: 42, time: '9:15 Am', doctor: 'Dr.Jamsheed' },
+  ]);
   
-  // Payment methods
-  const paymentMethods = [
-    'Cash',
-    'Credit Card',
-    'Debit Card',
-    'UPI',
-    'Insurance'
-  ];
+  // Add state for active appointments
+  const [activeAppointments, setActiveAppointments] = useState([]);
   
-  // Create refs for modals to handle outside clicks
-  const patientModalRef = useRef(null);
-  const bookingModalRef = useRef(null);
-  const checkInModalRef = useRef(null);
+  // Generate mock appointment counts for demonstration
+  useEffect(() => {
+    const generateAppointmentCounts = () => {
+      const counts = {};
+      const currentDate = new Date();
+      for (let i = -15; i < 15; i++) {
+        const date = new Date();
+        date.setDate(currentDate.getDate() + i);
+        counts[date.toISOString().split('T')[0]] = Math.floor(Math.random() * 50);
+      }
+      setAppointmentCounts(counts);
+    };
+    generateAppointmentCounts();
+  }, []);
+  
+  // Function to get color based on appointment count
+  const getDateColor = (date) => {
+    if (!date) return 'bg-white';
+    const dateStr = date.toISOString().split('T')[0];
+    const count = appointmentCounts[dateStr] || 0;
+    if (count === 0) return 'bg-white';
+    if (count < 10) return 'bg-teal-100';
+    if (count < 20) return 'bg-teal-200';
+    if (count < 30) return 'bg-teal-300';
+    return 'bg-teal-400';
+  };
 
   const doctors = [
     { name: 'Dr.Ranjith', role: 'Physician', status: 'On Duty' },
@@ -106,18 +138,13 @@ function Dashboard() {
     { name: 'Dr.Jamsheed', role: 'Diabetologist', status: 'On Duty' }
   ];
 
-  const appointmentData = [
-    { id: 'A1', token: 'A1', name: 'Sujith', age: 42, time: '8:45 Am', doctor: 'Dr.Jamsheed' },
-    { id: 'A2', token: 'A2', name: 'Rejith', age: 42, time: '8:50 Am', doctor: 'Dr.Jamsheed' },
-    { id: 'W1', token: 'W1', name: 'Anoop', age: 42, time: '9:00 Am', doctor: 'Dr.Jamsheed' },
-    { id: 'A3', token: 'A3', name: 'Shiva', age: 42, time: '9:15 Am', doctor: 'Dr.Jamsheed' },
-  ];
-
+  // Filter doctors based on search input
   const filteredDoctors = doctors.filter(doctor =>
     doctor.name.toLowerCase().includes(doctorSearch.toLowerCase())
   );
   
-  const filteredAppointments = appointmentData.filter(appointment =>
+  // Filter appointments based on global search
+  const filteredAppointments = appointments.filter(appointment =>
     appointment.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
     appointment.doctor.toLowerCase().includes(globalSearch.toLowerCase()) ||
     appointment.token.toLowerCase().includes(globalSearch.toLowerCase())
@@ -154,6 +181,17 @@ function Dashboard() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showPatientModal, showBookingModal, showCheckInModal]);
+
+  // Add click outside listener for doctor dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!event.target.closest('.doctor-search')) {
+        setShowDoctorDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle input changes in patient form
   const handlePatientInputChange = (e) => {
@@ -269,6 +307,7 @@ function Dashboard() {
               className="pl-10 pr-3 py-1.5 rounded-lg border border-gray-300 w-72 text-sm"
             />
           </div>
+          
           <div className="flex items-center gap-3">
             <button 
               className="bg-white px-4 py-2 rounded-lg shadow border border-gray-300"
@@ -396,7 +435,41 @@ function Dashboard() {
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
             inline
+            calendarClassName="heatmap-calendar"
+            dayClassName={date => `rounded-full w-8 h-8 ${getDateColor(date)}`}
+            renderDayContents={(day, date) => (
+              <div className="w-full h-full flex items-center justify-center">
+                {day}
+                {date && appointmentCounts[date.toISOString().split('T')[0]] && (
+                  <div className="text-[8px] absolute bottom-0 text-gray-500">
+                    {appointmentCounts[date.toISOString().split('T')[0]]}
+                  </div>
+                )}
+              </div>
+            )}
           />
+          <div className="flex items-center justify-center mt-2 text-xs gap-2">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-white border rounded mr-1"></div>
+              <span>0</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-100 rounded mr-1"></div>
+              <span>1-10</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-200 rounded mr-1"></div>
+              <span>11-20</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-300 rounded mr-1"></div>
+              <span>21-30</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-teal-400 rounded mr-1"></div>
+              <span>30+</span>
+            </div>
+          </div>
         </div>
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -434,8 +507,14 @@ function Dashboard() {
           <div 
             ref={patientModalRef}
             className="bg-white rounded-lg w-80 p-4 relative"
-            style={{ maxHeight: '80vh'}}
+            style={{ maxHeight: '80vh', overflowY: 'auto'}}
           >
+            <button 
+              onClick={() => setShowPatientModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
             <h2 className="text-lg font-bold mb-4 text-center">Patient Details</h2>
             
             <div className="space-y-2.5">
@@ -568,6 +647,12 @@ function Dashboard() {
             className="bg-white rounded-lg w-80 p-4 relative"
             style={{ maxHeight: '80vh', overflowY: 'auto' }}
           >
+            <button 
+              onClick={() => setShowBookingModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
             <h2 className="text-lg font-bold mb-4 text-center">New Booking</h2>
             
             <div className="space-y-2.5">
@@ -582,24 +667,39 @@ function Dashboard() {
                   placeholder="Search patient..."
                 />
               </div>
-              
-              <div>
+                <div>
                 <label className="block mb-1 font-medium text-sm">Doctor</label>
                 <div className="relative">
-                  <select 
+                  <input
+                    type="text"
                     name="doctor"
                     value={bookingForm.doctor}
                     onChange={handleBookingInputChange}
-                    className="w-full border border-gray-300 rounded-md p-1.5 appearance-none text-sm"
-                  >
-                    <option value="">Select Doctor</option>
-                    {doctors.map((doctor, index) => (
-                      <option key={index} value={doctor.name}>{doctor.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <span className="text-xs">▼</span>
-                  </div>
+                    placeholder="Search doctor..."
+                    className="w-full border border-gray-300 rounded-md p-1.5 text-sm"
+                    onFocus={() => setShowDoctorDropdown(true)}
+                  />
+                  {showDoctorDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-auto">
+                      {doctors
+                        .filter(doctor => 
+                          doctor.name.toLowerCase().includes(bookingForm.doctor.toLowerCase())
+                        )
+                        .map((doctor, index) => (
+                          <div
+                            key={index}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                            onClick={() => {
+                              setBookingForm(prev => ({ ...prev, doctor: doctor.name }));
+                              setShowDoctorDropdown(false);
+                            }}
+                          >
+                            {doctor.name}
+                          </div>
+                        ))
+                      }
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -704,6 +804,12 @@ function Dashboard() {
             className="bg-white rounded-lg w-80 p-4 relative"
             style={{ maxHeight: '80vh', overflowY: 'auto' }}
           >
+            <button 
+              onClick={() => setShowCheckInModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
             <h2 className="text-lg font-bold mb-4 text-center">Patient Check-In</h2>
             
             <div className="space-y-2.5">

@@ -149,10 +149,15 @@ const DoctorManagement = () => {
         </div>
       </div>
 
-      {/* Edit Schedule Modal - Improved to match design */}
-      {showEditSchedule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 shadow-lg w-[500px] max-h-screen overflow-hidden flex flex-col rounded-lg">
+      {/* Edit Schedule Modal - Improved to match design */}      {showEditSchedule && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 shadow-lg w-[500px] max-h-screen overflow-y-auto flex flex-col rounded-lg relative">
+            <button 
+              onClick={() => setShowEditSchedule(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
             <h2 className="text-xl font-bold mb-4 text-center">Edit Schedule</h2>
 
             <div className="mb-4">
@@ -271,9 +276,15 @@ const DoctorManagement = () => {
 
       {/* Add Doctor Modal */}
       {showAddDoctor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 shadow-lg w-[500px] h-[720px] overflow-hidden flex flex-col rounded-lg">
-            <h2 className="text-xl font-bold mb-4 text-center">Add Doctor</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 shadow-lg w-[500px] max-h-[90vh] overflow-y-auto flex flex-col rounded-lg relative">
+            <button 
+              onClick={() => setShowAddDoctor(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ✕
+            </button>
+            <h2 className="text-xl font-bold mb-6 text-center pt-2">Add Doctor</h2>
 
             {/* Doctor Details */}
             <div className="mb-4">
