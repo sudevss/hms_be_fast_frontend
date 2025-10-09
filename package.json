@@ -1,0 +1,102 @@
+{
+  "name": "hms-fe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hospital managment",
+  "repository": {
+    "type": "git",
+    "url": "\"\""
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "postcss.config.js",
+  "scripts": {
+    "kill": "kill-port 5178",
+    "prestart": "npm run kill",
+    "start": "vite",
+    "predev": "npm run kill",
+    "dev": "vite --open",
+    "dev:test": "vite --mode test",
+    "dev:uat": "vite --mode uat",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build",
+    "build:dev": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode development",
+    "build:test": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode test",
+    "build:uat": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode uat",
+    "build:stage": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode uat",
+    "build:prod": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode production",
+    "build:dr": "cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --mode production",
+    "preview": "vite preview",
+    "lint": "eslint \"./src/**/*.{js,jsx,ts,tsx,json}\"",
+    "lint:quite": "eslint \"./src/**/*.{js,jsx,ts,tsx,json}\" --quiet",
+    "lint:fix": "eslint --fix \"./src/**/*.{js,jsx,ts,tsx,json}\"",
+    "style": "prettier --check \"./src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "style:fix": "prettier --write \"./src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "format": "npm run style:fix && npm run lint:fix"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.10.6",
+    "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "@mui/utils": "^7.3.2",
+    "@mui/x-date-pickers": "^8.11.1",
+    "@tanstack/react-query": "^5.4.3",
+    "axios": "^1.11.0",
+    "cross-env": "^7.0.3",
+    "dayjs": "^1.11.18",
+    "lucide-react": "^0.542.0",
+    "material-react-table": "^3.2.1",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-datepicker": "^8.7.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-redux": "^8.0.5",
+    "react-router-dom": "^6.10.0",
+    "recharts": "^2.5.0",
+    "styled-components": "^6.1.8",
+    "tailwind-merge": "^3.0.1",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@hookform/devtools": "^4.3.1",
+    "@tanstack/eslint-plugin-query": "^5.0.5",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^3.1.0",
+    "autoprefixer": "^10.4.19",
+    "cspell": "^6.31.1",
+    "eslint": "^8.43.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-spellcheck": "0.0.20",
+    "husky": "^8.0.3",
+    "kill-port": "^2.0.1",
+    "lint-staged": "^13.2.1",
+    "postcss": "^8.4.38",
+    "prettier": "^2.8.7",
+    "sass": "^1.63.6",
+    "tailwindcss": "^3.4.3",
+    "vite": "^4.4.4"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write"
+    ],
+    "src/**/*.{js,jsx,ts,tsx,json}": [
+      "eslint --fix"
+    ]
+  }
+}
