@@ -1,0 +1,20 @@
+.recharts-tooltip-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: -2px auto;
+  // width: 0;
+  // height: 0;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid #794cff;
+  border-left: 1px solid transparent;
+  border-right: 1px solid #794cff;
+  // border-left: 8px solid transparent;
+  // border-right: 8px solid transparent;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: rotate(45deg);
+  // box-shadow: inset -5px -5px 5px -5px #794cff;
+}
