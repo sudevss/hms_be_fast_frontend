@@ -10,7 +10,12 @@ import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 // import AddBoking from "../../AppReusbleComponents/AddBoking";
 import EnhancedPieChart from "@components/Charts/EnhancedPieChart";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getDashBoardDetails, postCheckinPayment } from "../../serviceApis";
+import {
+  getDashBoardDetails,
+  postCheckinPayment,
+  postUpdateAppointmentStatus,
+  postUpdatePaymentStatus,
+} from "../../serviceApis";
 import DoctorsSection from "./DoctersSection";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useMemo } from "react";
@@ -114,12 +119,12 @@ function DashboardPage() {
   const minDate = dayjs().subtract(1, "day").toDate();
   const maxDate = dayjs().add(7, "day").toDate();
 
-  const mutationCheckinToken = useMutation({
-    mutationFn: (payload) => postCheckinPayment({ ...payload }),
+  const mutationAppoinmentStatusUpdate = useMutation({
+    mutationFn: (payload) => postUpdateAppointmentStatus({ ...payload, facility_id: 1 }),
     onSuccess: (res) => {
       setShowAlert({
         show: true,
-        message: `Appointment Booking Payment Updated  successfully`,
+        message: `Appointment status Updated  successfully`,
         status: "success",
       });
       queryClient.invalidateQueries({
@@ -134,127 +139,68 @@ function DashboardPage() {
         refetchActive: true,
         refetchInactive: false,
       });
-      if (res) {
-        if (setIsCheckinOpen) {
-          setIsCheckinOpen(false);
-        }
-      }
+       onResetAlert();
+      queryGetDashboard?.refetch();
     },
     onError: () => {
       setShowAlert({
         show: true,
-        message: `Appointment Booking Payment Update failed`,
+        message: `Appointment status Update failed`,
         status: "error",
       });
     },
   });
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "token", //access nested data with dot notation
-        header: "Token",
-        size: 100,
-      },
-      {
-        accessorKey: "patient_name",
-        header: "Patient Name",
-        // size: 150,
-      },
-
-      {
-        accessorKey: "checkin_time",
-        header: "Check-in Time",
-        size: 110,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "doctor_name",
-        header: "Doctor Name",
-        size: 150,
-        enableSorting: false,
-      },
-      {
-        accessorKey: "payment_type",
-        header: "Payment Type",
-        size: 110,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "is_paid",
-        header: "Payment",
-        size: 110,
-        enableSorting: false,
-        enableColumnFilter: false,
-        Cell: ({ row }) => (
-          <Box
-            sx={{ display: "flex", width: "100%", justifyContent: "center" }}
-          >
-            <Tooltip
-              placement="top"
-              title={row?.original?.is_paid ? "Paid" : "Not paid"}
-              arrow
-              enterDelay={100}
-            >
-              <IconButton backgroundColor="#115E59">
-                {row?.original?.is_paid ? (
-                  <FaCheck color="#115E59" />
-                ) : (
-                  <FcCancel color="#D20A3C" />
-                )}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
-      },
-      {
-        accessorKey: "actions",
-        header: "Actions",
-        size: 120, // Desired width in pixels
-        minSize: 100, // Minimum width
-        maxSize: 200, // Maximum width
-        enableResizing: true, // Optional: allows user to resize
-        enableSorting: false,
-        enableColumnFilter: false,
-        Cell: ({ row }) => (
-          <Box
-            sx={{ display: "flex", width: "100%", justifyContent: "center" }}
-          >
-            <IconButton
-              backgroundColor="#115E59"
-              onClick={() => {
-                setPaymentObj({
-                  ...initialStatePayment,
-                  ...row?.original,
-                  open: true,
-                });
-              }}
-            >
-              <ToggleOffOutlinedIcon color="#115E59" />
-            </IconButton>
-          </Box>
-        ),
-      },
-    ],
-    [tokenData, hourlyBookings, summary]
-  );
-
-  const tableProps = {
-    initialState: {
-      showGlobalFilter: true,
-      showColumnFilters: true,
-      columnPinning: {
-        right: ["actions"], // built-in ID for actions column
-        left: ["token"], // no columns pinned to the left
-      },
+  const mutationPayementUpdateStatus = useMutation({
+    mutationFn: (payload) => postUpdatePaymentStatus({ ...payload }),
+    onSuccess: (res) => {
+      console.log("res", res);
+      queryClient.invalidateQueries({
+        queryKey: ["queryGetAppointmentsAndBookings"],
+        exact: false,
+        refetchActive: true,
+        refetchInactive: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
+        exact: false,
+        refetchActive: true,
+        refetchInactive: false,
+      });
+      setShowAlert({
+        show: true,
+        message: `Payment updated successfully`,
+        status: "success",
+      });
+      onResetAlert();
+      setPaymentObj({ ...initialStatePayment });
+      queryGetDashboard?.refetch();
     },
+    onError: () => {
+      setShowAlert({
+        show: true,
+        message: `Payment updated failed`,
+        status: "error",
+      });
+    },
+  });
+
+  const updatePaymentStatus = (payload) => {
+    setPaymentObj({
+      ...initialStatePayment,
+      ...payload,
+      open: true,
+    });
+    // mutationPayementUpdateStatus.mutate({ ...payload });
+    // Implement the logic to update payment status
   };
 
-  const onSumbitPayment = () => {
-    mutationCheckinToken.mutate({ ...paymentObj });
+  const onsubmitPayment = () => {
+    mutationPayementUpdateStatus.mutate({ ...paymentObj });
   };
+
+  const showLoader = queryGetDashboard?.isLoading || mutationAppoinmentStatusUpdate?.isPending;
+
   return (
     <div className="flex flex-row min-h-screen bg-gray-50 w-full">
       {/* Main Content */}
@@ -301,11 +247,26 @@ function DashboardPage() {
           </div>
 
           {/* Appointment Table */}
-          <MuiReactTableComponent
+          <AppointmentsTable
+            tabName="Scheduled"
+            isDashboard={true}
+            updatePaymentStatus={updatePaymentStatus}
+            updateAppointmentStatus={(payload) =>
+              mutationAppoinmentStatusUpdate.mutate({ ...payload })
+            }
+            dashboardData={tokenData}
+            hourlyBookings={hourlyBookings}
+            summary={summary}
+            //  tableProps={tableProps}
+            isDate={false}
+            refetchDashBoard={queryGetDashboard?.refetch()}
+            setIsCheckinOpen={setIsCheckinOpen}
+          />
+          {/* <MuiReactTableComponent
             data={tokenData}
             columns={columns}
             tableProps={tableProps}
-          />
+          /> */}
         </div>
       </div>
       {/* Right Sidebar */}
@@ -459,7 +420,7 @@ function DashboardPage() {
           />
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
-          <StyledButton variant="contained" onClick={onSumbitPayment}>
+          <StyledButton variant="contained" onClick={onsubmitPayment}>
             Submit
           </StyledButton>
         </DialogActions>
@@ -470,7 +431,7 @@ function DashboardPage() {
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
           onClose={() => setShowAlert(INITIAL_SHOW_ALERT)}
         />
-        <PageLoader show={mutationCheckinToken?.isPending} />
+        <PageLoader show={showLoader} />
       </Dialog>
     </div>
   );

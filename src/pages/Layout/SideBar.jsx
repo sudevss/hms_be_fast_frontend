@@ -8,10 +8,25 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Box } from "@mui/material";
+import { logOut, userLoginDetails } from "@/stores/LoginStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Sidebar = () => {
+  const queryClient = useQueryClient();
+  const userObj = userLoginDetails();
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    userObj?.onReset();
+    logOut();
+    queryClient.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+    navigate("/login");
+  };
   return (
     <div className="fixed top-0 left-0 h-screen w-56 bg-black text-white p-3 rounded-r-2xl flex flex-col">
       <div className="flex items-center gap-2 mb-12">
@@ -52,8 +67,13 @@ const Sidebar = () => {
           </Link>
         </div>
         <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-teal-600  transition-colors">
-          <LogOut size={18} />
-          <span className="text-sm">Log out</span>
+          <a
+            onClick={handleLogout}
+            className="cursor-pointer flex items-center gap-2"
+          >
+            <LogOut size={18} />
+            <span className="text-sm">Log out</span>
+          </a>
         </div>
       </div>
     </div>

@@ -20,7 +20,8 @@ import DashboardPage from "./Dashboard";
 import DoctorsPage from "./Doctors";
 import PatientsPage from "./Patients";
 import AppointmentsPage from "./Appointments";
-import Layout from "./Layout";
+import Layout from "./Layout/Layout";
+import { PrivateRoute } from "./Layout/PrivateRoute";
 
 // eslint-disable-next-line react/prop-types
 // function SuspenseComponent({ children }) {
@@ -52,6 +53,7 @@ const router = createBrowserRouter(
         element={<LoginPage />}
       />
       <Route path="/" element={<Navigate to="login" replace />} />
+       <Route element={<PrivateRoute />}>
       <Route
         path="/dashboard"
         // element={<Navigate to="/" replace />}
@@ -72,6 +74,7 @@ const router = createBrowserRouter(
         // element={<Navigate to="/" replace />}
         element={<PatientsPage />}
       />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Route>
   )

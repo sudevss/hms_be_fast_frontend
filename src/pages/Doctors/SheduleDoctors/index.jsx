@@ -37,6 +37,7 @@ import { deleteDoctorSheduleSlot, postDoctorShedule } from "@/serviceApis";
 import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
 import { useMutation } from "@tanstack/react-query";
+import { useShowAlert } from "@/stores/showAlertStore";
 
 const convertTo24Hour = (timeStr) => {
   const hour = parseInt(timeStr);
@@ -63,6 +64,7 @@ const deleteDoctorSlot = (weekdaysSlots, parentIndex, childIndex) => {
     slotWeeks: [...day.slotWeeks],
   }));
 
+  
   // Check if the indices are valid
   if (
     updatedWeekdaysSlots[parentIndex] &&
@@ -88,8 +90,8 @@ const SheduleDoctors = ({ open, setOpen }) => {
     onReset,
     doctor_id,
   } = useSheduleDoctor();
+    const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
 
-  const [showAlert, setShowAlert] = useState(INITIAL_SHOW_ALERT);
   const [editIndexs, setEditIndexs] = useState({
     weekIndex: "",
     slotIndex: "",
