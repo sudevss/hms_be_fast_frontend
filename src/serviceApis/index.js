@@ -1,13 +1,14 @@
 import axios from "axios";
+import api from "./apiConfig";
 
 const API_BASE_URL = `https://hms-be-fast-six.vercel.app`;
 
 export const getDashBoardDetails = ({ date, facility_id, doctor_id }) => {
-  let url = `${API_BASE_URL}${`/dashboard/getDoctorDetails?facility_id=${facility_id}&date=${date}`}`;
+  let url = `${`/dashboard/getDoctorDetails?facility_id=${facility_id}&date=${date}`}`;
   if (doctor_id) {
     url += `&doctor_id=${doctor_id}`;
   }
-  return axios.get(url).then((response) => response.data);
+  return api.get(url).then((response) => response.data);
 };
 
 export const getDoctorSheduleDetails = async ({
@@ -15,8 +16,8 @@ export const getDoctorSheduleDetails = async ({
   doctor_id,
 }) => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}${`/doctor-schedule/${facility_id}/${doctor_id}`}`
+    const response = await api.get(
+      `${`/doctor-schedule/${facility_id}/${doctor_id}`}`
     );
     return response?.data;
   } catch (error) {
@@ -26,8 +27,8 @@ export const getDoctorSheduleDetails = async ({
 };
 
 export const postDoctorShedule = (payload) =>
-  axios
-    .post(`${API_BASE_URL}/doctor-schedule`, payload)
+  api
+    .post(`/doctor-schedule`, payload)
     .then((response) => response.data);
 
 export const deleteDoctorSheduleSlot = async ({
@@ -37,27 +38,27 @@ export const deleteDoctorSheduleSlot = async ({
   doctor_id,
   windowNum,
 }) => {
-  axios
+  api
     .delete(
-      `${API_BASE_URL}${`/doctor-schedule/${facility_id}/${doctor_id}/${startDate}/${endDate}/${windowNum}`}`
+      `${`/doctor-schedule/${facility_id}/${doctor_id}/${startDate}/${endDate}/${windowNum}`}`
     )
     .then((response) => response);
 };
 
 export const postNewDoctor = (payload) =>
-  axios
-    .post(`${API_BASE_URL}/doctors`, payload)
+  api
+    .post(`/doctors`, payload)
     .then((response) => response.data);
 
 export const putUpdateDoctor = (payload) =>
-  axios
-    .put(`${API_BASE_URL}/doctors/${payload?.id}`, payload)
+  api
+    .put(`/doctors/${payload?.id}`, payload)
     .then((response) => response.data);
 
 export const getAllDoctorsDetails = async ({ facility_id }) => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}${`/doctors?facility_id=${facility_id}&include_inactive=true`}`
+    const response = await api.get(
+      `${`/doctors?facility_id=${facility_id}&include_inactive=true`}`
     );
     return response?.data;
   } catch (error) {
@@ -70,9 +71,9 @@ export const deleteAppoinmentBooking = async ({
   appointment_id,
   facility_id,
 }) => {
-  axios
+  api
     .delete(
-      `${API_BASE_URL}${`/appointments/${appointment_id}?facility_id=${facility_id}`}`
+      `${`/appointments/${appointment_id}?facility_id=${facility_id}`}`
     )
     .then((response) => response);
 };
@@ -81,21 +82,21 @@ export const postCheckinAppoinmentBooking = async ({
   appointment_id,
   facility_id,
 }) => {
-  axios
+  api
     .post(
-      `${API_BASE_URL}${`/appointments/${appointment_id}/checkin?facility_id=${facility_id}`}`
+      `${`/appointments/${appointment_id}/checkin?facility_id=${facility_id}`}`
     )
     .then((response) => response);
 };
 
 export const postNewAppoinmentBooking = (payload) =>
-  axios
-    .post(`${API_BASE_URL}/new_booking/book`, payload)
+  api
+    .post(`/new_booking/book`, payload)
     .then((response) => response.data);
 
 export const postNewAppoinmentBookingWithExistingPatient = (payload) =>
-  axios
-    .post(`${API_BASE_URL}/new_booking/book-existing`, payload)
+  api
+    .post(`/new_booking/book-existing`, payload)
     .then((response) => response.data);
 
 export const getAppointmentsAndBookings = async ({
@@ -105,12 +106,12 @@ export const getAppointmentsAndBookings = async ({
   end_date,
   patient_id,
 }) => {
-  let url = `${API_BASE_URL}${`/appointments/?facility_id=${facility_id}&date=${date}&end_date=${end_date}&appointment_status=${appointment_status}`}`;
+  let url = `${`/appointments/?facility_id=${facility_id}&date=${date}&end_date=${end_date}&appointment_status=${appointment_status}`}`;
   if (patient_id) {
     url += `&patient_id=${patient_id}`;
   }
   try {
-    const response = await axios.get(url);
+    const response = await api.get(url);
     return response?.data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -122,44 +123,42 @@ export const getPaientDetailsByPhone = async ({
   facility_id,
   contact_number,
 }) =>
-  await axios
+  await api
     .get(
-      `${API_BASE_URL}${`/new_booking/lookup?phone_number=${contact_number}&facility_id=${facility_id}`}`
+      `${`/new_booking/lookup?phone_number=${contact_number}&facility_id=${facility_id}`}`
     )
     .then((response) => response.data);
 
 export const getPaientsDetails = async ({ facility_id }) =>
-  axios
-    .get(`${API_BASE_URL}${`/patients/?facility_id=${facility_id}`}`)
+  api
+    .get(`${`/patients/?facility_id=${facility_id}`}`)
     .then((response) => response.data);
 
 export const patchUpdatePatient = (payload) =>
-  axios
+  api
     .patch(
-      `${API_BASE_URL}/patients/${payload.id}?facility_id=${payload.facility_id}`,
+      `/patients/${payload.id}?facility_id=${payload.facility_id}`,
       payload
     )
     .then((response) => response.data);
 
 export const postAddNewPatient = (payload) =>
-  axios
-    .post(`${API_BASE_URL}/patients`, payload)
+  api
+    .post(`/patients`, payload)
     .then((response) => response.data);
 
 export const postCheckinPayment = (payload) =>
-  axios
+  api
     .post(
-      `${API_BASE_URL}${`/appointments/${payload?.appointment_id}/payment?facility_id=${payload?.facility_id}`}`,
+      `${`/appointments/${payload?.appointment_id}/payment?facility_id=${payload?.facility_id}`}`,
       payload
     )
-    .then((response) => {
-      console.log(response.data);
-      return response.data;
-    });
+    .then((response) =>  response.data);
+    
 
 export const putAddPatientDiagnosis = (payload) =>
-  axios
-    .put(`${API_BASE_URL}${`/patient_diagnosis/`}`, payload)
+  api
+    .put(`${`/patient_diagnosis/`}`, payload)
     .then((response) => response.data);
 
 export const getPatientDiagnosis = ({
@@ -168,9 +167,9 @@ export const getPatientDiagnosis = ({
   diagnosis_id,
   facility_id = "1",
 }) =>
-  axios
+  api
     .get(
-      `${API_BASE_URL}${`/patient_diagnosis/?facility_id=${facility_id}&patient_id=${patient_id}&doctor_id=${doctor_id}&diagnosis_id=${diagnosis_id}`}`
+      `${`/patient_diagnosis/?facility_id=${facility_id}&patient_id=${patient_id}&doctor_id=${doctor_id}&diagnosis_id=${diagnosis_id}`}`
     )
     .then((response) => response.data);
 
@@ -179,11 +178,11 @@ export const getPatientReports = ({
   appointment_id,
   facility_id = "1",
 }) => {
-  let url = `${API_BASE_URL}${`/patient_reports?facility_id=${facility_id}&patient_id=${patient_id}`}`;
+  let url = `${`/patient_reports?facility_id=${facility_id}&patient_id=${patient_id}`}`;
   if (appointment_id) {
     url += `&appointment_id=${appointment_id}`;
   }
-  return axios.get(url).then((response) => response.data);
+  return api.get(url).then((response) => response.data);
 };
 
 export const getPatientReportFileDownload = ({
@@ -191,9 +190,9 @@ export const getPatientReportFileDownload = ({
   facility_id = "1",
   upload_id,
 }) => {
-  return axios
+  return api
     .get(
-      `${API_BASE_URL}${`/patient_reports/file?facility_id=${facility_id}&patient_id=${patient_id}&upload_id=${upload_id}`}`,
+      `${`/patient_reports/file?facility_id=${facility_id}&patient_id=${patient_id}&upload_id=${upload_id}`}`,
 
       {
         responseType: "blob", // important for binary data
@@ -202,8 +201,29 @@ export const getPatientReportFileDownload = ({
     .then((response) => response.data);
 };
 
+
+export const postUpdatePaymentStatus = ({appointment_id, facility_id, ...payload}) =>  
+ api
+    .post(`/appointments/${appointment_id}/payment?facility_id=${facility_id}`, payload)
+    .then((response) => response.data);
+    
+export const postUpdateAppointmentStatus = ({appointment_id, facility_id}) =>  
+ api
+    .post(`/appointments/${appointment_id}/complete?facility_id=${facility_id}`)
+    .then((response) => response.data);
+
+  
+
+
+export const postLogin = (payload) =>
+  axios
+    .post(`${API_BASE_URL}/login/login`, payload)
+    .then((response) => response.data);
+
 // export const postPatientUploadFiles = ({ payload }) => {
-//   return axios
-//     .post(`${API_BASE_URL}${`/patient_reports/upload`}`, payload)
+//   return api
+//     .post(`${`/patient_reports/upload`}`, payload)
 //     .then((response) => response);
 // };
+
+ 

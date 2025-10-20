@@ -72,7 +72,7 @@ const MuiReactTableComponent = ({
       >
         <Stack width="50%" flexDirection="row">
           {isDate && (
-            <Box width="25%">
+            <Box width="12vw">
               <DatePickerComponent
                 name="date"
                 value={date}
