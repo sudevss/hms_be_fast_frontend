@@ -1,13 +1,18 @@
 /* eslint-disable spellcheck/spell-checker */
 /* eslint-disable @tanstack/query/exhaustive-deps */
 /* eslint-disable camelcase */
+import { postLogin } from "@/serviceApis";
+import { userLoginDetails } from "@/stores/LoginStore";
 import AlertSnackbar from "@components/AlertSnackbar";
 import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
+import StyledButton from "@components/StyledButton";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import PageLoader from "@pages/PageLoader";
+import { useMutation } from "@tanstack/react-query";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const MESSAGES = {
   InvalidCredentials: "Please enter valid User ID & Password",
@@ -19,10 +24,60 @@ const MESSAGES = {
 };
 
 function LoginCardPanel({}) {
-  const [showAlert, setShowAlert] = useState(INITIAL_SHOW_ALERT);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [showLoader, setShowLoader] = useState(false);
+  const userObj = userLoginDetails();
+  
 
+  // const { } = userLoginDetails();
+  const navigate = useNavigate();
+  const [showAlert, setShowAlert] = useState(INITIAL_SHOW_ALERT);
+  // const [alertMessage, setAlertMessage] = useState("");
+  // const [showLoader, setShowLoader] = useState(false);
+
+  const [loginObj, setLoginObj] = useState({
+    user_id: "",
+    password: "",
+  });
+
+  const mutateLogin = useMutation({
+    mutationFn: () => postLogin(loginObj),
+    // postLogin(loginObj),
+    onSuccess: (res) => {
+     
+      if (res) {
+        userObj.setUserDetails(res);
+        navigate("/dashboard");
+      }
+
+      // const updatedata = data?.weekDaysList.map((_obj) => ({
+      //   ..._obj,
+      //   isChecked: _obj?.slotWeeks?.some(({ windowNum }) => windowNum),
+      // }));
+      // if (updatedata) {
+      //   setDoctorSheduleData({ ...data, weekDaysList: [...updatedata] });
+      //   setOpenSheduleDoctor(true);
+      // }
+    },
+    onError: (error) => {
+      setShowAlert({
+        show: true,
+        message: error?.response?.data?.detail,
+        status: "error",
+      });
+    },
+  });
+
+  const handleLogin = () => {
+    mutateLogin.mutate();
+  };
+
+  const handleOnChange = (e) => {
+    const { name, value } = e.target;
+    setLoginObj((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+  const showLoader = mutateLogin.isPending;
   return (
     <>
       <Stack justifyContent="center" alignItems="center" height="100%">
@@ -54,9 +109,11 @@ function LoginCardPanel({}) {
               <>
                 <TextInputWithLabel
                   type="text"
-                  name="userId"
+                  name="user_id"
                   label="User ID"
-                  placeholder=""
+                  placeholder="Enter User ID"
+                  onChange={handleOnChange}
+
                   // onChange={(event) => {
                   //   setUserId(event.target.value);
                   // }}
@@ -68,9 +125,7 @@ function LoginCardPanel({}) {
                   name="password"
                   label="Password"
                   placeholder="Enter Password"
-                  // onChange={(event) => {
-                  //   setPassword(event.target.value);
-                  // }}
+                  onChange={handleOnChange}
                   LabelSxProps={{ fontWeight: 600 }}
                 />
                 {/* <TextInputWithLabel
@@ -109,14 +164,15 @@ function LoginCardPanel({}) {
                 )} */}
                 {/* {!authState?.isAuthenticated && ( */}
 
-                <Button
+                <StyledButton
                   variant="contained"
-                  type="submit"
+                  // type="submit"
                   sx={{ borderRadius: "28px" }}
-                  // onClick={login}
+                  disabled={!(loginObj.user_id || loginObj.password)}
+                  onClick={handleLogin}
                 >
                   Login
-                </Button>
+                </StyledButton>
 
                 {/* )} */}
               </Stack>
@@ -126,8 +182,8 @@ function LoginCardPanel({}) {
       </Stack>
       <PageLoader show={showLoader} />
       <AlertSnackbar
-        message={alertMessage}
-        showAlert={showAlert}
+        message={showAlert.message}
+        showAlert={ showAlert.show }
         severity="error"
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         onClose={() => setShowAlert(INITIAL_SHOW_ALERT)}

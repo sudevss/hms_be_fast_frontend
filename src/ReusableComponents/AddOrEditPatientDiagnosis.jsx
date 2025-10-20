@@ -39,6 +39,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     recomm_tests,
     treatment_plan,
     vital_bp,
+    height,
+    weight,
     vital_hr,
     vital_spo2,
     vital_temp,
@@ -47,6 +49,10 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     diagnosis_id,
     setPatientDiagnosis,
   } = usePatientDiagnosis();
+
+  const patientDiagnosisObj = usePatientDiagnosis();
+
+  console.log({patientDiagnosisObj});
 
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
 
@@ -186,6 +192,33 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
             label="Temp"
             width="100%"
             placeholderText="Enter Temp"
+            onChange={(e) =>
+              onChangePatientDiagnosis(e.target.name, e.target.value)
+            }
+            LabelSxProps={{ fontWeight: 600 }}
+          />
+          
+        </Stack>
+         <Stack flexDirection="row" gap={2}>
+          <TextInputWithLabel
+            type="text"
+            name="height"
+            value={height}
+            label="Height"
+            width="100%"
+            placeholderText="Enter Height"
+            onChange={(e) =>
+              onChangePatientDiagnosis(e.target.name, e.target.value)
+            }
+            LabelSxProps={{ fontWeight: 600 }}
+          />
+          <TextInputWithLabel
+            type="text"
+            name="weight"
+            value={weight}
+            label="Weight"
+            width="100%"
+            placeholderText="Enter Weight"
             onChange={(e) =>
               onChangePatientDiagnosis(e.target.name, e.target.value)
             }

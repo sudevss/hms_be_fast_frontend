@@ -15,6 +15,7 @@ import {
   getPatientDiagnosis,
   postCheckinAppoinmentBooking,
 } from "@/serviceApis";
+import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageLoader from "@pages/PageLoader";
@@ -35,6 +36,13 @@ const AppointmentsTable = ({
   refetchDashBoard,
   tabName,
   patient_id,
+  isDate=true,
+  isDashboard=false,
+  dashboardData=[],
+  hourlyBookings,
+  summary,
+  updatePaymentStatus,
+  updateAppointmentStatus
 }) => {
   const currentDate = dayjs().format("YYYY-MM-DD");
   const [appointmentDateFilter, setAppointmentDateFilter] =
@@ -139,7 +147,6 @@ const AppointmentsTable = ({
       });
     },
   });
-
   const handleDeleleAppoinmentBooking = (_obj) => {
     mutationDeleteAppointmentBooking.mutate({ ..._obj });
   };
@@ -147,6 +154,7 @@ const AppointmentsTable = ({
   const handleCheckinAppoinmentBooking = (_obj) => {
     mutationCheckinAppointmentBooking.mutate({ ..._obj });
   };
+
 
   const mutationGetDiagnosis = useMutation({
     mutationFn: (payload) => getPatientDiagnosis({ ...payload }),
@@ -156,6 +164,150 @@ const AppointmentsTable = ({
       return;
     },
   });
+  
+  const dashboardColumns = useMemo(
+    () => [
+      {
+        accessorKey: "token", //access nested data with dot notation
+        header: "Token",
+        size: 100,
+      },
+      {
+        accessorKey: "patient_name",
+        header: "Patient Name",
+        // size: 150,
+      },
+
+      {
+        accessorKey: "checkin_time",
+        header: "Check-in Time",
+        size: 110,
+        enableSorting: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: "doctor_name",
+        header: "Doctor Name",
+        size: 150,
+        enableSorting: false,
+      },
+      {
+        accessorKey: "payment_type",
+        header: "Payment Type",
+        size: 110,
+        enableSorting: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: "is_paid",
+        header: "Payment",
+        size: 110,
+        enableSorting: false,
+        enableColumnFilter: false,
+          Cell: ({ row }) => (
+          <Box
+            sx={{ display: "flex", width: "100%", justifyContent: "center" }}
+          >
+            <Tooltip
+              placement="top"
+              title={row?.original?.is_paid || row?.original?.paid  ? "Paid" : "Not paid"}
+              arrow
+              enterDelay={100}
+            >
+              <IconButton backgroundColor="#115E59">
+                {row?.original?.is_paid || row?.original?.paid ? (
+                  <FaCheck color="#115E59" />
+                ) : (
+                  <FcCancel color="#D20A3C" />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+      {
+        accessorKey: "actions",
+        header: "Actions",
+        size: 120, // Desired width in pixels
+        minSize: 100, // Minimum width
+        maxSize: 200, // Maximum width
+        enableResizing: true, // Optional: allows user to resize
+        enableSorting: false,
+        enableColumnFilter: false,
+        Cell: ({ row }) => (
+          <Box
+            sx={{ display: "flex", width: "100%", justifyContent: "center" }}
+          >
+            {!["Completed"].includes(tabName) && (
+              <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
+                <IconButton
+                  backgroundColor="#115E59"
+                  onClick={() => updateAppointmentStatus(row.original)}
+                >
+                  <ToggleOffOutlinedIcon color="#115E59" />
+                </IconButton>
+              </Tooltip>
+            )}
+              <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+                <IconButton
+                  backgroundColor="#115E59"
+                  onClick={() => updatePaymentStatus(row.original)}
+                >
+                  <CurrencyRupeeIcon color="#115E59" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip
+                placement="top"
+                title="Add Diagnosis"
+                arrow
+                enterDelay={100}
+              >
+                <IconButton
+                  backgroundColor="#115E59"
+                  onClick={() => {
+                    if (row.original?.diagnosis_id) {
+                      mutationGetDiagnosis.mutate(row.original);
+                    }
+
+                    setPatientDiagnosis({
+                      appointment_id: row.original?.appointment_id,
+                      patient_id: row.original?.PatientID,
+                      facility_id: row.original?.facility_id,
+                      doctor_id: row.original?.doctor_id,
+                      ...row.original,
+                    });
+                    setOpenDiagnosis(true);
+                  }}
+                >
+                  <FaDiagnoses color="#115E59" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
+                <IconButton
+                  backgroundColor="#115E59"
+                  onClick={() => {
+                    setOpenReports(true);
+                    setPatientReportObj({ ...row.original });
+                    // setOpenDiagnosis(true);
+                    // setPatientDiagnosis({
+                    //   appointment_id: row.original?.appointment_id,
+                    // });
+                    // mutationGetDiagnosis(row.original);
+                    // setPatientDiagnosis({ ...row.original });
+                  }}
+                >
+                  <BiSolidReport color="#115E59" />
+                </IconButton>
+              </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [
+  hourlyBookings,
+  summary, dashboardData, tabName]
+  );
+
 
   const columns = useMemo(
     () => [
@@ -243,7 +395,7 @@ const AppointmentsTable = ({
           <Box
             sx={{ display: "flex", width: "100%", justifyContent: "center" }}
           >
-            {!["Completed", "Waiting"].includes(tabName) && (
+            {!["Completed"].includes(tabName) && (
               <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
                 <IconButton
                   backgroundColor="#115E59"
@@ -253,7 +405,7 @@ const AppointmentsTable = ({
                 </IconButton>
               </Tooltip>
             )}
-            {tabName === "Completed" && (
+            {!["Scheduled"].includes(tabName) && (
               <Tooltip
                 placement="top"
                 title="Add Diagnosis"
@@ -265,6 +417,13 @@ const AppointmentsTable = ({
                   onClick={() => {
                     if (row.original?.diagnosis_id) {
                       mutationGetDiagnosis.mutate(row.original);
+                    setPatientDiagnosis({
+                      appointment_id: row.original?.appointment_id,
+                      patient_id: row.original?.PatientID,
+                      facility_id: row.original?.facility_id,
+                      doctor_id: row.original?.doctor_id,
+                      ...row.original,
+                    });
                     }
 
                     setPatientDiagnosis({
@@ -317,6 +476,16 @@ const AppointmentsTable = ({
     [tabName, appointmentData]
   );
 
+  const dashboardTableProps = {
+    initialState: {
+      showGlobalFilter: true,
+      showColumnFilters: true,
+      columnPinning: {
+        right: ["actions"], // built-in ID for actions column
+        left: ["token"], // no columns pinned to the left
+      },
+    },
+  };
   const tableProps = {
     initialState: {
       showGlobalFilter: true,
@@ -328,9 +497,9 @@ const AppointmentsTable = ({
     },
   };
 
-  useEffect(() => {
-    onResetAlert();
-  }, [setIsCheckinOpen, refetchDashBoard, tabName, patient_id]);
+  // useEffect(() => {
+  //   onResetAlert();
+  // }, [setIsCheckinOpen, refetchDashBoard, tabName, patient_id]);
 
   const showLoader =
     mutationDeleteAppointmentBooking?.isPending ||
@@ -342,7 +511,7 @@ const AppointmentsTable = ({
     return (
       <>
         <Stack width="100%" flexDirection="row" alignItems="center">
-          <Box width="30%">
+          <Box width="12vw">
             <DatePickerComponent
               name="date"
               value={endDate}
@@ -381,21 +550,21 @@ const AppointmentsTable = ({
       <MuiReactTableComponent
         date={appointmentDateFilter}
         setDate={setAppointmentDateFilter}
-        data={appointmentData}
+        data={isDashboard?dashboardData:appointmentData}
         dateLabel="Start Date"
-        isDate={true}
+        isDate={isDate}
         dateProps={{
           disableFuture: false,
           disablePast: false,
           required: false,
         }}
         // inputProps={{ disablePast: true, error: !startDate }}
-        columns={columns}
-        tableProps={tableProps}
+        columns={isDashboard? dashboardColumns : columns}
+        tableProps={ isDashboard? dashboardTableProps :tableProps}
         CustomRenderTopToolbar={
           ["Completed"].includes(tabName) && renderTopToolbarComponent
         }
-        maxHeight="800px"
+        maxHeight="40vh"
       />
       <AddOrEditPatientDiagnosis
         open={openDiagnosis}
