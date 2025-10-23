@@ -1,49 +1,77 @@
-import { Autocomplete, InputLabel, Stack, TextField } from "@mui/material";
+import {
+  Autocomplete,
+  InputLabel,
+  Stack,
+  TextField,
+  IconButton,
+  useTheme,
+  FormHelperText,
+} from "@mui/material";
+import { XCircle } from "lucide-react";
 import PropTypes from "prop-types";
 
-function AutoCompleteWithLabel(props) {
-  const {
-    name,
-    label,
-    value,
-    placeholder,
-    onChangeHandler,
-    inputValue,
-    onInputChangeHandler,
-    RootSxProps,
-    searchOptions,
-    sortBy,
-    groupBy,
-    LabelSxProps,
-    startAdornment,
-    ...restProps
-  } = props;
-
-  const { required } = restProps;
+/**
+ * Carelon HMS - AutoComplete With Label
+ * -------------------------------------------------------
+ * Reusable, theme-aware, and responsive autocomplete input
+ * Supports sorting, grouping, adornments, and clear button.
+ */
+function AutoCompleteWithLabel({
+  name,
+  label,
+  value,
+  placeholder,
+  onChangeHandler,
+  inputValue,
+  onInputChangeHandler,
+  RootSxProps,
+  searchOptions,
+  sortBy,
+  groupBy,
+  LabelSxProps,
+  startAdornment,
+  showClearButton,
+  required,
+  helperText,
+  error,
+  ...restProps
+}) {
+  const theme = useTheme();
 
   const getSortedOptions = (options) =>
-    options.sort((a, b) => -b[sortBy].localeCompare(a[sortBy]));
+    sortBy
+      ? [...options].sort((a, b) =>
+          a[sortBy].localeCompare(b[sortBy], undefined, { sensitivity: "base" })
+        )
+      : options;
 
   return (
     <Stack
       alignItems="flex-start"
-      className="TextInputWithLabel-root"
+      spacing={0.5}
+      className="AutoCompleteWithLabel-root"
       sx={RootSxProps}
     >
+      {/* Label */}
       <InputLabel
         htmlFor={`search-${name}`}
         sx={{
           fontWeight: 500,
-          lineHeight: "28px",
+          fontSize: "0.875rem",
+          lineHeight: "1.25rem",
+          color: theme.palette.text.primary,
           ...(required && {
-            "&::after": { content: "' *'", color: "error.main" },
+            "&::after": { content: "' *'", color: theme.palette.error.main },
           }),
           ...LabelSxProps,
         }}
       >
         {label}
       </InputLabel>
+
+      {/* Autocomplete */}
       <Autocomplete
+        id={`search-${name}`}
         value={value}
         onChange={(e, newValue, reason) => {
           onChangeHandler(newValue, reason);
@@ -52,66 +80,106 @@ function AutoCompleteWithLabel(props) {
         onInputChange={(e, newValue, reason) => {
           onInputChangeHandler(newValue, reason);
         }}
-        id={`search-${name}`}
-        options={sortBy ? getSortedOptions(searchOptions) : searchOptions}
+        options={getSortedOptions(searchOptions)}
         groupBy={
           groupBy ? (option) => option[groupBy][0]?.toUpperCase() : undefined
         }
         sx={{
-          width: 250,
-          "& .MuiSvgIcon-root": {
-            fontSize: "1.5rem",
-          },
+          width: "100%",
+          minWidth: 220,
           "& .MuiInputBase-root": {
-            padding: 0,
-            color: "#666666",
-          },
-          "& .MuiInputBase-input": {
-            color: "text.primary",
+            backgroundColor:
+              theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+            borderRadius: "8px",
+            fontSize: "14px",
             fontWeight: 500,
+            color: theme.palette.text.primary,
+            transition: "all 0.2s ease",
+            "&:hover fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+              borderWidth: "2px",
+            },
+          },
+          "& .MuiOutlinedInput-root": {
             padding: 0,
+            minHeight: 42,
           },
-          "& .MuiInputBase-input::placeholder": {
-            color: "#666666",
-          },
-          "& .MuiButtonBase-root.MuiAutocomplete-popupIndicator": {
-            display: "none",
+          "& .MuiSvgIcon-root": {
+            fontSize: "1.3rem",
+            color: theme.palette.text.secondary,
           },
         }}
         renderInput={(params) => (
           <TextField
             {...params}
-            variant="outlined"
             placeholder={placeholder}
+            variant="outlined"
+            size="small"
+            error={error}
+            helperText=""
             InputProps={{
               ...params.InputProps,
               startAdornment,
-              // endAdornment: (
-              //   <IconButton
-              //     edge="end"
-              //     aria-label="clear"
-              //     onClick={() => null}
-              //   >
-              //     <Clear />
-              //   </IconButton>
-              // ),
+              endAdornment: (
+                <>
+                  {showClearButton && inputValue && (
+                    <IconButton
+                      edge="end"
+                      aria-label="clear"
+                      size="small"
+                      onClick={() => onInputChangeHandler("", "clear")}
+                      sx={{
+                        color: theme.palette.grey.main,
+                        "&:hover": { color: theme.palette.error.main },
+                      }}
+                    >
+                      <XCircle size={18} />
+                    </IconButton>
+                  )}
+                  {params.InputProps.endAdornment}
+                </>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-input": {
+                padding: "8px 12px",
+              },
+              "& .MuiInputBase-input::placeholder": {
+                color: theme.palette.text.secondary,
+                opacity: 0.7,
+              },
             }}
           />
         )}
+        {...restProps}
       />
+
+      {/* Helper Text */}
+      {helperText && (
+        <FormHelperText
+          sx={{
+            color: error
+              ? theme.palette.error.main
+              : theme.palette.text.secondary,
+            fontSize: "13px",
+            ml: 1,
+          }}
+        >
+          {helperText}
+        </FormHelperText>
+      )}
     </Stack>
   );
 }
 
+/* ✅ PropTypes */
 AutoCompleteWithLabel.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
-  // value: PropTypes.oneOfType([
-  //   PropTypes.string,
-  //   PropTypes.bool,
-  //   PropTypes.number,
-  // ]).isRequired,
   value: PropTypes.shape({
     label: PropTypes.oneOfType([
       PropTypes.string,
@@ -123,7 +191,7 @@ AutoCompleteWithLabel.propTypes = {
   onChangeHandler: PropTypes.func.isRequired,
   inputValue: PropTypes.string.isRequired,
   onInputChangeHandler: PropTypes.func.isRequired,
-  RootSxProps: PropTypes.shape({}),
+  RootSxProps: PropTypes.object,
   searchOptions: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string.isRequired,
@@ -132,10 +200,15 @@ AutoCompleteWithLabel.propTypes = {
   ).isRequired,
   sortBy: PropTypes.string,
   groupBy: PropTypes.string,
-  LabelSxProps: PropTypes.shape({}),
+  LabelSxProps: PropTypes.object,
   startAdornment: PropTypes.node,
+  showClearButton: PropTypes.bool,
+  required: PropTypes.bool,
+  helperText: PropTypes.string,
+  error: PropTypes.bool,
 };
 
+/* ✅ Default Props */
 AutoCompleteWithLabel.defaultProps = {
   placeholder: "Search",
   RootSxProps: {},
@@ -143,6 +216,10 @@ AutoCompleteWithLabel.defaultProps = {
   sortBy: "",
   groupBy: "",
   startAdornment: null,
+  showClearButton: true,
+  required: false,
+  helperText: "",
+  error: false,
 };
 
 export default AutoCompleteWithLabel;

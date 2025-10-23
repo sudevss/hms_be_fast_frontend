@@ -1,97 +1,97 @@
 import {
   Dialog,
   DialogTitle,
-  Alert,
-  AlertTitle,
-  DialogActions,
   DialogContent,
-  Button,
-  Typography,
-  Stack,
+  IconButton,
   Box,
 } from "@mui/material";
-
-import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
-import SelectWithLabel from "@components/Inputs/SelectWithLabel";
-import {
-  GENDER_DATA,
-  PAYMENT_METHODS,
-  TIME_SLOTS_HOURS_OPTIONS,
-  TOKEN_TYPES,
-} from "@data/staticData";
-import TextAreaInputWithLabel from "@components/Inputs/TextAreaInputWithLabel";
-import {
-  getAllDoctorsDetails,
-  getPaientDetailsByPhone,
-  patchUpdatePatient,
-  postAddNewPatient,
-  postNewAppoinmentBooking,
-} from "@/serviceApis";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import PageLoader from "@pages/PageLoader";
-import DatePickerComponent from "@components/DatePicker";
-import AlertSnackbar from "@components/AlertSnackbar";
-import { usePatient } from "@/stores/patientStore";
 import AppointmentsTable from "@/ReusableComponents/AppointmentsTable";
+import { usePatient } from "@/stores/patientStore";
 
 const PatientHistoryTable = ({ open, setOpen }) => {
   const { id, onReset } = usePatient();
 
+  const handleClose = () => {
+    setOpen(false);
+    onReset();
+  };
+
   return (
     <Dialog
-      fullScreen
-      fullWidth
       open={open || false}
-      onClose={() => {
-        setOpen(false);
-        onReset();
-      }}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
+      onClose={handleClose}
+      fullWidth
+      maxWidth="lg"
+      aria-labelledby="patient-history-title"
       sx={{
-        maxHeight: "calc(100% - 100px)",
         "& .MuiDialog-container": {
-          alignItems: "flex-start", // Align to top
+          alignItems: "flex-start",
         },
         "& .MuiPaper-root": {
-          mt: 10, // Add top margin
+          mt: 10,
+          borderRadius: 2,
+          width: "95%",
+          height: "85vh",
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
+      {/* Close Icon */}
       <IconButton
         aria-label="close"
-        onClick={() => {
-          setOpen(false);
-          onReset();
-        }}
-        sx={(theme) => ({
+        onClick={handleClose}
+        sx={{
           position: "absolute",
           right: 8,
           top: 8,
-          //   color: theme.palette.grey[500],
-        })}
+        }}
       >
         <CloseIcon />
       </IconButton>
+
+      {/* Title */}
       <DialogTitle
+        id="patient-history-title"
         sx={{
           m: 0,
           p: 2,
           fontSize: "18px",
-          fontWeight: "600",
-          justifyContent: "center",
-          display: "flex",
+          fontWeight: 600,
+          textAlign: "center",
+          borderBottom: "1px solid #E0E0E0",
         }}
-        id="customized-dialog-title"
       >
         Patient Appointment History
       </DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column" }}>
-        <AppointmentsTable tabName="Completed" patient_id={id} />
+
+      {/* Content */}
+      <DialogContent
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        {id ? (
+          <AppointmentsTable tabName="Completed" patient_id={id} />
+        ) : (
+          <Box
+            sx={{
+              textAlign: "center",
+              color: "gray",
+              mt: 10,
+              fontSize: "16px",
+              fontWeight: 500,
+            }}
+          >
+            No patient selected.
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   );

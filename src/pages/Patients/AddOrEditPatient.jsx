@@ -1,46 +1,30 @@
 import {
   Dialog,
   DialogTitle,
-  Alert,
-  AlertTitle,
   DialogActions,
   DialogContent,
-  Button,
-  Typography,
   Stack,
   Box,
+  IconButton,
 } from "@mui/material";
-
-import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
-import SelectWithLabel from "@components/Inputs/SelectWithLabel";
+import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
+import SelectWithLabel from "@components/inputs/SelectWithLabel";
+import DatePickerComponent from "@components/DatePicker";
+import AlertSnackbar from "@components/AlertSnackbar";
+import PageLoader from "@pages/PageLoader";
+
 import {
   GENDER_DATA,
   INITIAL_SHOW_ALERT,
-  PAYMENT_METHODS,
-  TIME_SLOTS_HOURS_OPTIONS,
-  TOKEN_TYPES,
 } from "@data/staticData";
-import TextAreaInputWithLabel from "@components/Inputs/TextAreaInputWithLabel";
 import {
-  getAllDoctorsDetails,
-  getPaientDetailsByPhone,
-  patchUpdatePatient,
   postAddNewPatient,
-  postNewAppoinmentBooking,
+  patchUpdatePatient,
 } from "@/serviceApis";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import PageLoader from "@pages/PageLoader";
-import DatePickerComponent from "@components/DatePicker";
-import AlertSnackbar from "@components/AlertSnackbar";
-import {
-  calculateAge,
-  patientRequiredFileds,
-  usePatient,
-} from "@/stores/patientStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { calculateAge, patientRequiredFileds, usePatient } from "@/stores/patientStore";
 import { useShowAlert } from "@/stores/showAlertStore";
 
 const AddOrEditPatient = ({ open, setOpen }) => {
@@ -54,14 +38,16 @@ const AddOrEditPatient = ({ open, setOpen }) => {
     gender,
     email_id,
     ABDM_ABHA_id,
-    setPatientData,
     onChangePatient,
     onReset,
     id,
   } = usePatient();
+
   const patientState = usePatient();
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
+  const queryClient = useQueryClient();
 
+  // ✅ Prepare payload
   const reqPayload = () => ({
     firstname,
     lastname,
@@ -73,44 +59,44 @@ const AddOrEditPatient = ({ open, setOpen }) => {
     email_id,
     ABDM_ABHA_id,
     facility_id: 1,
-    disease: "",
-    room_id: 1,
     id,
   });
 
-  const queryClient = useQueryClient();
-
+  // ✅ Mutation for add/update
   const mutationUpdatePatient = useMutation({
     mutationFn: (payload) =>
       !payload?.id
-        ? postAddNewPatient({ ...payload })
-        : patchUpdatePatient({ ...payload }),
-    onSuccess: (res) => {
+        ? postAddNewPatient(payload)
+        : patchUpdatePatient(payload),
+    onSuccess: () => {
       setShowAlert({
         show: true,
-        message: `Updated Patient has successfully`,
+        message: `Patient details updated successfully.`,
         status: "success",
       });
-      onReset();
       queryClient.invalidateQueries({
         queryKey: ["queryGetPaientsDetails"],
         exact: false,
         refetchActive: true,
-        refetchInactive: false,
       });
+      onReset();
       setOpen(false);
     },
     onError: () => {
       setShowAlert({
         show: true,
-        message: `Update Patient has failed`,
-        status: "erro",
+        message: `Updating patient failed. Please try again.`,
+        status: "error",
       });
     },
   });
-  const isSubmit = !patientRequiredFileds?.every((name) => patientState[name]);
 
-  const onSumbitPatient = () => {
+  const isSubmitDisabled = !patientRequiredFileds?.every(
+    (field) => patientState[field]
+  );
+
+  // ✅ Handle submit
+  const handleSubmit = () => {
     mutationUpdatePatient.mutate(reqPayload());
   };
 
@@ -122,31 +108,31 @@ const AddOrEditPatient = ({ open, setOpen }) => {
         onResetAlert();
         setOpen(false);
       }}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
+      aria-labelledby="edit-patient-dialog"
       sx={{
         maxHeight: "calc(100% - 100px)",
         "& .MuiDialog-container": {
-          alignItems: "flex-start", // Align to top
+          alignItems: "flex-start",
         },
         "& .MuiPaper-root": {
-          mt: 10, // Add top margin
+          mt: 10,
+          borderRadius: 2,
+          width: { xs: "95%", sm: "500px" },
         },
       }}
     >
       <DialogTitle
         sx={{
-          m: 0,
-          p: 2,
           fontSize: "18px",
-          fontWeight: "600",
-          justifyContent: "center",
-          display: "flex",
+          fontWeight: 600,
+          textAlign: "center",
+          pb: 0,
         }}
-        id="customized-dialog-title"
+        id="edit-patient-dialog"
       >
-        Update Patient Details
+        {id ? "Update Patient Details" : "Add New Patient"}
       </DialogTitle>
+
       <IconButton
         aria-label="close"
         onClick={() => {
@@ -154,119 +140,124 @@ const AddOrEditPatient = ({ open, setOpen }) => {
           onResetAlert();
           setOpen(false);
         }}
-        sx={(theme) => ({
+        sx={{
           position: "absolute",
           right: 8,
           top: 8,
-          //   color: theme.palette.grey[500],
-        })}
+        }}
       >
         <CloseIcon />
       </IconButton>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+        {/* Mobile Number */}
         <TextInputWithLabel
           type="text"
           name="contact_number"
           value={contact_number?.replace(/\D/g, "").slice(0, 10)}
           label="Mobile #"
-          width="100%"
           placeholderText="Enter Mobile #"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
-        <Stack flexDirection="row" gap={2}>
+
+        {/* First & Last Name */}
+        <Stack direction="row" gap={1}>
           <TextInputWithLabel
             type="text"
             name="firstname"
             label="First Name"
             value={firstname}
-            placeholder="Enter First name"
+            placeholder="Enter First Name"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
             LabelSxProps={{ fontWeight: 600 }}
           />
           <TextInputWithLabel
             type="text"
             name="lastname"
-            value={lastname}
             label="Last Name"
-            placeholder="Enter Last name"
+            value={lastname}
+            placeholder="Enter Last Name"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
             LabelSxProps={{ fontWeight: 600 }}
           />
         </Stack>
-        <Stack flexDirection="row" gap={2}>
-          <Box>
+
+        {/* DOB & Age */}
+        <Stack direction="row" gap={1}>
+          <Box sx={{ flex: 1 }}>
             <DatePickerComponent
               name="dob"
               value={dob}
-              required={true}
-              showInputLabel={true}
-              currentYear={null}
+              required
+              showInputLabel
               disableFuture
-              // resProps={{ maxDate}}
-              // inputProps={{ disableFuture: true }}
               label="Date of Birth"
-              // helperText={!AppointmentDate && "Date of Birth  is required"}
               sxLabel={{ fontWeight: 600 }}
               onChange={(e) => {
-                onChangePatient("age", calculateAge(e.target.value));
-                onChangePatient([e.target.name], e.target.value);
+                const dobValue = e.target.value;
+                onChangePatient("dob", dobValue);
+                onChangePatient("age", calculateAge(dobValue));
               }}
             />
           </Box>
           <TextInputWithLabel
             type="text"
             name="age"
+            label="Age"
             value={age?.toString()?.replace(/\D/g, "").slice(0, 2)}
-            label="Age #"
-            width="100%"
-            disabled={dob}
-            placeholderText="Enter Age #"
+            disabled={!!dob}
+            placeholderText="Enter Age"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
             LabelSxProps={{ fontWeight: 600 }}
           />
         </Stack>
+
+        {/* Gender */}
         <SelectWithLabel
           type="text"
           name="gender"
-          value={gender}
           label="Gender"
-          width="100%"
+          value={gender}
           placeholderText="Select Gender"
           menuOptions={GENDER_DATA}
-          minWidth={210}
           onChangeHandler={(value) => onChangePatient("gender", value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
 
+        {/* ABHA ID */}
         <TextInputWithLabel
           type="text"
           name="ABDM_ABHA_id"
+          label="ABDM ABHA ID"
           value={ABDM_ABHA_id}
-          label="ABDM ABHA ID #"
-          placeholder="Enter ABDM ABHA ID #"
+          placeholder="Enter ABHA ID"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
+
+        {/* Address */}
         <TextInputWithLabel
           type="text"
           name="address"
-          value={address}
           label="Address"
+          value={address}
           placeholder="Enter Address"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
       </DialogContent>
+
       <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
         <StyledButton
-          disabled={isSubmit}
+          disabled={isSubmitDisabled}
           variant="contained"
-          onClick={onSumbitPatient}
+          onClick={handleSubmit}
         >
           Submit
         </StyledButton>
       </DialogActions>
+
       <AlertSnackbar
         message={showAlert.message}
         showAlert={showAlert.show}

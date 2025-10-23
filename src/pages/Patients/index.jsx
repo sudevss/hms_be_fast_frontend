@@ -1,23 +1,26 @@
-import { useState } from "react";
-
-import Sidebar from "@/pages/Layout/SideBar";
-import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
-// import AddBoking from "../../AppReusbleComponents/AddBoking";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAllDoctorsDetails, getPaientsDetails } from "../../serviceApis";
-import { useMemo } from "react";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Typography,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 
-import { Box, Dialog, IconButton, Tooltip } from "@mui/material";
-import ToggleOffOutlinedIcon from "@mui/icons-material/ToggleOffOutlined";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import ModeEditOutlineOutlinedIcon from "@mui/icons-material/ModeEditOutlineOutlined";
 import WorkHistoryOutlinedIcon from "@mui/icons-material/WorkHistoryOutlined";
+import { BiSolidReport } from "react-icons/bi";
 
 import StyledButton from "@components/StyledButton";
-import { usePatient } from "@/stores/patientStore";
-import AddOrEditPatient from "./AddOrEditPatient";
+import MuiReactTableComponent from "@components/Table/MuiReactTableComponent";
 import PageLoader from "@pages/PageLoader";
-import { BiSolidReport } from "react-icons/bi";
+
+import { getPaientsDetails } from "@/serviceApis";
+import { usePatient } from "@/stores/patientStore";
+
+import AddOrEditPatient from "./AddOrEditPatient";
 import PatientHistoryTable from "./PatientHistoryTable";
 import PatientReports from "@/ReusableComponents/PatientReports";
 
@@ -25,140 +28,96 @@ function PatientsPage() {
   const [openPatient, setOpenPatient] = useState(false);
   const [openHistory, setOpenHistory] = useState(false);
   const [openReports, setOpenReports] = useState(false);
+
   const { setPatientData, onReset } = usePatient();
   const patientData = usePatient();
 
-  const queryGetPaientsDetails = useQuery({
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // ✅ Fetch patient list
+  const { data: patients = [], isLoading } = useQuery({
     queryKey: ["queryGetPaientsDetails"],
     queryFn: () => getPaientsDetails({ facility_id: 1 }),
     enabled: true,
   });
-  const { data: paientsDetailsData = [], isLoading = false } =
-    queryGetPaientsDetails;
 
+  // ✅ Table Columns
   const columns = useMemo(
     () => [
-      {
-        accessorKey: "id", //access nested data with dot notation
-        header: "ID",
-        size: 100,
-      },
-      {
-        accessorKey: "name",
-        header: "Name",
-        // size: 150,
-      },
-      {
-        accessorKey: "contact_number", //normal accessorKey
-        header: "Mobile Number",
-        // size: 30,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "age",
-        header: "Age",
-        size: 60,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "gender",
-        header: "Gender",
-        size: 70,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "address",
-        header: "Place",
-        // size: 50,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "doctor_visited",
-        header: "Doctor Visited",
-        // size: 50,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-      {
-        accessorKey: "last_visited_date",
-        header: "Last Visited",
-        // size: 50,
-        enableSorting: false,
-        enableColumnFilter: false,
-      },
-
+      { accessorKey: "id", header: "ID", size: 60 },
+      { accessorKey: "name", header: "Name" },
+      { accessorKey: "contact_number", header: "Mobile #" },
+      { accessorKey: "age", header: "Age", size: 60 },
+      { accessorKey: "gender", header: "Gender", size: 80 },
+      { accessorKey: "address", header: "Address" },
+      { accessorKey: "doctor_visited", header: "Doctor Visited" },
+      { accessorKey: "last_visited_date", header: "Last Visited" },
       {
         accessorKey: "actions",
         header: "Actions",
-        size: 120, // Desired width in pixels
-        minSize: 100, // Minimum width
-        maxSize: 200, // Maximum width
-        enableResizing: true, // Optional: allows user to resize
+        size: 120,
         enableSorting: false,
         enableColumnFilter: false,
         Cell: ({ row }) => (
           <Box
-            sx={{ display: "flex", width: "100%", justifyContent: "center" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 1,
+              alignItems: "center",
+            }}
           >
-            {/* <IconButton
-              backgroundColor="#115E59"
-              onClick={() =>
-                alert("Edit action for " + row.getValue("name.firstName"))
-              }
-            >
-              <ToggleOffOutlinedIcon color="#115E59" />
-            </IconButton> */}
-            <Tooltip
-              placement="top"
-              title="Edit Patient"
-              arrow
-              enterDelay={100}
-            >
+            <Tooltip title="Edit Patient" arrow>
               <IconButton
-                backgroundColor="#115E59"
+                size="small"
                 onClick={() => {
+                  onReset();
+                  setPatientData(row.original);
                   setOpenPatient(true);
                   setOpenHistory(false);
                   setOpenReports(false);
-                  setPatientData(row?.original);
                 }}
               >
-                <ModeEditOutlineOutlinedIcon color="#115E59" />
+                <ModeEditOutlineOutlinedIcon
+                  fontSize="small"
+                  sx={{ color: "#115E59" }}
+                />
               </IconButton>
             </Tooltip>
-            <Tooltip placement="top" title="History" arrow enterDelay={100}>
+
+            <Tooltip title="View History" arrow>
               <IconButton
-                backgroundColor="#115E59"
+                size="small"
                 onClick={() => {
+                  onReset();
+                  setPatientData(row.original);
                   setOpenHistory(true);
                   setOpenPatient(false);
                   setOpenReports(false);
-                  setPatientData(row?.original);
                 }}
               >
-                <WorkHistoryOutlinedIcon color="#115E59" />
+                <WorkHistoryOutlinedIcon
+                  fontSize="small"
+                  sx={{ color: "#115E59" }}
+                />
               </IconButton>
             </Tooltip>
-            <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
+
+            <Tooltip title="View Reports" arrow>
               <IconButton
-                backgroundColor="#115E59"
+                size="small"
                 onClick={() => {
+                  onReset();
+                  setPatientData(row.original);
                   setOpenReports(true);
                   setOpenHistory(false);
                   setOpenPatient(false);
-                  setPatientData(row?.original);
                 }}
               >
-                <BiSolidReport color="#115E59" />
+                <BiSolidReport size={18} color="#115E59" />
               </IconButton>
             </Tooltip>
-            {/* <IconButton color="error" onClick={() => handleDelete(row)}>
-              <DeleteForeverIcon />
-            </IconButton> */}
           </Box>
         ),
       },
@@ -166,50 +125,104 @@ function PatientsPage() {
     []
   );
 
+  // ✅ Default Table Props
   const initialState = {
     showGlobalFilter: true,
     showColumnFilters: true,
-    columnPinning: {
-      right: ["actions"], // built-in ID for actions column
-      left: ["id"], // no columns pinned to the left
-    },
+    columnPinning: { right: ["actions"], left: ["id"] },
   };
 
   return (
-    <div className="flex flex-row min-h-screen bg-gray-50 w-full">
-      {/* Main Content */}
-      <div className="flex-1  p-5  overflow-y-auto ">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex justify-end w-full gap-5">
-            <StyledButton
-              variant="outlined"
-              onClick={() => {
-                setOpenPatient(true);
-                setPatientData({});
-              }}
-            >
-              Add Patient
-            </StyledButton>
-          </div>
-        </div>
-        <MuiReactTableComponent
-          data={paientsDetailsData}
-          columns={columns}
-          isDate={false}
-          tableProps={initialState}
-        />
-      </div>
-      <PatientHistoryTable open={openHistory} setOpen={setOpenHistory} />
+    <>
+      {/* Page Container (Responsive Width) */}
+      <Box
+        sx={{
+          width: {
+            xs: "95vw", // Mobile (0-599px)
+            sm: "90vw", // Small tablets (600-899px)
+            md: "75vw", // Tablets / small laptops (900-1199px)
+            lg: "80vw", // Desktops (1200-1535px)
+            xl: "85vw", // Large screens (1536px+)
+          },
+          mx: "auto",
+          bgcolor: "#fff",
+          borderRadius: 2,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "80vh",
+        }}
+      >
+        {/* Page Header */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "flex-end",
+            gap: 2,
+            px: { xs: 2, sm: 3, md: 4 },
+            py: 2.5,
+            borderBottom: "1px solid #e5e7eb",
+            backgroundColor: "#fafafa",
+          }}
+        >
+          
 
+          <StyledButton
+            variant="outlined"
+            onClick={() => {
+              onReset();
+              setPatientData({});
+              setOpenPatient(true);
+              setOpenHistory(false);
+              setOpenReports(false);
+            }}
+            sx={{
+              px: { xs: 2.5, sm: 3 },
+              py: { xs: 0.8, sm: 1 },
+              borderRadius: "28px",
+              fontSize: { xs: "0.85rem", sm: "1rem" },
+              textTransform: "none",
+            }}
+          >
+            Add Patient
+          </StyledButton>
+        </Box>
+
+        {/* Table Section */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            p: { xs: 2, sm: 3, md: 4 },
+          }}
+        >
+          <MuiReactTableComponent
+            data={patients}
+            columns={columns}
+            isDate={false}
+            tableProps={initialState}
+          />
+        </Box>
+      </Box>
+
+      {/* Dialogs */}
+      <AddOrEditPatient open={openPatient} setOpen={setOpenPatient} />
+      <PatientHistoryTable open={openHistory} setOpen={setOpenHistory} />
       <PatientReports
-        patientReportsObj={{ ...patientData, patient_id: patientData?.id }}
+        patientReportsObj={{
+          ...patientData,
+          patient_id: patientData?.id,
+        }}
         setPatientReportObj={onReset}
         open={openReports}
         setOpen={setOpenReports}
       />
-      <AddOrEditPatient open={openPatient} setOpen={setOpenPatient} />
+
       <PageLoader show={isLoading} />
-    </div>
+    </>
   );
 }
 

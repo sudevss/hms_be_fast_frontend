@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Carelon global styles */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: theme('colors.background.DEFAULT');
+  font-family: theme('fontFamily.sans');
+  color: theme('colors.text.primary');
+}
+
+/* Responsive container */
+.container {
+  @apply max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8;
+}

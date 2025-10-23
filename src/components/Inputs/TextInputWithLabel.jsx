@@ -1,35 +1,60 @@
-import { Box, InputLabel, TextField } from "@mui/material";
+import { Box, InputLabel, TextField, useTheme } from "@mui/material";
 import PropTypes from "prop-types";
 
-function TextInputWithLabel(props) {
-  const {
-    type,
-    name,
-    label,
-    placeholder,
-    InputSxProps,
-    LabelSxProps,
-    RootSxProps,
-    ...restProps
-  } = props;
-
-  const { required } = restProps;
+/**
+ * Carelon HMS - Text Input with Label
+ * -------------------------------------------------------
+ * A themed, responsive text input field consistent with
+ * Carelon’s MUI and Tailwind hybrid design system.
+ */
+function TextInputWithLabel({
+  type,
+  name,
+  label,
+  placeholder,
+  InputSxProps,
+  LabelSxProps,
+  RootSxProps,
+  required,
+  helperText,
+  error,
+  ...restProps
+}) {
+  const theme = useTheme();
 
   return (
-    <Box className="TextInputWithLabel-root" sx={RootSxProps}>
+    <Box
+      className="TextInputWithLabel-root"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 0.75,
+        width: "100%",
+        ...RootSxProps,
+      }}
+    >
+      {/* Label */}
       <InputLabel
         htmlFor={`input-${name}`}
         sx={{
           fontWeight: 500,
-          lineHeight: "28px",
+          fontSize: "0.95rem",
+          lineHeight: "1.25rem",
+          color: theme.palette.text.primary,
           ...(required && {
-            "&::after": { content: "' *'", color: "error.main" },
+            "&::after": {
+              content: "' *'",
+              color: theme.palette.error.main,
+            },
           }),
           ...LabelSxProps,
         }}
       >
         {label}
       </InputLabel>
+
+      {/* Input Field */}
       <TextField
         id={`input-${name}`}
         name={name}
@@ -37,21 +62,39 @@ function TextInputWithLabel(props) {
         variant="outlined"
         placeholder={placeholder}
         fullWidth
+        error={error}
+        helperText={helperText}
         sx={{
-          padding: "5px",
-          "&.MuiTextField-root": { backgroundColor: "inherit" },
-          // "&.MuiTextField-root .MuiOutlinedInput-root": {
-          //   backgroundColor: "white",
-          // },
-          "& .MuiInputBase-input": {
-            color: "text.primary",
+          "& .MuiOutlinedInput-root": {
+            backgroundColor:
+              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+            height: 42,
+            borderRadius: "8px",
             fontWeight: 500,
-            padding: "12px",
+            fontSize: "0.95rem",
+            "& fieldset": {
+              borderColor: error
+                ? theme.palette.error.main
+                : theme.palette.grey[400],
+            },
+            "&:hover fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+              borderWidth: "2px",
+            },
           },
-          "&.MuiTextField-root .MuiOutlinedInput-root": {
-            backgroundColor: "#fff",
-            height: "40px",
-            border: "1px #D7D7D7",
+          "& .MuiInputBase-input": {
+            color: theme.palette.text.primary,
+            padding: "10px 12px",
+          },
+          "& .MuiFormHelperText-root": {
+            marginLeft: "4px",
+            fontSize: "0.8rem",
+            color: error
+              ? theme.palette.error.main
+              : theme.palette.text.secondary,
           },
           ...InputSxProps,
         }}
@@ -66,9 +109,12 @@ TextInputWithLabel.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
-  InputSxProps: PropTypes.shape({}),
-  LabelSxProps: PropTypes.shape({}),
-  RootSxProps: PropTypes.shape({}),
+  InputSxProps: PropTypes.object,
+  LabelSxProps: PropTypes.object,
+  RootSxProps: PropTypes.object,
+  required: PropTypes.bool,
+  helperText: PropTypes.string,
+  error: PropTypes.bool,
 };
 
 TextInputWithLabel.defaultProps = {
@@ -77,6 +123,9 @@ TextInputWithLabel.defaultProps = {
   InputSxProps: {},
   LabelSxProps: {},
   RootSxProps: {},
+  required: false,
+  helperText: "",
+  error: false,
 };
 
 export default TextInputWithLabel;
