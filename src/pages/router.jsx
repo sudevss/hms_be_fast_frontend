@@ -21,7 +21,7 @@ import DoctorsPage from "./Doctors";
 import PatientsPage from "./Patients";
 import AppointmentsPage from "./Appointments";
 import Layout from "./Layout/Layout";
-import { PrivateRoute } from "./Layout/PrivateRoute";
+import  PrivateRoute  from "./Layout/PrivateRoute";
 
 // eslint-disable-next-line react/prop-types
 // function SuspenseComponent({ children }) {

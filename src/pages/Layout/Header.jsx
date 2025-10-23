@@ -1,12 +1,56 @@
 import React from "react";
+import { Box, IconButton, Typography } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   return (
-    <header className="fixed top-1 left-52 right-0 h-12  flex justify-center items-center z-10">
-      <h1 className="text-3xl font-extrabold" style={{ color: "#115E59" }}>
+    <Box
+      component="header"
+      className="flex items-center justify-between px-4 bg-white border-b shadow-sm"
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: { xs: 0, md: "7rem" }, // same width as sidebar
+        right: 0,
+        height: { xs: "2rem", sm: "64px", md: "3.5rem" },
+        zIndex: 1100,
+        borderColor: "#E0E0E0",
+      }}
+    >
+      {/* Left: Menu Button for Mobile */}
+      <IconButton
+        onClick={onMenuClick}
+        sx={{
+          display: { xs: "flex", md: "none" },
+          color: "#115E59",
+        }}
+        aria-label="open sidebar"
+      >
+        <MenuIcon />
+      </IconButton>
+
+      {/* Center: Title */}
+      <Typography
+        variant="h6"
+        sx={{
+          fontWeight: 800,
+          fontSize: { xs: "18px", sm: "22px", md: "26px" },
+          color: "#115E59",
+          textAlign: "center",
+          flexGrow: 1,
+        }}
+      >
         Apple Medical Center
-      </h1>
-    </header>
+      </Typography>
+
+      {/* Right: Placeholder for future buttons (profile, settings, etc.) */}
+      <Box
+        sx={{
+          width: "40px",
+          display: { xs: "none", md: "block" },
+        }}
+      />
+    </Box>
   );
 };
 

@@ -1,16 +1,30 @@
+// src/pages/Layout/PrivateRoute.jsx
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { userLoginDetails } from "@/stores/LoginStore";
 import Layout from "./Layout";
 
 export function PrivateRoute() {
-   const userObj = userLoginDetails.getState();
   const location = useLocation();
+  const userObj = userLoginDetails.getState();
+  const { access_token } = userObj || {};
 
-//   if()
-  if (!userObj?.access_token) {
-    // Redirect to login, keep current path in state
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // If no token → redirect to login and preserve intended path
+  if (!access_token) {
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location.pathname }}
+        replace
+      />
+    );
   }
 
-  return <Layout />; // render child routes
+  // If logged in → render layout + nested routes
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
 }
+
+export default PrivateRoute;

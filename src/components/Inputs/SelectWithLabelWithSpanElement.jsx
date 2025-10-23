@@ -4,122 +4,181 @@ import {
   MenuItem,
   Select,
   Stack,
+  useTheme,
 } from "@mui/material";
 import PropTypes from "prop-types";
+import SpanElement from "@components/SpanElement";
 
-function SelectWithLabelWithSpanElement(props) {
-  const {
-    name,
-    label,
-    value,
-    renderValue,
-    onChangeHandler,
-    RootProps,
-    labelProps,
-    menuOptions,
-    SelectSxProps,
-    disableMenuOptionConditionValidator,
-    helperText,
-    placeholderText,
-    showMenuOptionsLoadingStatus,
-    showOptionsNotAvailableStatus,
-    width,
-    ...rest
-  } = props;
+/**
+ * Carelon HMS - Inline Select With Label + SpanElement
+ * ----------------------------------------------------------
+ * Responsive, inline select component that supports
+ * label emphasis (via SpanElement), placeholders, helper text,
+ * and dynamic menu states (loading/no data).
+ */
+function SelectWithLabelWithSpanElement({
+  name,
+  label,
+  value,
+  renderValue,
+  onChangeHandler,
+  RootProps,
+  labelProps,
+  menuOptions,
+  SelectSxProps,
+  disableMenuOptionConditionValidator,
+  helperText,
+  placeholderText,
+  showMenuOptionsLoadingStatus,
+  showOptionsNotAvailableStatus,
+  width = "100%",
+  minWidth = 200,
+  ...rest
+}) {
+  const theme = useTheme();
 
   const handleChange = (event) => {
     onChangeHandler(event.target.value);
   };
 
-  let MenuOptionElements = [];
+  // Generate Menu Options
+  const MenuOptionElements = (() => {
+    if (menuOptions?.length === 0 && showMenuOptionsLoadingStatus)
+      return [
+        <MenuItem key="loading" disabled>
+          <em>Loading...</em>
+        </MenuItem>,
+      ];
 
-  if (menuOptions?.length === 0 && showMenuOptionsLoadingStatus) {
-    MenuOptionElements.push(
-      <MenuItem value="loading" key="loading" disabled>
-        <em>Loading</em>
-      </MenuItem>
-    );
-  } else if (
-    menuOptions?.length === 0 &&
-    !showMenuOptionsLoadingStatus &&
-    showOptionsNotAvailableStatus
-  ) {
-    MenuOptionElements.push(
-      <MenuItem value="no data" key="no data" disabled>
-        <em>No data</em>
-      </MenuItem>
-    );
-  } else {
-    MenuOptionElements = menuOptions.map((option) => {
-      if (!option.value)
-        return (
-          <MenuItem value="" key="falsy-item" id="falsy-item">
-            <em>None</em>
-          </MenuItem>
-        );
+    if (
+      menuOptions?.length === 0 &&
+      !showMenuOptionsLoadingStatus &&
+      showOptionsNotAvailableStatus
+    )
+      return [
+        <MenuItem key="no-data" disabled>
+          <em>No data available</em>
+        </MenuItem>,
+      ];
 
-      return (
-        <MenuItem
-          value={option.value || option.label}
-          key={option.value || option.label}
-          disabled={disableMenuOptionConditionValidator(option)}
-          style={{
-            whiteSpace: "unset",
-            wordBreak: "break-word",
-            width: "100%",
-            maxWidth: "100%",
-          }}
-        >
-          {option.label}
-        </MenuItem>
-      );
-    });
-  }
+    return menuOptions.map((option) => (
+      <MenuItem
+        value={option.value || option.label}
+        key={option.value || option.label}
+        disabled={disableMenuOptionConditionValidator(option)}
+        sx={{
+          whiteSpace: "unset",
+          wordBreak: "break-word",
+          width: "100%",
+          fontSize: "14px",
+          fontWeight: 500,
+          color: theme.palette.text.primary,
+          "&.Mui-disabled": { opacity: 0.6, color: theme.palette.text.disabled },
+        }}
+      >
+        {option.label}
+      </MenuItem>
+    ));
+  })();
 
   return (
-    <Stack direction="row" alignItems="center" spacing={1} {...RootProps}>
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      alignItems={{ xs: "flex-start", sm: "center" }}
+      spacing={1}
+      flexWrap="wrap"
+      {...RootProps}
+      sx={{ width, minWidth, ...RootProps?.sx }}
+    >
+      {/* Label with optional inline SpanElement */}
       <InputLabel
         htmlFor={`menu-${name}`}
-        sx={{ fontWeight: 600 }}
+        sx={{
+          fontWeight: 600,
+          fontSize: "0.95rem",
+          color: theme.palette.text.primary,
+          whiteSpace: "nowrap",
+          ...labelProps?.sx,
+        }}
         {...labelProps}
       >
-        {label}
+        <SpanElement fontWeight={600} color={theme.palette.hms.main}>
+          {label}
+        </SpanElement>
       </InputLabel>
+
+      {/* Select Field */}
       <Select
         {...rest}
         id={`menu-${name}`}
         name={name}
         value={value}
+        onChange={handleChange}
+        displayEmpty
         sx={{
-          minWidth: 240,
-          width,
-          "& .MuiSelect-select.Mui-disabled .placeholder-text": {
-            color: "#BBB",
-            fontWeight: 400,
+          minWidth,
+          flex: "1 1 auto",
+          height: 42,
+          borderRadius: "8px",
+          backgroundColor:
+            theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+          "& .MuiSelect-select": {
+            padding: "8px 12px",
+            color: theme.palette.text.primary,
+            fontWeight: 500,
+            fontSize: "0.95rem",
+            display: "flex",
+            alignItems: "center",
           },
-          "& .MuiSelect-select .placeholder-text": {
-            color: "#CCB8F0",
+          "& fieldset": {
+            borderColor: theme.palette.grey[400],
+          },
+          "&:hover fieldset": {
+            borderColor: theme.palette.primary.main,
+          },
+          "&.Mui-focused fieldset": {
+            borderColor: theme.palette.primary.main,
+            borderWidth: "2px",
+          },
+          "& .placeholder-text": {
+            color: theme.palette.text.secondary,
+            opacity: 0.7,
             fontWeight: 400,
           },
           ...SelectSxProps,
         }}
         MenuProps={{
-          sx: { "& .MuiList-root": { maxHeight: "260px", maxWidth: "100%" } },
+          PaperProps: {
+            sx: {
+              borderRadius: "8px",
+              maxHeight: 260,
+              boxShadow:
+                "0px 1px 5px rgba(80,9,181,0.1), 0px 8px 24px rgba(43,27,73,0.15)",
+            },
+          },
         }}
-        onChange={handleChange}
-        // MenuProps={{ sx: { marginTop: 1 } }}
-        renderValue={(selected) => {
-          if (!selected && placeholderText) {
-            return <span className="placeholder-text">{placeholderText}</span>;
-          }
-
-          return renderValue ? renderValue(selected) : selected;
-        }}
+        renderValue={(selected) =>
+          !selected && placeholderText ? (
+            <span className="placeholder-text">{placeholderText}</span>
+          ) : renderValue ? (
+            renderValue(selected)
+          ) : (
+            selected
+          )
+        }
       >
         {MenuOptionElements}
       </Select>
+
+      {/* Helper Text */}
       {helperText && (
-        <FormHelperText sx={{ color: "error.main" }}>
+        <FormHelperText
+          sx={{
+            color: theme.palette.error.main,
+            fontSize: "0.8rem",
+            ml: { xs: 0, sm: 1 },
+          }}
+        >
           {helperText}
         </FormHelperText>
       )}
@@ -142,20 +201,21 @@ SelectWithLabelWithSpanElement.propTypes = {
         PropTypes.string,
         PropTypes.number,
         PropTypes.bool,
-      ]).isRequired,
+      ]),
       label: PropTypes.string.isRequired,
     })
   ).isRequired,
-  SelectSxProps: PropTypes.shape({}),
-  RootProps: PropTypes.shape({}),
-  labelProps: PropTypes.shape({}),
+  SelectSxProps: PropTypes.object,
+  RootProps: PropTypes.object,
+  labelProps: PropTypes.object,
   onChangeHandler: PropTypes.func,
   disableMenuOptionConditionValidator: PropTypes.func,
   helperText: PropTypes.string,
   placeholderText: PropTypes.string,
   showMenuOptionsLoadingStatus: PropTypes.bool,
   showOptionsNotAvailableStatus: PropTypes.bool,
-  width: PropTypes.number,
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  minWidth: PropTypes.number,
 };
 
 SelectWithLabelWithSpanElement.defaultProps = {
@@ -163,15 +223,14 @@ SelectWithLabelWithSpanElement.defaultProps = {
   RootProps: {},
   labelProps: {},
   renderValue: null,
-  onChangeHandler: (value) => {
-    console.log(value);
-  },
+  onChangeHandler: () => {},
   disableMenuOptionConditionValidator: () => false,
   helperText: "",
   placeholderText: "",
   showMenuOptionsLoadingStatus: true,
   showOptionsNotAvailableStatus: true,
-  width: 240,
+  width: "100%",
+  minWidth: 200,
 };
 
 export default SelectWithLabelWithSpanElement;

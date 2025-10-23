@@ -1,31 +1,65 @@
-import { Grid, Stack, Typography } from "@mui/material";
+import { Grid, Box, useTheme, useMediaQuery } from "@mui/material";
 import SideIllustrationPanel from "@components/SideIllustrationPanel";
 import LoginCardPanel from "./LoginCardPanel";
 
 function Login() {
+  const theme = useTheme();
+  const isTabletUp = useMediaQuery(theme.breakpoints.up("md")); // ≥900px
+
   return (
-    <Grid container width="100%" height="100%" margin="0" minWidth="400px">
+    <Grid
+      container
+      sx={{
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        bgcolor: "background.default",
+      }}
+    >
+      {/* Left Illustration Section */}
+      {isTabletUp && (
+        <Grid
+          item
+          md={6}
+          sx={{
+            maxWidth:  "45vw",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "primary.light",
+            height: "100%",
+          }}
+        >
+          <SideIllustrationPanel />
+        </Grid>
+      )}
+
+      {/* Right Login Section */}
       <Grid
         item
         xs={12}
-        sm={5}
+        md={6}
         sx={{
-          backgroundColor: "primary.light",
-          height: { xs: "60px", sm: "100%" },
+          display: "flex",
+            maxWidth: isTabletUp ? "45vw": "100vw",
+
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          bgcolor: "background.paper",
         }}
       >
-        <SideIllustrationPanel />
-      </Grid>
-      <Grid
-        item
-        xs={12}
-        sm={7}
-        sx={{
-          ml: "20%",
-          height: { xs: "calc(100% - 60px)", sm: "100%" },
-        }}
-      >
-        <LoginCardPanel />
+        
+          <Box
+            sx={{
+              bgcolor: "background.paper",
+              // boxShadow: { xs: "none", sm: 3 },
+              borderRadius: 2,
+              p: { xs: 2, sm: 4 },
+            }}
+          >
+            <LoginCardPanel />
+          </Box>
       </Grid>
     </Grid>
   );
