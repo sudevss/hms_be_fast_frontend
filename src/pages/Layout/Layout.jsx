@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Box, CssBaseline } from "@mui/material";
-import Header from "./Header";
-import Footer from "./Footer";
-import Sidebar from "./Sidebar"; 
+import Header from "./Header.jsx";
+import Footer from "./Footer.jsx";
+import Sidebar from "./Sidebar.jsx"; 
 import { Outlet } from "react-router-dom";
 import { userLoginDetails } from "@/stores/LoginStore";
 
