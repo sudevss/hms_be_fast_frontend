@@ -46,12 +46,14 @@ import  PrivateRoute  from "./Layout/PrivateRoute";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route element={<Layout />}>
+    <Route >
       <Route
         path="/login"
         // element={<Navigate to="/" replace />}
         element={<LoginPage />}
       />
+    <Route element={<Layout />}>
+
       <Route path="/" element={<Navigate to="login" replace />} />
        <Route element={<PrivateRoute />}>
       <Route
@@ -74,6 +76,7 @@ const router = createBrowserRouter(
         // element={<Navigate to="/" replace />}
         element={<PatientsPage />}
       />
+      </Route>
       </Route>
       <Route path="*" element={<NotFound />} />
     </Route>

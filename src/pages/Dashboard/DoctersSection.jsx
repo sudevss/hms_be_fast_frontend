@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import SearchTextInput from "@components/inputs/SearchTextInput";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 function DoctorsSection({ filteredDoctors = [] }) {
   const theme = useTheme();
@@ -38,12 +39,13 @@ function DoctorsSection({ filteredDoctors = [] }) {
   return (
     <Box
       sx={{
-        width:{
-            //  xs: "100%", // Mobile phones (0px - 599px)
-            sm: "100vw", // Small tablets (600px - 899px)
-            md: "24vw", // Tablets / small laptops (900px - 1199px)
-            lg: "20vw", // Desktops (1200px - 1535px)
-            xl: "14vw",},
+        width: {
+          //  xs: "100%", // Mobile phones (0px - 599px)
+          sm: "100vw", // Small tablets (600px - 899px)
+          md: "24vw", // Tablets / small laptops (900px - 1199px)
+          lg: "20vw", // Desktops (1200px - 1535px)
+          xl: "14vw",
+        },
         // width: expanded ? { xs: "100%", md: "25vw" } : "25vw",
         transition: "width 0.35s ease-in-out",
         backgroundColor: "#fff",
@@ -79,49 +81,24 @@ function DoctorsSection({ filteredDoctors = [] }) {
       </Tooltip> */}
 
       {/* Collapsible Content */}
-       <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            // p: 2,
-            overflow: "hidden",
-          }}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          p: 1,
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          textAlign="center"
+          justifyContent="space-between"
+          sx={{ mb: 1 }}
         >
-          {/* Header */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 1 }}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontSize: { xs: "0.9rem", sm: "1rem" },
-                fontWeight: 700,
-                color: theme.palette.primary.main,
-              }}
-            >
-              Doctors
-            </Typography>
-
-            <Tooltip title="Reset Filter">
-              <IconButton
-                size="small"
-                onClick={handleReset}
-                sx={{
-                  color: theme.palette.grey[700],
-                  "&:hover": { backgroundColor: theme.palette.action.hover },
-                }}
-              >
-                {/* <RestartAlt size={18} /> */}
-              </IconButton>
-            </Tooltip>
-          </Stack>
-
           {/* Search Box */}
-          <Box sx={{ mb: 2,  }}>
             <SearchTextInput
               name="doctorSearch"
               placeholder="Search doctors..."
@@ -129,127 +106,138 @@ function DoctorsSection({ filteredDoctors = [] }) {
               onChange={(val) => setDoctorSearch(val)}
               fullWidth
             />
-          </Box>
+          <Tooltip title="Reset Filter">
+            <IconButton
+              size="small"
+              onClick={handleReset}
+              sx={{
+                color: theme.palette.grey[700],
+                "&:hover": { backgroundColor: theme.palette.action.hover },
+              }}
+            >
+              <RestartAltIcon  />
+            </IconButton>
+          </Tooltip>
+        </Stack>
 
-          {/* Doctor List */}
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: "auto",
-              pr: 0.5,
-              "&::-webkit-scrollbar": { width: "6px" },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#ccc",
-                borderRadius: "6px",
-              },
-              "&::-webkit-scrollbar-thumb:hover": { backgroundColor: "#999" },
-            }}
-          >
-            {filteredDoctors.length === 0 ? (
-              <Typography
-                variant="body2"
-                textAlign="center"
-                color="text.secondary"
-                sx={{ mt: 2 }}
-              >
-                No doctors found
-              </Typography>
-            ) : (
-              filteredDoctors.map(
-                (
-                  {
-                    doctor_id,
-                    name,
-                    specialization,
-                    total_slots,
-                    available_slots,
-                    status,
-                  },
-                  index
-                ) => (
-                  <Stack
-                    key={index}
-                    direction="row"
-                    alignItems="flex-start"
-                    justifyContent="space-between"
-                    sx={{
-                      p: 1.2,
-                      mb: 1,
-                      borderRadius: 2,
-                      cursor: "pointer",
-                      transition: "background-color 0.2s ease",
-                      backgroundColor:
-                        doctorId === doctor_id
-                          ? theme.palette.primary.light
-                          : "transparent",
-                      "&:hover": { backgroundColor: theme.palette.action.hover },
-                    }}
-                    onClick={() => setdoctor_id(doctor_id)}
-                  >
-                    {/* Doctor Info */}
-                    <Stack direction="row" alignItems="flex-start" spacing={1}>
-                      <Radio
-                        checked={doctorId === doctor_id}
-                        onChange={() => setdoctor_id(doctor_id)}
-                        size={isMobile ? "small" : "medium"}
-                        sx={{ mt: 0.5 }}
-                      />
-                      <Stack spacing={0.3}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: { xs: "0.85rem", sm: "0.9rem" },
-                          }}
-                        >
-                          {name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.8rem" }}
-                        >
-                          {specialization || "—"}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.75rem" }}
-                        >
-                          Total Slots: {total_slots ?? 0}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.75rem" }}
-                        >
-                          Available: {available_slots ?? 0}
-                        </Typography>
-                      </Stack>
+        {/* Doctor List */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            pr: 0.5,
+            "&::-webkit-scrollbar": { width: "6px" },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#ccc",
+              borderRadius: "6px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": { backgroundColor: "#999" },
+          }}
+        >
+          {filteredDoctors.length === 0 ? (
+            <Typography
+              variant="body2"
+              textAlign="center"
+              color="text.secondary"
+              sx={{ mt: 2 }}
+            >
+              No doctors found
+            </Typography>
+          ) : (
+            filteredDoctors.map(
+              (
+                {
+                  doctor_id,
+                  name,
+                  specialization,
+                  total_slots,
+                  available_slots,
+                  status,
+                },
+                index
+              ) => (
+                <Stack
+                  key={index}
+                  direction="row"
+                  alignItems="flex-start"
+                  justifyContent="space-between"
+                  sx={{
+                    p: 1.2,
+                    mb: 1,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                    backgroundColor:
+                      doctorId === doctor_id
+                        ? theme.palette.primary.light
+                        : "transparent",
+                    "&:hover": { backgroundColor: theme.palette.action.hover },
+                  }}
+                  onClick={() => setdoctor_id(doctor_id)}
+                >
+                  {/* Doctor Info */}
+                  <Stack direction="row" alignItems="flex-start" spacing={1}>
+                    <Radio
+                      checked={doctorId === doctor_id}
+                      onChange={() => setdoctor_id(doctor_id)}
+                      size={isMobile ? "small" : "medium"}
+                      sx={{ mt: 0.5 }}
+                    />
+                    <Stack spacing={0.3}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                        }}
+                      >
+                        {name}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.8rem" }}
+                      >
+                        {specialization || "—"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.75rem" }}
+                      >
+                        Total Slots: {total_slots ?? 0}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.75rem" }}
+                      >
+                        Available: {available_slots ?? 0}
+                      </Typography>
                     </Stack>
-
-                    {/* Status */}
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        color:
-                          status === "On Duty"
-                            ? theme.palette.success.main
-                            : theme.palette.error.main,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {status}
-                    </Typography>
                   </Stack>
-                )
+
+                  {/* Status */}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color:
+                        status === "On Duty"
+                          ? theme.palette.success.main
+                          : theme.palette.error.main,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {status}
+                  </Typography>
+                </Stack>
               )
-            )}
-          </Box>
+            )
+          )}
         </Box>
-      
+      </Box>
     </Box>
   );
 }

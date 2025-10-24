@@ -1,10 +1,32 @@
 import { Grid, Box, useTheme, useMediaQuery } from "@mui/material";
 import SideIllustrationPanel from "@components/SideIllustrationPanel";
 import LoginCardPanel from "./LoginCardPanel";
+import { useEffect } from "react";
+
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { logOut, userLoginDetails } from "@/stores/LoginStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 function Login() {
+
+  const queryClient = useQueryClient();
+  const userObj = userLoginDetails();
+  const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isTabletUp = useMediaQuery(theme.breakpoints.up("md")); // ≥900px
+
+    const handleLogout = () => {
+      userObj?.onReset();
+      logOut();
+      queryClient.clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      navigate("/login");
+    };
+  useEffect(() => {
+    handleLogout();
+  }, []);
 
   return (
     <Grid
