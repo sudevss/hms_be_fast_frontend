@@ -184,3 +184,4 @@ const MuiReactTableComponent = ({
 
 export default MuiReactTableComponent;
 
+
