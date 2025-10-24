@@ -15,9 +15,7 @@ function App() {
     <div className="app min-h-screen bg-gray-50 text-gray-900" id="App-root">
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {/* <SystemAlertContextProvider> */}
         <RouterProvider router={router} />
-        {/* </SystemAlertContextProvider> */}
       </ThemeProvider>
     </div>
   );
