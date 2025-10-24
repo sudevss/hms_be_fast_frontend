@@ -273,16 +273,6 @@ function DashboardPage() {
             mb: 1,
           }}
         >
-          <h2
-            style={{
-              fontSize: "1rem",
-              fontWeight: "600",
-              marginBottom: "0.5rem",
-              color: "#115E59",
-            }}
-          >
-            Select Date
-          </h2>
           <DatePicker
             sx={{
               width: {
