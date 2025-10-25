@@ -4,7 +4,7 @@ import { Box, InputBase, IconButton } from "@mui/material";
 import { useState } from "react";
 
 /**
- * intuismart HMS - Search Bar
+ * Carelon HMS - Search Bar
  * ------------------------------------------------
  * A responsive, animated search input with hover/focus expansion,
  * theme-aware colors, and keyboard accessibility.

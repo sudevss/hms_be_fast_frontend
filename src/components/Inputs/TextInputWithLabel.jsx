@@ -2,10 +2,10 @@ import { Box, InputLabel, TextField, useTheme } from "@mui/material";
 import PropTypes from "prop-types";
 
 /**
- * intuismart HMS - Text Input with Label
+ * Carelon HMS - Text Input with Label
  * -------------------------------------------------------
  * A themed, responsive text input field consistent with
- * intuismart’s MUI and Tailwind hybrid design system.
+ * Carelon’s MUI and Tailwind hybrid design system.
  */
 function TextInputWithLabel({
   type,

@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useTheme } from "@mui/material/styles";
 
 /**
- * intuismart HMS Enhanced Pie Chart
+ * Carelon HMS Enhanced Pie Chart
  * ------------------------------------------
  * Responsive, dark-mode aware, and branded chart.
  */
@@ -119,7 +119,7 @@ const EnhancedPieChart = ({ data }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const theme = useTheme();
 
-  // intuismart brand colors, theme-aware
+  // Carelon brand colors, theme-aware
   const COLORS = [
     theme.palette.primary.main,
     theme.palette.success.main,

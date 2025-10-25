@@ -3,7 +3,7 @@ import { colors } from "./palette";
 import { typography } from "./typography";
 
 /**
- * intuismart HMS Theme (Dynamic)
+ * Carelon HMS Theme (Dynamic)
  * ------------------------------------------
  * Supports Light & Dark modes, responsive typography,
  * and consistent component styling across resolutions.

@@ -2,10 +2,10 @@ import { Box, InputLabel, TextField, useTheme } from "@mui/material";
 import PropTypes from "prop-types";
 
 /**
- * intuismart HMS - TextArea Input with Label
+ * Carelon HMS - TextArea Input with Label
  * -----------------------------------------------------
  * A themed multiline input with label, responsive spacing,
- * and full consistency across the intuismart HMS design system.
+ * and full consistency across the Carelon HMS design system.
  */
 function TextAreaInputWithLabel({
   type,
