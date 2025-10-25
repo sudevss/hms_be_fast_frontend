@@ -47,6 +47,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     vital_temp,
     onReset,
     onChangePatientDiagnosis,
+    diagnosis_id,
     setPatientDiagnosis,
   } = usePatientDiagnosis();
 
@@ -99,6 +100,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     vital_temp,
     height,
     weight,
+    diagnosis_id,
   });
 
   const onSumbitPatientDiagnosis = () => {
