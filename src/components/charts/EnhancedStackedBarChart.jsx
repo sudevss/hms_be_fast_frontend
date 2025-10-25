@@ -12,9 +12,9 @@ import {
 import PropTypes from "prop-types";
 
 /**
- * Carelon HMS - Enhanced Stacked Bar Chart
+ * intuismart HMS - Enhanced Stacked Bar Chart
  * -------------------------------------------
- * Fully responsive, Carelon-branded, theme-aware chart
+ * Fully responsive, intuismart-branded, theme-aware chart
  * Supports dark/light mode, customizable props, and tooltips
  */
 

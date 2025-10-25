@@ -10,7 +10,7 @@ import PropTypes from "prop-types";
 import SpanElement from "@components/SpanElement";
 
 /**
- * Carelon HMS - Inline Select With Label + SpanElement
+ * intuismart HMS - Inline Select With Label + SpanElement
  * ----------------------------------------------------------
  * Responsive, inline select component that supports
  * label emphasis (via SpanElement), placeholders, helper text,
