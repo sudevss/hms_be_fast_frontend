@@ -13,7 +13,7 @@ function ErrorAccess() {
       <Box color="inherit" fontWeight={500} fontSize={22}>
         You don't have Access . Please reach out to{" "}
         <a
-          href="mailto:QualityCoE@intuismart.com"
+          href="mailto:QualityCoE@carelon.com"
           className="text-[#5009BB] hover:underline font-semibold"
         >
           QualityCoE

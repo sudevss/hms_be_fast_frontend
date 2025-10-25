@@ -1,4 +1,4 @@
-// intuismart Branding Colors
+// Carelon Branding Colors
 
 const PRIMARY_TEXT_COLOR = "#115E59"; // Primary text color
 

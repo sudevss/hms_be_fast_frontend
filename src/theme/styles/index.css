@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom intuismart global styles */
+/* Custom Carelon global styles */
 html, body, #root {
   height: 100%;
   margin: 0;

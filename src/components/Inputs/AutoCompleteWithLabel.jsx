@@ -11,7 +11,7 @@ import { XCircle } from "lucide-react";
 import PropTypes from "prop-types";
 
 /**
- * intuismart HMS - AutoComplete With Label
+ * Carelon HMS - AutoComplete With Label
  * -------------------------------------------------------
  * Reusable, theme-aware, and responsive autocomplete input
  * Supports sorting, grouping, adornments, and clear button.

@@ -11,7 +11,7 @@ import {
 import PropTypes from "prop-types";
 
 /**
- * intuismart HMS - MultiSelectWithLabel
+ * Carelon HMS - MultiSelectWithLabel
  * ------------------------------------------------
  * Responsive, theme-aware multiple select component
  * with labeled checkboxes and accessibility support.
