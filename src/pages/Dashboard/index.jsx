@@ -154,10 +154,11 @@ function DashboardPage() {
       sx={{
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
-        width: "100%",
         minHeight: "100vh",
+        width: "100%",
         backgroundColor: "#f9fafb",
         position: "relative",
+        
       }}
     >
       {/* Left Content Section */}
@@ -166,6 +167,13 @@ function DashboardPage() {
           flex: 1,
           p: { xs: 2, sm: 3 },
           overflowY: "auto",
+          width: {
+            xs: "100%", // Mobile phones (0px - 599px)
+            sm: "90vw", // Small tablets (600px - 899px)
+            md: "80vw", // Tablets / small laptops (900px - 1199px)
+            lg: "70vw", // Desktops (1200px - 1535px)
+            xl: "70vw", // Large screens (1536px+)
+          }
         }}
       >
         {/* Top Action Buttons */}
@@ -253,7 +261,7 @@ function DashboardPage() {
             sm: "90vw", // Small tablets (600px - 899px)
             md: "45vw", // Tablets / small laptops (900px - 1199px)
             lg: "35vw", // Desktops (1200px - 1535px)
-            xl: "18vw", // Large screens (1536px+)
+            xl: "25vw", // Large screens (1536px+)
           },
           p: { xs: 2, sm: 3 },
           backgroundColor: "#fff",
