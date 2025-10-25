@@ -14,8 +14,8 @@ import {
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
-import TextAreaInputWithLabel from "@components/Inputs/TextAreaInputWithLabel";
+import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
+import TextAreaInputWithLabel from "@components/inputs/TextAreaInputWithLabel";
 import { getPaientDetailsByPhone, putAddPatientDiagnosis } from "@/serviceApis";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -46,7 +46,6 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     vital_temp,
     onReset,
     onChangePatientDiagnosis,
-    diagnosis_id,
     setPatientDiagnosis,
   } = usePatientDiagnosis();
 
@@ -99,7 +98,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     vital_hr,
     vital_spo2,
     vital_temp,
-    diagnosis_id,
+    height,
+    weight,
   });
 
   const onSumbitPatientDiagnosis = () => {
@@ -258,6 +258,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
               value={diagnosis_date}
               required={true}
               showInputLabel={true}
+              disabled
               // inputProps={{ disablePast: true, error: !AppointmentDate }}
               label="Diagnosis Date"
               sxLabel={{ fontWeight: 600 }}

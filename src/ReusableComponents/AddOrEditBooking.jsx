@@ -343,6 +343,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
             <SelectWithLabel
               type="text"
               name="gender"
+              fullWidth
               value={gender}
               label="Gender"
               width="100%"
@@ -385,6 +386,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         )}
         <SelectWithLabel
           type="text"
+          fullWidth
           name="doctorName"
           value={doctorName}
           menuOptions={doctorMenuOptions}
@@ -417,6 +419,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           </Box>
           <SelectWithLabel
             type="text"
+            fullWidth
             disabled={!AppointmentDate}
             name="AppointmentTime"
             value={AppointmentTime}
@@ -456,6 +459,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
 
         <SelectWithLabel
           type="text"
+          fullWidth
           name="AppointmentMode"
           value={AppointmentMode}
           label="Token Type"
@@ -469,6 +473,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         />
         <SelectWithLabel
           type="text"
+          fullWidth
           name="payment_method"
           value={payment_method}
           label="Payment Method"

@@ -4,7 +4,7 @@ import {
   useMaterialReactTable,
 } from "material-react-table";
 import { Box, Stack } from "@mui/material";
-import SearchTextInput from "@components/Inputs/SearchTextInput";
+import SearchTextInput from "@components/inputs/SearchTextInput";
 import DatePickerComponent from "@/components/DatePicker";
 
 const MuiReactTableComponent = ({
@@ -36,13 +36,13 @@ const MuiReactTableComponent = ({
     columns: enhancedColumns, // ✅ use enhanced columns
     data,
     enableRowActions: false,
+    enableSorting: false,
+    enableColumnFilters: false,
     enableBottomToolbar: false,
     enableTopToolbar: true,
     positionToolbarDropZone: "none",
     enableColumnActions: false,
     columnFilterModeOptions: null,
-    enableSorting: true,
-    enableColumnFilters: true,
     columnFilterDisplayMode: "popover",
     enableDensityToggle: false,
     enableHiding: false,
