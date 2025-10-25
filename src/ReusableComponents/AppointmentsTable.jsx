@@ -1,12 +1,26 @@
 import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 import { useEffect, useMemo, useState } from "react";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  IconButton,
+  Stack,
+  Tooltip,
+} from "@mui/material";
+
 
 import {
   deleteAppoinmentBooking,
   getAppointmentsAndBookings,
   getPatientDiagnosis,
   postCheckinAppoinmentBooking,
+  postUpdateAppointmentStatus,
+  postUpdatePaymentStatus,
 } from "@/serviceApis";
 
 import PageLoader from "@pages/PageLoader";
@@ -25,8 +39,10 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import { useShowAlert } from "@/stores/showAlertStore";
-import { INITIAL_SHOW_ALERT } from "@data/staticData";
+import { INITIAL_SHOW_ALERT, PAYMENT_METHODS } from "@data/staticData";
 import dayjs from "dayjs";
+import SelectWithLabel from "@components/inputs/SelectWithLabel";
+import StyledButton from "@components/StyledButton";
 
 const AppointmentsTable = ({
   setIsCheckinOpen,
@@ -38,7 +54,6 @@ const AppointmentsTable = ({
   dashboardData = [],
   hourlyBookings,
   summary,
-  updatePaymentStatus,
   updateAppointmentStatus,
 }) => {
   const currentDate = dayjs().format("YYYY-MM-DD");
@@ -48,6 +63,13 @@ const AppointmentsTable = ({
   const [openDiagnosis, setOpenDiagnosis] = useState(false);
   const [openReports, setOpenReports] = useState(false);
   const [patientReportsObj, setPatientReportObj] = useState("");
+  const [paymentObj, setPaymentObj] = useState({
+    appointment_id: "",
+    facility_id: 1,
+    payment_status: false,
+    payment_method: "",
+    open: false,
+  });
 
   const { setPatientDiagnosis } = usePatientDiagnosis();
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
@@ -87,6 +109,40 @@ const AppointmentsTable = ({
       }),
     enabled: true,
   });
+
+  const updatePaymentStatus = (row) => {
+    setPaymentObj({ ...paymentObj, ...row, open: true })
+    // const payment_status = row.paid ? false : true;
+    // mutationAppoinmentStatusUpdate.mutate({
+    //   appointment_id: row.appointment_id,
+    //   payment_status,
+    //   payment_method: row.payment_method || "Cash",
+    // });
+  };
+
+  const mutationPaymentStatusUpdate = useMutation({
+    mutationFn: (payload) => postUpdatePaymentStatus(payload),
+    onSuccess: () => {
+      setShowAlert({
+        show: true,
+        message: `Payment updated successfully`,
+        status: "success",
+      });
+      queryClient.invalidateQueries(["dashboard"]);
+      setPaymentObj({ appointment_id: "", open: false });
+      onResetAlert();
+    },
+    onError: () => {
+      setShowAlert({
+        show: true,
+        message: `Payment update failed`,
+        status: "error",
+      });
+    },
+  });
+
+  const handlePaymentSubmit = () =>
+    mutationPaymentStatusUpdate.mutate(paymentObj);
 
   // 🔹 Delete Appointment
   const mutationDelete = useMutation({
@@ -169,9 +225,18 @@ const AppointmentsTable = ({
   const columns = useMemo(() => {
     const paymentCell = ({ row }) => (
       <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <Tooltip title={row.original.is_paid || row.original.paid ? "Paid" : "Not Paid"} arrow>
+        <Tooltip
+          title={
+            row.original.is_paid || row.original.paid ? "Paid" : "Not Paid"
+          }
+          arrow
+        >
           <IconButton>
-            {row.original.is_paid || row.original.paid  ? <FaCheck color="#115E59" /> : <FcCancel />}
+            {row.original.is_paid || row.original.paid ? (
+              <FaCheck color="#115E59" />
+            ) : (
+              <FcCancel />
+            )}
           </IconButton>
         </Tooltip>
       </Box>
@@ -249,6 +314,14 @@ const AppointmentsTable = ({
             </IconButton>
           </Tooltip>
         )}
+        <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+          <IconButton
+            backgroundColor="#115E59"
+            onClick={() => updatePaymentStatus(row.original)}
+          >
+            <CurrencyRupeeIcon color="#115E59" />
+          </IconButton>
+        </Tooltip>
         {!["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
             <IconButton
@@ -317,7 +390,8 @@ const AppointmentsTable = ({
     isLoading ||
     mutationDelete.isPending ||
     mutationCheckin.isPending ||
-    mutationGetDiagnosis.isPending;
+    mutationGetDiagnosis.isPending || 
+    mutationPaymentStatusUpdate.isPending;
 
   // 🔹 Render End Date Filter (for Completed tab)
   const renderTopToolbarComponent = () => (
@@ -358,6 +432,56 @@ const AppointmentsTable = ({
           ["Completed"].includes(tabName) && renderTopToolbarComponent
         }
       />
+      <Dialog
+        open={paymentObj?.open}
+        onClose={() => setPaymentObj({ appointment_id: "", open: false })}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 600,
+            textAlign: "center",
+          }}
+        >
+          Update Payment
+        </DialogTitle>
+        <DialogContent>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={paymentObj?.payment_status}
+                onChange={(e) =>
+                  setPaymentObj((prev) => ({
+                    ...prev,
+                    payment_status: e.target.checked,
+                  }))
+                }
+              />
+            }
+            label="Payment Status"
+          />
+
+          <SelectWithLabel
+            type="text"
+            name="paymentMethod"
+            value={paymentObj?.payment_method}
+            label="Payment Method"
+            placeholderText="Select Payment Method"
+            menuOptions={PAYMENT_METHODS}
+            width="100%"
+            onChangeHandler={(value) =>
+              setPaymentObj((prev) => ({
+                ...prev,
+                payment_method: value,
+              }))
+            }
+          />
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
+          <StyledButton variant="contained" onClick={handlePaymentSubmit}>
+            Submit
+          </StyledButton>
+        </DialogActions>
+      </Dialog>
 
       {/* Modals */}
       <AddOrEditPatientDiagnosis

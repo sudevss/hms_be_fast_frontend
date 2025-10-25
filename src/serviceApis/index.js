@@ -227,3 +227,30 @@ export const postLogin = (payload) =>
 // };
 
  
+
+
+export const uploadPatientReportFiles = async ({
+  files,
+  facility_id,
+  patient_id,
+  appointment_id,
+  diagnosis_id,
+}) => {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append("facility_id", facility_id);
+    formData.append("patient_id", patient_id);
+    formData.append("report_date", "2025-10-05");
+    formData.append("appointment_id", appointment_id);
+    formData.append("diagnosis_id", diagnosis_id);
+    formData.append("files", file); // Adjust field name as per your API
+  });
+
+ return api
+    .post(`/patient_reports/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then((response) => response.data);
+};
