@@ -9,7 +9,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { CustomSearchIcon } from "@components/SVGs/Misc";
 
 /**
- * Carelon HMS - Search Text Input
+ * intuismart HMS - Search Text Input
  * --------------------------------------------------------
  * Themed, accessible search field with built-in icons,
  * clear functionality, and responsive styling.
