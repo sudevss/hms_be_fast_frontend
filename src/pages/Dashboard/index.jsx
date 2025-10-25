@@ -217,7 +217,7 @@ function DashboardPage() {
               backgroundColor: "#fff",
               borderRadius: 2,
               boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              p:2,
+              p: 2,
               height: "28vh",
             }}
           >
@@ -253,7 +253,7 @@ function DashboardPage() {
             sm: "90vw", // Small tablets (600px - 899px)
             md: "45vw", // Tablets / small laptops (900px - 1199px)
             lg: "35vw", // Desktops (1200px - 1535px)
-            xl: "28vw", // Large screens (1536px+)
+            xl: "18vw", // Large screens (1536px+)
           },
           p: { xs: 2, sm: 3 },
           backgroundColor: "#fff",
@@ -320,13 +320,22 @@ function DashboardPage() {
 
       {/* Check-in Dialog */}
       <Dialog
-        fullWidth
+        maxWidth={false} // 👈 disables MUI's fixed maxWidth ("sm", "md", etc.)
+        fullWidth={false} // 👈 so width is fully controlled by sx
         open={isCheckinOpen}
         onClose={() => {
           setIsCheckinOpen(false);
           onResetAlert();
         }}
-        PaperProps={{ sx: { width: { xs: "95%", md: "80vw" } } }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: { xs: "95%", md: "80vw" },
+              borderRadius: 2,
+              p: 2,
+            },
+          },
+        }}
       >
         <DialogTitle fontWeight={600} color="#115E59">
           Check-In Booking Details
@@ -412,4 +421,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-

@@ -11,7 +11,7 @@ const Layout = () => {
   const { access_token } = userObj || {};
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const SIDEBAR_WIDTH = "7rem"; // sidebar width for desktop
+  const SIDEBAR_WIDTH = "6.1rem"; // sidebar width for desktop
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 

@@ -1,11 +1,6 @@
 import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  IconButton,
-  Stack,
-  Tooltip,
-} from "@mui/material";
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
 
 import {
   deleteAppoinmentBooking,
@@ -20,10 +15,7 @@ import DatePickerComponent from "@components/DatePicker";
 import AddOrEditPatientDiagnosis from "@/ReusableComponents/AddOrEditPatientDiagnosis";
 import PatientReports from "@/ReusableComponents/PatientReports";
 
-import {
-  FaDiagnoses,
-  FaCheck,
-} from "react-icons/fa";
+import { FaDiagnoses, FaCheck } from "react-icons/fa";
 import { FcCancel } from "react-icons/fc";
 import { BiSolidReport } from "react-icons/bi";
 import ToggleOffOutlinedIcon from "@mui/icons-material/ToggleOffOutlined";
@@ -50,7 +42,8 @@ const AppointmentsTable = ({
   updateAppointmentStatus,
 }) => {
   const currentDate = dayjs().format("YYYY-MM-DD");
-  const [appointmentDateFilter, setAppointmentDateFilter] = useState(currentDate);
+  const [appointmentDateFilter, setAppointmentDateFilter] =
+    useState(currentDate);
   const [endDate, setEndDate] = useState("");
   const [openDiagnosis, setOpenDiagnosis] = useState(false);
   const [openReports, setOpenReports] = useState(false);
@@ -120,7 +113,10 @@ const AppointmentsTable = ({
   const mutationCheckin = useMutation({
     mutationFn: (payload) => postCheckinAppoinmentBooking(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries(["queryGetAppointmentsAndBookings", "dashboard"]);
+      queryClient.invalidateQueries([
+        "queryGetAppointmentsAndBookings",
+        "dashboard",
+      ]);
       setShowAlert({
         show: true,
         message: "Check-in successful",
@@ -151,6 +147,7 @@ const AppointmentsTable = ({
   const handleDelete = (row) => mutationDelete.mutate(row);
   const handleCheckin = (row) => mutationCheckin.mutate(row);
   const handleDiagnosis = (row) => {
+    console.log("row", row);
     if (row?.diagnosis_id) mutationGetDiagnosis.mutate(row);
     else {
       setPatientDiagnosis({
@@ -172,48 +169,129 @@ const AppointmentsTable = ({
   const columns = useMemo(() => {
     const paymentCell = ({ row }) => (
       <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <Tooltip title={row.original.paid ? "Paid" : "Not Paid"} arrow>
+        <Tooltip title={row.original.is_paid || row.original.paid ? "Paid" : "Not Paid"} arrow>
           <IconButton>
-            {row.original.paid ? <FaCheck color="#115E59" /> : <FcCancel />}
+            {row.original.is_paid || row.original.paid  ? <FaCheck color="#115E59" /> : <FcCancel />}
           </IconButton>
         </Tooltip>
       </Box>
     );
 
-    const actionsCell = ({ row }) => (
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+    const dashboardActionsCell = ({ row }) => (
+      <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
         {!["Completed"].includes(tabName) && (
-          <Tooltip title="Check-in" arrow>
-            <IconButton onClick={() => handleCheckin(row.original)}>
+          <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => updateAppointmentStatus(row.original)}
+            >
+              <ToggleOffOutlinedIcon color="#115E59" />
+            </IconButton>
+          </Tooltip>
+        )}
+        <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+          <IconButton
+            backgroundColor="#115E59"
+            onClick={() => updatePaymentStatus(row.original)}
+          >
+            <CurrencyRupeeIcon color="#115E59" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
+          <IconButton
+            backgroundColor="#115E59"
+            onClick={() => {
+              if (row.original?.diagnosis_id) {
+                mutationGetDiagnosis.mutate(row.original);
+              }
+
+              setPatientDiagnosis({
+                appointment_id: row.original?.appointment_id,
+                patient_id: row.original?.PatientID,
+                facility_id: row.original?.facility_id,
+                doctor_id: row.original?.doctor_id,
+                ...row.original,
+              });
+              setOpenDiagnosis(true);
+            }}
+          >
+            <FaDiagnoses color="#115E59" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
+          <IconButton
+            backgroundColor="#115E59"
+            onClick={() => {
+              setOpenReports(true);
+              setPatientReportObj({ ...row.original });
+              // setOpenDiagnosis(true);
+              // setPatientDiagnosis({
+              //   appointment_id: row.original?.appointment_id,
+              // });
+              // mutationGetDiagnosis(row.original);
+              // setPatientDiagnosis({ ...row.original });
+            }}
+          >
+            <BiSolidReport color="#115E59" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    );
+    const actionsCell = ({ row }) => (
+      <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
+        {!["Completed"].includes(tabName) && (
+          <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => handleCheckin(row.original)}
+            >
               <ToggleOffOutlinedIcon color="#115E59" />
             </IconButton>
           </Tooltip>
         )}
         {!["Scheduled"].includes(tabName) && (
-          <Tooltip title="Diagnosis" arrow>
-            <IconButton onClick={() => handleDiagnosis(row.original)}>
+          <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => handleDiagnosis(row.original)}
+            >
               <FaDiagnoses color="#115E59" />
             </IconButton>
           </Tooltip>
         )}
         {tabName === "Completed" && (
-          <Tooltip title="Reports" arrow>
-            <IconButton onClick={() => handleReports(row.original)}>
+          <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => handleReports(row.original)}
+            >
               <BiSolidReport color="#115E59" />
             </IconButton>
           </Tooltip>
         )}
         {tabName === "Scheduled" && (
-          <Tooltip title="Delete" arrow>
-            <IconButton color="error" onClick={() => handleDelete(row.original)}>
+          <Tooltip placement="top" title="Delete" arrow enterDelay={100}>
+            <IconButton
+              color="error"
+              onClick={() => handleDelete(row.original)}
+            >
               <DeleteForeverIcon />
             </IconButton>
           </Tooltip>
         )}
       </Box>
     );
+    const tokenColumn = [
+      { accessorKey: "token", header: "Token" },
+      { accessorKey: "patient_name", header: "Patient Name" },
+      { accessorKey: "checkin_time", header: "Check-in-Time" },
+      { accessorKey: "doctor_name", header: "Doctor" },
+      { accessorKey: "payment_type", header: "Payment Type" },
+      { accessorKey: "is_paid", header: "Payment", Cell: paymentCell },
+      { accessorKey: "actions", header: "Actions", Cell: dashboardActionsCell },
+    ];
 
-    return [
+    const appointmentColumn = [
       { accessorKey: "appointment_id", header: "ID", size: 80 },
       { accessorKey: "name", header: "Patient Name" },
       { accessorKey: "phone", header: "Mobile", size: 120 },
@@ -224,6 +302,7 @@ const AppointmentsTable = ({
       { accessorKey: "consultation_fee", header: "Fee", size: 80 },
       { accessorKey: "actions", header: "Actions", Cell: actionsCell },
     ];
+    return isDashboard ? tokenColumn : appointmentColumn;
   }, [tabName]);
 
   const tableProps = {
@@ -281,7 +360,10 @@ const AppointmentsTable = ({
       />
 
       {/* Modals */}
-      <AddOrEditPatientDiagnosis open={openDiagnosis} setOpen={setOpenDiagnosis} />
+      <AddOrEditPatientDiagnosis
+        open={openDiagnosis}
+        setOpen={setOpenDiagnosis}
+      />
       <PatientReports
         open={openReports}
         setOpen={setOpenReports}

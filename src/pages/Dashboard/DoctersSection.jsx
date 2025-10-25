@@ -29,7 +29,6 @@ function DoctorsSection({ filteredDoctors = [] }) {
     setDoctorSearch,
   } = useDashboardStore();
 
-  const [expanded, setExpanded] = useState(true);
 
   const handleReset = () => {
     setDoctorSearch("");
@@ -162,7 +161,7 @@ function DoctorsSection({ filteredDoctors = [] }) {
                   alignItems="flex-start"
                   justifyContent="space-between"
                   sx={{
-                    p: 1.2,
+                    pr: 1.2,
                     mb: 1,
                     borderRadius: 2,
                     cursor: "pointer",

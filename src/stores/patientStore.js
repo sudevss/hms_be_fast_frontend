@@ -44,6 +44,8 @@ const initialStatePatientDiagnosis = {
   vital_spo2: "",
   vital_temp: "",
   assessment_notes: "",
+  height: "",
+  weight: "", 
 };
 
 export const usePatient = create((set) => ({
