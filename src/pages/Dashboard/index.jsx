@@ -36,7 +36,7 @@ import EnhancedPieChart from "@components/charts/EnhancedPieChart";
 import EnhancedStackedBarChart from "@components/charts/EnhancedStackedBarChart";
 import StyledButton from "@components/StyledButton";
 import AppointmentsTable from "@/ReusableComponents/AppointmentsTable";
-import SelectWithLabel from '@/components/inputs/SelectWithLabel.jsx';
+import SelectWithLabel from '@/components/inputs/SelectWithLabel';
 import AddOrEditBooking from "@/ReusableComponents/AddOrEditBooking";
 import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
@@ -421,4 +421,5 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
+
 
