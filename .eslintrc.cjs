@@ -44,7 +44,7 @@ module.exports = {
         templates: true,
         lang: "en_US",
         skipWords: [
-          "Carelon",
+          "intuismart",
           "bgcolor",
           "MoreVertIcon",
           "DecrementalChart",

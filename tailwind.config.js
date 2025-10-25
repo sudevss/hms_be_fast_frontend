@@ -29,7 +29,7 @@ export default {
         ],
       },
       boxShadow: {
-        carelon:
+        intuismart:
           "0px 1px 5px rgba(80, 9, 181, 0.1), 0px 8px 24px rgba(43, 27, 73, 0.15)",
       },
       backgroundImage: {

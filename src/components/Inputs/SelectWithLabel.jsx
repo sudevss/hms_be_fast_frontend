@@ -8,12 +8,6 @@ import {
 } from "@mui/material";
 import PropTypes from "prop-types";
 
-/**
- * Carelon HMS - Select With Label
- * ---------------------------------------------------------
- * A themed, accessible select dropdown with label, placeholder,
- * dynamic states (loading/no data), and validation messages.
- */
 function SelectWithLabel({
   name,
   label,
