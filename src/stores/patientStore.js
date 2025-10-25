@@ -32,7 +32,7 @@ const initialStatePatientDiagnosis = {
   appointment_id: "",
   assessment_notes: "",
   chief_complaint: "",
-  diagnosis_date: "",
+  diagnosis_date: dayjs().format("YYYY-MM-DD"),
   doctor_id: "",
   facility_id: "",
   followup_date: "",
@@ -45,7 +45,7 @@ const initialStatePatientDiagnosis = {
   vital_temp: "",
   assessment_notes: "",
   height: "",
-  weight: "", 
+  weight: "",
 };
 
 export const usePatient = create((set) => ({

@@ -49,14 +49,7 @@ function DashboardPage() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
-  const [paymentObj, setPaymentObj] = useState({
-    appointment_id: "",
-    facility_id: 1,
-    payment_status: false,
-    payment_method: "",
-    open: false,
-  });
-
+  
   const { date, setDate, doctor_id, doctorSearch } = useDashboardStore();
 
   // 🔹 Fetch Dashboard Data
@@ -115,36 +108,9 @@ function DashboardPage() {
     },
   });
 
-  const mutationPaymentStatusUpdate = useMutation({
-    mutationFn: (payload) => postUpdatePaymentStatus(payload),
-    onSuccess: () => {
-      setShowAlert({
-        show: true,
-        message: `Payment updated successfully`,
-        status: "success",
-      });
-      queryClient.invalidateQueries(["dashboard"]);
-      setPaymentObj({ appointment_id: "", open: false });
-      onResetAlert();
-      queryGetDashboard.refetch();
-    },
-    onError: () => {
-      setShowAlert({
-        show: true,
-        message: `Payment update failed`,
-        status: "error",
-      });
-    },
-  });
-
-  const handlePaymentSubmit = () =>
-    mutationPaymentStatusUpdate.mutate(paymentObj);
-
   const showLoader =
     queryGetDashboard?.isLoading ||
-    mutationAppoinmentStatusUpdate?.isPending ||
-    mutationPaymentStatusUpdate?.isPending;
-
+    mutationAppoinmentStatusUpdate?.isPending 
   const minDate = dayjs().subtract(1, "day").toDate();
   const maxDate = dayjs().add(7, "day").toDate();
 
@@ -238,9 +204,6 @@ function DashboardPage() {
         <AppointmentsTable
           tabName="Scheduled"
           isDashboard
-          updatePaymentStatus={(payload) =>
-            setPaymentObj({ ...paymentObj, ...payload, open: true })
-          }
           updateAppointmentStatus={(payload) =>
             mutationAppoinmentStatusUpdate.mutate(payload)
           }
@@ -364,57 +327,6 @@ function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Update Dialog */}
-      <Dialog
-        open={paymentObj?.open}
-        onClose={() => setPaymentObj({ appointment_id: "", open: false })}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 600,
-            textAlign: "center",
-          }}
-        >
-          Update Payment
-        </DialogTitle>
-        <DialogContent>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={paymentObj?.payment_status}
-                onChange={(e) =>
-                  setPaymentObj((prev) => ({
-                    ...prev,
-                    payment_status: e.target.checked,
-                  }))
-                }
-              />
-            }
-            label="Payment Status"
-          />
-
-          <SelectWithLabel
-            type="text"
-            name="paymentMethod"
-            value={paymentObj?.payment_method}
-            label="Payment Method"
-            placeholderText="Select Payment Method"
-            menuOptions={PAYMENT_METHODS}
-            width="100%"
-            onChangeHandler={(value) =>
-              setPaymentObj((prev) => ({
-                ...prev,
-                payment_method: value,
-              }))
-            }
-          />
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
-          <StyledButton variant="contained" onClick={handlePaymentSubmit}>
-            Submit
-          </StyledButton>
-        </DialogActions>
-      </Dialog>
 
       {/* Alerts & Loader */}
       <AlertSnackbar

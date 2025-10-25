@@ -25,6 +25,7 @@ import AlertSnackbar from "@components/AlertSnackbar";
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { useShowAlert } from "@/stores/showAlertStore";
+import dayjs from "dayjs";
 
 const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
   const {
@@ -50,8 +51,6 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
   } = usePatientDiagnosis();
 
   const patientDiagnosisObj = usePatientDiagnosis();
-
-  console.log({patientDiagnosisObj});
 
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
 
@@ -255,7 +254,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           <Box>
             <DatePickerComponent
               name="diagnosis_date"
-              value={diagnosis_date}
+              value={diagnosis_date }
               required={true}
               showInputLabel={true}
               disabled
