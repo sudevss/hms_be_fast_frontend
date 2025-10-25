@@ -19,7 +19,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { postLogin } from "@/serviceApis";
 import { userLoginDetails } from "@/stores/LoginStore";
 import AlertSnackbar from "@components/AlertSnackbar";
-import TextInputWithLabel from "@components/temp/TextInputWithLabel";
+import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
 import StyledButton from "@components/StyledButton";
 import PageLoader from "@pages/PageLoader";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";

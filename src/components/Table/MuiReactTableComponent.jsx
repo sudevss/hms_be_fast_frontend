@@ -4,7 +4,7 @@ import {
   useMaterialReactTable,
 } from "material-react-table";
 import { Box, Stack } from "@mui/material";
-import SearchTextInput from "@components/temp/SearchTextInput";
+import SearchTextInput from "@components/inputs/SearchTextInput";
 import DatePickerComponent from "@/components/DatePicker";
 
 const MuiReactTableComponent = ({
