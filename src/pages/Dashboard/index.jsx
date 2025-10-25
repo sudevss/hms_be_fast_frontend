@@ -36,7 +36,7 @@ import EnhancedPieChart from "@components/charts/EnhancedPieChart";
 import EnhancedStackedBarChart from "@components/charts/EnhancedStackedBarChart";
 import StyledButton from "@components/StyledButton";
 import AppointmentsTable from "@/ReusableComponents/AppointmentsTable";
-import SelectWithLabel from "@components/inputs/SelectWithLabel";
+// import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import AddOrEditBooking from "@/ReusableComponents/AddOrEditBooking";
 import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
@@ -385,7 +385,7 @@ function DashboardPage() {
             label="Payment Status"
           />
 
-          <SelectWithLabel
+          {/* <SelectWithLabel
             type="text"
             name="paymentMethod"
             value={paymentObj?.payment_method}
@@ -399,7 +399,7 @@ function DashboardPage() {
                 payment_method: value,
               }))
             }
-          />
+          /> */}
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
           <StyledButton variant="contained" onClick={handlePaymentSubmit}>
