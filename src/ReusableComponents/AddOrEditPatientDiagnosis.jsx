@@ -14,8 +14,8 @@ import {
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
-import TextAreaInputWithLabel from "@components/inputs/TextAreaInputWithLabel";
+import TextInputWithLabel from "@components/temp/TextInputWithLabel";
+import TextAreaInputWithLabel from "@components/temp/TextAreaInputWithLabel";
 import { getPaientDetailsByPhone, putAddPatientDiagnosis } from "@/serviceApis";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";

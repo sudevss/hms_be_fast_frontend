@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useDashboardStore } from "@/stores/dashboardStore";
-import SearchTextInput from "@components/inputs/SearchTextInput";
+import SearchTextInput from "@components/temp/SearchTextInput";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 function DoctorsSection({ filteredDoctors = [] }) {

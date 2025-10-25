@@ -17,8 +17,8 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import CloseIcon from "@mui/icons-material/Close";
 
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
-import SelectWithLabel from "@components/inputs/SelectWithLabel";
+import TextInputWithLabel from "@components/temp/TextInputWithLabel";
+import SelectWithLabel from "@components/temp/SelectWithLabel";
 import DatePickerComponent from "@components/DatePicker";
 import AlertSnackbar from "@components/AlertSnackbar";
 import PageLoader from "@pages/PageLoader";
