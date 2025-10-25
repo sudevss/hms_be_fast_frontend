@@ -14,8 +14,8 @@ import {
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
-import SelectWithLabel from "@components/Inputs/SelectWithLabel";
+import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
+import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import {
   GENDER_DATA,
   INITIAL_SHOW_ALERT,
@@ -24,7 +24,7 @@ import {
   TOKEN_TYPES,
 } from "@data/staticData";
 import { bookingRequiredFileds, useBooking } from "@/stores/bookingStore";
-import TextAreaInputWithLabel from "@components/Inputs/TextAreaInputWithLabel";
+import TextAreaInputWithLabel from "@components/inputs/TextAreaInputWithLabel";
 import {
   getAllDoctorsDetails,
   getPaientDetailsByPhone,
