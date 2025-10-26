@@ -17,7 +17,10 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDashBoardDetails, postUpdateAppointmentStatus } from "@/serviceApis";
+import {
+  getDashBoardDetails,
+  postUpdateAppointmentStatus,
+} from "@/serviceApis";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
@@ -40,7 +43,7 @@ function DashboardPage() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // 👈 NEW
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const { date, setDate, doctor_id, doctorSearch } = useDashboardStore();
 
@@ -50,11 +53,18 @@ function DashboardPage() {
     enabled: true,
   });
 
-  const { token_data: tokenData = [], doctors = [], hourly_booking_chart: hourlyBookings = [], summary = {} } =
-    queryGetDashboard?.data || {};
+  const {
+    token_data: tokenData = [],
+    doctors = [],
+    hourly_booking_chart: hourlyBookings = [],
+    summary = {},
+  } = queryGetDashboard?.data || {};
 
   const filteredDoctors = useMemo(
-    () => doctors.filter((d) => d.name.toLowerCase().includes(doctorSearch.toLowerCase())),
+    () =>
+      doctors.filter((d) =>
+        d.name.toLowerCase().includes(doctorSearch.toLowerCase())
+      ),
     [doctors, doctorSearch]
   );
 
@@ -69,7 +79,8 @@ function DashboardPage() {
   );
 
   const mutationAppoinmentStatusUpdate = useMutation({
-    mutationFn: (payload) => postUpdateAppointmentStatus({ ...payload, facility_id: 1 }),
+    mutationFn: (payload) =>
+      postUpdateAppointmentStatus({ ...payload, facility_id: 1 }),
     onSuccess: () => {
       setShowAlert({
         show: true,
@@ -113,22 +124,39 @@ function DashboardPage() {
           flex: 1,
           p: { xs: 2, sm: 3 },
           overflowY: "auto",
-          transition: "width 0.3s ease",
-          width: isSidebarOpen ? { md: "75%", lg: "70%" } : "100%",
+          transition: "all 0.3s ease",
+           width: isSidebarOpen ? { md: "75%", lg: "70%" } : "100%",
         }}
       >
         {/* Top Actions */}
-        <Box display="flex" justifyContent="flex-end" gap={2} mb={3} flexWrap="wrap">
-          <StyledButton variant="outlined" onClick={() => setIsBookingOpen(true)}>
+        <Box
+          display="flex"
+          justifyContent="flex-end"
+          gap={2}
+          mb={3}
+          flexWrap="wrap"
+        >
+          <StyledButton
+            variant="outlined"
+            onClick={() => setIsBookingOpen(true)}
+          >
             New Booking
           </StyledButton>
-          <StyledButton variant="outlined" onClick={() => setIsCheckinOpen(true)}>
+          <StyledButton
+            variant="outlined"
+            onClick={() => setIsCheckinOpen(true)}
+          >
             Check-in
           </StyledButton>
         </Box>
 
         {/* Charts */}
-        <Box display="flex" flexDirection={isMobile ? "column" : "row"} gap={2} mb={4}>
+        <Box
+          display="flex"
+          flexDirection={isMobile ? "column" : "row"}
+          gap={2}
+          mb={4}
+        >
           <Box
             sx={{
               flex: isMobile ? "1 1 auto" : "0 0 45%",
@@ -161,7 +189,9 @@ function DashboardPage() {
         <AppointmentsTable
           tabName="Scheduled"
           isDashboard
-          updateAppointmentStatus={(payload) => mutationAppoinmentStatusUpdate.mutate(payload)}
+          updateAppointmentStatus={(payload) =>
+            mutationAppoinmentStatusUpdate.mutate(payload)
+          }
           dashboardData={tokenData}
           hourlyBookings={hourlyBookings}
           summary={summary}
@@ -178,7 +208,7 @@ function DashboardPage() {
           sx={{
             position: "absolute",
             top: 80,
-            right: isSidebarOpen ? { md: "25vw", lg: "30vw" } : 0,
+            right: isSidebarOpen ? { md: "30%", lg: "32%", xl: "30%" } : 0,
             zIndex: 10,
             backgroundColor: "#fff",
             boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
@@ -196,8 +226,9 @@ function DashboardPage() {
           width: {
             xs: "100%",
             sm: "90vw",
-            md: isSidebarOpen ? "35vw" : "0px",
-            lg: isSidebarOpen ? "30vw" : "0px",
+            md: isSidebarOpen ? "40vw" : "0px",
+            lg: isSidebarOpen ? "38vw" : "0px",
+            xl: isSidebarOpen ? "28vw" : "0px",
           },
           transition: "width 0.3s ease",
           backgroundColor: "#fff",
@@ -213,6 +244,15 @@ function DashboardPage() {
               inline
               minDate={minDate}
               maxDate={maxDate}
+              sx={{
+                width: {
+                  //  xs: "100%", // Mobile phones (0px - 599px)
+                  sm: "100vw", // Small tablets (600px - 899px)
+                  md: "65%", // Tablets / small laptops (900px - 1199px)
+                  lg: "65%", // Desktops (1200px - 1535px)
+                  xl: "65%",
+                },
+              }}
               calendarClassName="custom-calendar"
             />
             <Box
