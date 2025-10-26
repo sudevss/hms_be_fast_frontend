@@ -15,16 +15,14 @@ import DatePickerComponent from "@components/DatePicker";
 import AlertSnackbar from "@components/AlertSnackbar";
 import PageLoader from "@pages/PageLoader";
 
-import {
-  GENDER_DATA,
-  INITIAL_SHOW_ALERT,
-} from "@data/staticData";
-import {
-  postAddNewPatient,
-  patchUpdatePatient,
-} from "@/serviceApis";
+import { GENDER_DATA, INITIAL_SHOW_ALERT } from "@data/staticData";
+import { postAddNewPatient, patchUpdatePatient } from "@/serviceApis";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { calculateAge, patientRequiredFileds, usePatient } from "@/stores/patientStore";
+import {
+  calculateAge,
+  patientRequiredFileds,
+  usePatient,
+} from "@/stores/patientStore";
 import { useShowAlert } from "@/stores/showAlertStore";
 
 const AddOrEditPatient = ({ open, setOpen }) => {
@@ -47,6 +45,19 @@ const AddOrEditPatient = ({ open, setOpen }) => {
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
   const queryClient = useQueryClient();
 
+  // 💠 Compact styles for labels and inputs
+  const labelSx = {
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    mb: 0.5,
+    color: "text.primary",
+  };
+
+  const inputSx = {
+    height: 40,
+    fontSize: "0.9rem",
+  };
+
   // ✅ Prepare payload
   const reqPayload = () => ({
     firstname,
@@ -65,9 +76,7 @@ const AddOrEditPatient = ({ open, setOpen }) => {
   // ✅ Mutation for add/update
   const mutationUpdatePatient = useMutation({
     mutationFn: (payload) =>
-      !payload?.id
-        ? postAddNewPatient(payload)
-        : patchUpdatePatient(payload),
+      !payload?.id ? postAddNewPatient(payload) : patchUpdatePatient(payload),
     onSuccess: () => {
       setShowAlert({
         show: true,
@@ -95,19 +104,20 @@ const AddOrEditPatient = ({ open, setOpen }) => {
     (field) => patientState[field]
   );
 
-  // ✅ Handle submit
   const handleSubmit = () => {
     mutationUpdatePatient.mutate(reqPayload());
+  };
+
+  const handleClose = () => {
+    onReset();
+    onResetAlert();
+    setOpen(false);
   };
 
   return (
     <Dialog
       open={open || false}
-      onClose={() => {
-        onReset();
-        onResetAlert();
-        setOpen(false);
-      }}
+      onClose={handleClose}
       aria-labelledby="edit-patient-dialog"
       sx={{
         maxHeight: "calc(100% - 100px)",
@@ -135,11 +145,7 @@ const AddOrEditPatient = ({ open, setOpen }) => {
 
       <IconButton
         aria-label="close"
-        onClick={() => {
-          onReset();
-          onResetAlert();
-          setOpen(false);
-        }}
+        onClick={handleClose}
         sx={{
           position: "absolute",
           right: 8,
@@ -149,7 +155,17 @@ const AddOrEditPatient = ({ open, setOpen }) => {
         <CloseIcon />
       </IconButton>
 
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+      <DialogContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          mt: 1,
+          "& .MuiInputLabel-root": {
+            fontSize: "0.85rem",
+          },
+        }}
+      >
         {/* Mobile Number */}
         <TextInputWithLabel
           type="text"
@@ -158,7 +174,8 @@ const AddOrEditPatient = ({ open, setOpen }) => {
           label="Mobile #"
           placeholderText="Enter Mobile #"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-          LabelSxProps={{ fontWeight: 600 }}
+          LabelSxProps={labelSx}
+          InputSxProps={inputSx}
         />
 
         {/* First & Last Name */}
@@ -170,7 +187,8 @@ const AddOrEditPatient = ({ open, setOpen }) => {
             value={firstname}
             placeholder="Enter First Name"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-            LabelSxProps={{ fontWeight: 600 }}
+            LabelSxProps={labelSx}
+            InputSxProps={inputSx}
           />
           <TextInputWithLabel
             type="text"
@@ -179,20 +197,25 @@ const AddOrEditPatient = ({ open, setOpen }) => {
             value={lastname}
             placeholder="Enter Last Name"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-            LabelSxProps={{ fontWeight: 600 }}
+            LabelSxProps={labelSx}
+            InputSxProps={inputSx}
           />
         </Stack>
 
         {/* DOB & Age */}
         <Stack direction="row" gap={1}>
-          <Box sx={{ flex: 1 }}>
+          <Box>
             <DatePickerComponent
               name="dob"
               value={dob}
-              required
-              showInputLabel
+              required={true}
+              showInputLabel={true}
+              currentYear={null}
               disableFuture
+              // resProps={{ maxDate}}
+              // inputProps={{ disableFuture: true }}
               label="Date of Birth"
+              // helperText={!AppointmentDate && "Date of Birth  is required"}
               sxLabel={{ fontWeight: 600 }}
               onChange={(e) => {
                 const dobValue = e.target.value;
@@ -201,6 +224,23 @@ const AddOrEditPatient = ({ open, setOpen }) => {
               }}
             />
           </Box>
+          {/* <Box sx={{ flex: 1 }}>
+            <DatePickerComponent
+              name="dob"
+              value={dob}
+              required
+              showInputLabel
+              disableFuture
+              label="Date of Birth"
+              labelSx={labelSx}
+              inputSx={inputSx}
+              onChange={(e) => {
+                const dobValue = e.target.value;
+                onChangePatient("dob", dobValue);
+                onChangePatient("age", calculateAge(dobValue));
+              }}
+            />
+          </Box> */}
           <TextInputWithLabel
             type="text"
             name="age"
@@ -209,7 +249,8 @@ const AddOrEditPatient = ({ open, setOpen }) => {
             disabled={!!dob}
             placeholderText="Enter Age"
             onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-            LabelSxProps={{ fontWeight: 600 }}
+            LabelSxProps={labelSx}
+            InputSxProps={inputSx}
           />
         </Stack>
 
@@ -219,10 +260,12 @@ const AddOrEditPatient = ({ open, setOpen }) => {
           name="gender"
           label="Gender"
           value={gender}
+          fullWidth
           placeholderText="Select Gender"
           menuOptions={GENDER_DATA}
           onChangeHandler={(value) => onChangePatient("gender", value)}
-          LabelSxProps={{ fontWeight: 600 }}
+          labelSx={labelSx}
+          inputSx={inputSx}
         />
 
         {/* ABHA ID */}
@@ -233,7 +276,8 @@ const AddOrEditPatient = ({ open, setOpen }) => {
           value={ABDM_ABHA_id}
           placeholder="Enter ABHA ID"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-          LabelSxProps={{ fontWeight: 600 }}
+          LabelSxProps={labelSx}
+          InputSxProps={inputSx}
         />
 
         {/* Address */}
@@ -244,7 +288,8 @@ const AddOrEditPatient = ({ open, setOpen }) => {
           value={address}
           placeholder="Enter Address"
           onChange={(e) => onChangePatient(e.target.name, e.target.value)}
-          LabelSxProps={{ fontWeight: 600 }}
+          LabelSxProps={labelSx}
+          InputSxProps={inputSx}
         />
       </DialogContent>
 

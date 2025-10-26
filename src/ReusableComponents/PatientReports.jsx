@@ -21,14 +21,17 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DownloadIcon from "@mui/icons-material/Download";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { getPatientReportFileDownload, getPatientReports, uploadPatientReportFiles } from "@/serviceApis";
+import {
+  getPatientReportFileDownload,
+  getPatientReports,
+  uploadPatientReportFiles,
+} from "@/serviceApis";
 import PageLoader from "@pages/PageLoader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import AlertSnackbar from "@components/AlertSnackbar";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { useShowAlert } from "@/stores/showAlertStore";
-
 
 const PatientReports = ({
   open,
@@ -142,6 +145,8 @@ const PatientReports = ({
 
   const reportsData = queryGetPatientReports?.data || [];
 
+  console.log("reportsData", patientReportsObj);
+
   return (
     <Dialog
       fullWidth
@@ -238,16 +243,17 @@ const PatientReports = ({
         <Divider sx={{ mb: 3 }} />
 
         <Stack spacing={2}>
-          <Button
-            sx={{ width: "40%" }}
-            variant="contained"
-            component="label"
-            startIcon={<CloudUploadIcon />}
-          >
-            Select Files
-            <input type="file" hidden multiple onChange={handleFileChange} />
-          </Button>
-
+          {patientReportsObj?.diagnosis_id && (
+            <Button
+              sx={{ width: "40%" }}
+              variant="contained"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+            >
+              Select Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+          )}
           {files.length > 0 && (
             <Box>
               <Typography variant="h5" gutterBottom>
@@ -288,13 +294,14 @@ const PatientReports = ({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
+        {patientReportsObj?.diagnosis_id && (
         <StyledButton
           variant="contained"
           disabled={mutationFileUpload.isPending || !files.length > 0}
           onClick={handleUpload}
         >
           Upload All
-        </StyledButton>
+        </StyledButton>)}
       </DialogActions>
       <AlertSnackbar
         message={showAlert.message}

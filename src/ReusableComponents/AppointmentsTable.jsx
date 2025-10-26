@@ -40,9 +40,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import { useShowAlert } from "@/stores/showAlertStore";
 import { INITIAL_SHOW_ALERT, PAYMENT_METHODS } from "@data/staticData";
-import dayjs from "dayjs";
+import {convertUTCClockToIST, dayjs} from "@utils/dateUtils";
 import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import StyledButton from "@components/StyledButton";
+import EditAttributesIcon from '@mui/icons-material/EditAttributes';
 
 const AppointmentsTable = ({
   setIsCheckinOpen,
@@ -245,12 +246,12 @@ const AppointmentsTable = ({
     const dashboardActionsCell = ({ row }) => (
       <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
         {!["Completed"].includes(tabName) && (
-          <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
+          <Tooltip placement="top" title="Move Complete Status" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
               onClick={() => updateAppointmentStatus(row.original)}
             >
-              <ToggleOffOutlinedIcon color="#115E59" />
+              <EditAttributesIcon color="#115E59" />
             </IconButton>
           </Tooltip>
         )}
@@ -357,7 +358,13 @@ const AppointmentsTable = ({
     const tokenColumn = [
       { accessorKey: "token", header: "Token" },
       { accessorKey: "patient_name", header: "Patient Name" },
-      { accessorKey: "checkin_time", header: "Check-in-Time" },
+      { accessorKey: "checkin_time", header: "Check-in-Time", Cell: ({ row }) => (
+        <span>
+          {row.original.checkin_time
+            ? convertUTCClockToIST(row.original.checkin_time)
+            : "-"}
+        </span>
+      ) },
       { accessorKey: "doctor_name", header: "Doctor" },
       { accessorKey: "payment_type", header: "Payment Type" },
       { accessorKey: "is_paid", header: "Payment", Cell: paymentCell },

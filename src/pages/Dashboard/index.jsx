@@ -4,29 +4,21 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
   Box,
-  Button,
-  Checkbox,
+  IconButton,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
-  IconButton,
-  Tooltip,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-import {
-  getDashBoardDetails,
-  postUpdateAppointmentStatus,
-  postUpdatePaymentStatus,
-} from "@/serviceApis";
-import { INITIAL_SHOW_ALERT, PAYMENT_METHODS } from "@data/staticData";
+import { getDashBoardDetails, postUpdateAppointmentStatus } from "@/serviceApis";
+import { INITIAL_SHOW_ALERT } from "@data/staticData";
 
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useShowAlert } from "@/stores/showAlertStore";
@@ -36,7 +28,6 @@ import EnhancedPieChart from "@components/charts/EnhancedPieChart";
 import EnhancedStackedBarChart from "@components/charts/EnhancedStackedBarChart";
 import StyledButton from "@components/StyledButton";
 import AppointmentsTable from "@/ReusableComponents/AppointmentsTable";
-import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import AddOrEditBooking from "@/ReusableComponents/AddOrEditBooking";
 import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
@@ -49,32 +40,24 @@ function DashboardPage() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // 👈 NEW
+
   const { date, setDate, doctor_id, doctorSearch } = useDashboardStore();
 
-  // 🔹 Fetch Dashboard Data
   const queryGetDashboard = useQuery({
     queryKey: ["dashboard", doctor_id, date],
     queryFn: () => getDashBoardDetails({ date, facility_id: 1, doctor_id }),
     enabled: true,
   });
 
-  const {
-    token_data: tokenData = [],
-    doctors = [],
-    hourly_booking_chart: hourlyBookings = [],
-    summary = {},
-  } = queryGetDashboard?.data || {};
+  const { token_data: tokenData = [], doctors = [], hourly_booking_chart: hourlyBookings = [], summary = {} } =
+    queryGetDashboard?.data || {};
 
   const filteredDoctors = useMemo(
-    () =>
-      doctors.filter((d) =>
-        d.name.toLowerCase().includes(doctorSearch.toLowerCase())
-      ),
+    () => doctors.filter((d) => d.name.toLowerCase().includes(doctorSearch.toLowerCase())),
     [doctors, doctorSearch]
   );
 
-  // 🔹 Appointment Summary
   const appointmentSummary = useMemo(
     () => [
       { name: "Total Appointments", value: summary?.total_appointments || 0 },
@@ -85,10 +68,8 @@ function DashboardPage() {
     [summary]
   );
 
-  // 🔹 Mutations
   const mutationAppoinmentStatusUpdate = useMutation({
-    mutationFn: (payload) =>
-      postUpdateAppointmentStatus({ ...payload, facility_id: 1 }),
+    mutationFn: (payload) => postUpdateAppointmentStatus({ ...payload, facility_id: 1 }),
     onSuccess: () => {
       setShowAlert({
         show: true,
@@ -109,8 +90,7 @@ function DashboardPage() {
   });
 
   const showLoader =
-    queryGetDashboard?.isLoading ||
-    mutationAppoinmentStatusUpdate?.isPending 
+    queryGetDashboard?.isLoading || mutationAppoinmentStatusUpdate?.isPending;
   const minDate = dayjs().subtract(1, "day").toDate();
   const maxDate = dayjs().add(7, "day").toDate();
 
@@ -124,53 +104,31 @@ function DashboardPage() {
         width: "100%",
         backgroundColor: "#f9fafb",
         position: "relative",
-        
+        overflow: "hidden",
       }}
     >
-      {/* Left Content Section */}
+      {/* Left Section */}
       <Box
         sx={{
           flex: 1,
           p: { xs: 2, sm: 3 },
           overflowY: "auto",
-          width: {
-            xs: "100%", // Mobile phones (0px - 599px)
-            sm: "90vw", // Small tablets (600px - 899px)
-            md: "80vw", // Tablets / small laptops (900px - 1199px)
-            lg: "70vw", // Desktops (1200px - 1535px)
-            xl: "70vw", // Large screens (1536px+)
-          }
+          transition: "width 0.3s ease",
+          width: isSidebarOpen ? { md: "75%", lg: "70%" } : "100%",
         }}
       >
-        {/* Top Action Buttons */}
-        <Box
-          display="flex"
-          justifyContent="flex-end"
-          gap={2}
-          mb={3}
-          flexWrap="wrap"
-        >
-          <StyledButton
-            variant="outlined"
-            onClick={() => setIsBookingOpen(true)}
-          >
+        {/* Top Actions */}
+        <Box display="flex" justifyContent="flex-end" gap={2} mb={3} flexWrap="wrap">
+          <StyledButton variant="outlined" onClick={() => setIsBookingOpen(true)}>
             New Booking
           </StyledButton>
-          <StyledButton
-            variant="outlined"
-            onClick={() => setIsCheckinOpen(true)}
-          >
+          <StyledButton variant="outlined" onClick={() => setIsCheckinOpen(true)}>
             Check-in
           </StyledButton>
         </Box>
 
-        {/* Charts Section */}
-        <Box
-          display="flex"
-          flexDirection={isMobile ? "column" : "row"}
-          gap={2}
-          mb={4}
-        >
+        {/* Charts */}
+        <Box display="flex" flexDirection={isMobile ? "column" : "row"} gap={2} mb={4}>
           <Box
             sx={{
               flex: isMobile ? "1 1 auto" : "0 0 45%",
@@ -200,13 +158,10 @@ function DashboardPage() {
           </Box>
         </Box>
 
-        {/* Appointment Table */}
         <AppointmentsTable
           tabName="Scheduled"
           isDashboard
-          updateAppointmentStatus={(payload) =>
-            mutationAppoinmentStatusUpdate.mutate(payload)
-          }
+          updateAppointmentStatus={(payload) => mutationAppoinmentStatusUpdate.mutate(payload)}
           dashboardData={tokenData}
           hourlyBookings={hourlyBookings}
           summary={summary}
@@ -216,83 +171,74 @@ function DashboardPage() {
         />
       </Box>
 
+      {/* Sidebar Toggle Button */}
+      <Tooltip title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}>
+        <IconButton
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          sx={{
+            position: "absolute",
+            top: 80,
+            right: isSidebarOpen ? { md: "25vw", lg: "30vw" } : 0,
+            zIndex: 10,
+            backgroundColor: "#fff",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            "&:hover": { backgroundColor: "#f0f0f0" },
+            transition: "right 0.3s ease",
+          }}
+        >
+          {isSidebarOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      </Tooltip>
+
       {/* Right Sidebar */}
       <Box
         sx={{
           width: {
-            xs: "100%", // Mobile phones (0px - 599px)
-            sm: "90vw", // Small tablets (600px - 899px)
-            md: "45vw", // Tablets / small laptops (900px - 1199px)
-            lg: "35vw", // Desktops (1200px - 1535px)
-            xl: "25vw", // Large screens (1536px+)
+            xs: "100%",
+            sm: "90vw",
+            md: isSidebarOpen ? "35vw" : "0px",
+            lg: isSidebarOpen ? "30vw" : "0px",
           },
-          p: { xs: 2, sm: 3 },
+          transition: "width 0.3s ease",
           backgroundColor: "#fff",
-          // borderLeft: { md: "1px solid #e5e7eb" },
-          position: { md: "sticky" },
-          top: 0,
-          height: { md: "100vh", xs: "auto" },
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
+          overflow: "hidden",
+          p: isSidebarOpen ? { xs: 2, sm: 3 } : 0,
         }}
       >
-        {/* Date Picker Section */}
-        <Box
-          sx={{
-            flexShrink: 0,
-            mb: 1,
-          }}
-        >
-          <DatePicker
-            sx={{
-              width: {
-                //  xs: "100%", // Mobile phones (0px - 599px)
-                sm: "14vw", // Small tablets (600px - 899px)
-                md: "24vw", // Tablets / small laptops (900px - 1199px)
-                lg: "17vw", // Desktops (1200px - 1535px)
-                xl: "14vw",
-              },
-            }}
-            selected={date}
-            onChange={(d) => setDate(d)}
-            inline
-            minDate={minDate}
-            maxDate={maxDate}
-            calendarClassName="custom-calendar"
-          />
-        </Box>
-
-        {/* Doctor Section */}
-        <Box
-          sx={{
-            flex: 1, // Takes remaining height
-            overflowY: "auto",
-            borderRadius: 2,
-            // border: "1px solid #e5e7eb",
-            // p: 1,
-            mt: 1,
-            backgroundColor: "#fafafa",
-            "&::-webkit-scrollbar": {
-              width: "6px",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              background: "#cfcfcf",
-              borderRadius: "4px",
-            },
-          }}
-        >
-          <DoctorsSection filteredDoctors={filteredDoctors || doctors} />
-        </Box>
+        {isSidebarOpen && (
+          <>
+            <DatePicker
+              selected={date}
+              onChange={(d) => setDate(d)}
+              inline
+              minDate={minDate}
+              maxDate={maxDate}
+              calendarClassName="custom-calendar"
+            />
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: "auto",
+                borderRadius: 2,
+                mt: 1,
+                backgroundColor: "#fafafa",
+                "&::-webkit-scrollbar": { width: "6px" },
+                "&::-webkit-scrollbar-thumb": {
+                  background: "#cfcfcf",
+                  borderRadius: "4px",
+                },
+              }}
+            >
+              <DoctorsSection filteredDoctors={filteredDoctors || doctors} />
+            </Box>
+          </>
+        )}
       </Box>
 
-      {/* Add Booking Modal */}
+      {/* Modals */}
       <AddOrEditBooking open={isBookingOpen} setOpen={setIsBookingOpen} />
 
-      {/* Check-in Dialog */}
       <Dialog
-        maxWidth={false} // 👈 disables MUI's fixed maxWidth ("sm", "md", etc.)
-        fullWidth={false} // 👈 so width is fully controlled by sx
         open={isCheckinOpen}
         onClose={() => {
           setIsCheckinOpen(false);
@@ -300,11 +246,7 @@ function DashboardPage() {
         }}
         slotProps={{
           paper: {
-            sx: {
-              width: { xs: "95%", md: "80vw" },
-              borderRadius: 2,
-              p: 2,
-            },
+            sx: { width: { xs: "95%", md: "80vw" }, borderRadius: 2, p: 2 },
           },
         }}
       >
@@ -327,8 +269,6 @@ function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-
-      {/* Alerts & Loader */}
       <AlertSnackbar
         message={showAlert.message}
         showAlert={showAlert.show}
@@ -341,9 +281,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-
-
-
-
-
-
