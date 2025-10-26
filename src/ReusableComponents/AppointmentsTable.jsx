@@ -13,7 +13,6 @@ import {
   Tooltip,
 } from "@mui/material";
 
-
 import {
   deleteAppoinmentBooking,
   getAppointmentsAndBookings,
@@ -40,10 +39,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import { useShowAlert } from "@/stores/showAlertStore";
 import { INITIAL_SHOW_ALERT, PAYMENT_METHODS } from "@data/staticData";
-import {convertUTCClockToIST, dayjs} from "@utils/dateUtils";
+import { convertUTCClockToIST, dayjs } from "@utils/dateUtils";
 import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import StyledButton from "@components/StyledButton";
-import EditAttributesIcon from '@mui/icons-material/EditAttributes';
+import EditAttributesIcon from "@mui/icons-material/EditAttributes";
 
 const AppointmentsTable = ({
   setIsCheckinOpen,
@@ -112,7 +111,7 @@ const AppointmentsTable = ({
   });
 
   const updatePaymentStatus = (row) => {
-    setPaymentObj({ ...paymentObj, ...row, open: true })
+    setPaymentObj({ ...paymentObj, ...row, open: true });
     // const payment_status = row.paid ? false : true;
     // mutationAppoinmentStatusUpdate.mutate({
     //   appointment_id: row.appointment_id,
@@ -246,7 +245,12 @@ const AppointmentsTable = ({
     const dashboardActionsCell = ({ row }) => (
       <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
         {!["Completed"].includes(tabName) && (
-          <Tooltip placement="top" title="Move Complete Status" arrow enterDelay={100}>
+          <Tooltip
+            placement="top"
+            title="Move Complete Status"
+            arrow
+            enterDelay={100}
+          >
             <IconButton
               backgroundColor="#115E59"
               onClick={() => updateAppointmentStatus(row.original)}
@@ -259,7 +263,9 @@ const AppointmentsTable = ({
           <IconButton
             color="#115E59"
             disabled={row.original.is_paid || row.original.paid}
-            onClick={() => updatePaymentStatus(row.original)}
+            onClick={() => {
+              updatePaymentStatus(row.original);
+            }}
           >
             <CurrencyRupeeIcon color="#115E59" />
           </IconButton>
@@ -319,7 +325,10 @@ const AppointmentsTable = ({
         <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
           <IconButton
             backgroundColor="#115E59"
-            onClick={() => updatePaymentStatus(row.original)}
+            disabled={row.original.is_paid || row.original.paid}
+            onClick={() => {
+              updatePaymentStatus(row.original);
+            }}
           >
             <CurrencyRupeeIcon color="#115E59" />
           </IconButton>
@@ -359,13 +368,17 @@ const AppointmentsTable = ({
     const tokenColumn = [
       { accessorKey: "token", header: "Token" },
       { accessorKey: "patient_name", header: "Patient Name" },
-      { accessorKey: "checkin_time", header: "Check-in-Time", Cell: ({ row }) => (
-        <span>
-          {row.original.checkin_time
-            ? convertUTCClockToIST(row.original.checkin_time)
-            : "-"}
-        </span>
-      ) },
+      {
+        accessorKey: "checkin_time",
+        header: "Check-in-Time",
+        Cell: ({ row }) => (
+          <span>
+            {row.original.checkin_time
+              ? convertUTCClockToIST(row.original.checkin_time)
+              : "-"}
+          </span>
+        ),
+      },
       { accessorKey: "doctor_name", header: "Doctor" },
       { accessorKey: "payment_type", header: "Payment Type" },
       { accessorKey: "is_paid", header: "Payment", Cell: paymentCell },
@@ -398,7 +411,7 @@ const AppointmentsTable = ({
     isLoading ||
     mutationDelete.isPending ||
     mutationCheckin.isPending ||
-    mutationGetDiagnosis.isPending || 
+    mutationGetDiagnosis.isPending ||
     mutationPaymentStatusUpdate.isPending;
 
   // 🔹 Render End Date Filter (for Completed tab)
