@@ -7,7 +7,6 @@ import {
   Stack,
   FormControlLabel,
   Checkbox,
-  InputLabel,
   Box,
   useMediaQuery,
   useTheme,
@@ -41,7 +40,6 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { useMutation } from "@tanstack/react-query";
 
-
 // 🔹 Helper Functions
 const convertTo24Hour = (timeStr) => {
   const hour = parseInt(timeStr);
@@ -63,7 +61,6 @@ const deleteDoctorSlot = (weekdaysSlots, weekIndex, slotIndex) =>
       : day
   );
 
-
 // 🔹 Main Component
 const SheduleDoctors = ({ open, setOpen }) => {
   const {
@@ -84,6 +81,17 @@ const SheduleDoctors = ({ open, setOpen }) => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const compactLabelSx = {
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    mb: 0.5,
+    color: "text.primary",
+  };
+  const compactInputSx = {
+    height: 40,
+    fontSize: "0.9rem",
+  };
 
   // 🔹 Mutation: Add Schedule
   const mutationAddSchedule = useMutation({
@@ -195,12 +203,12 @@ const SheduleDoctors = ({ open, setOpen }) => {
         open={open || false}
         onClose={handleClose}
         fullWidth
-        maxWidth="md"
+        maxWidth="sm"
         sx={{
           "& .MuiDialog-paper": {
             mt: isMobile ? 2 : 8,
             borderRadius: 3,
-            p: 2,
+            // p: 2,
           },
         }}
       >
@@ -230,13 +238,16 @@ const SheduleDoctors = ({ open, setOpen }) => {
             direction={isMobile ? "column" : "row"}
             spacing={2}
             mb={3}
-            justifyContent="space-between"
+            // justifyContent="space-between"
           >
+            <Box>
             <DatePickerComponent
               name="startDate"
               value={startDate}
               required
               label="Start Date"
+              labelSx={compactLabelSx}
+              inputSx={compactInputSx}
               onChange={(e) =>
                 onChangeSheduleDoctor({
                   [e.target.name]: e.target.value,
@@ -244,6 +255,8 @@ const SheduleDoctors = ({ open, setOpen }) => {
                 })
               }
             />
+            </Box>
+             <Box>
             <DatePickerComponent
               name="endDate"
               value={endDate}
@@ -251,12 +264,15 @@ const SheduleDoctors = ({ open, setOpen }) => {
               disabled={!startDate}
               minDate={dayjs(startDate)}
               label="End Date"
+              labelSx={compactLabelSx}
+              inputSx={compactInputSx}
               onChange={(e) =>
                 onChangeSheduleDoctor({
                   [e.target.name]: e.target.value,
                 })
               }
             />
+            </Box>
           </Stack>
 
           {/* Weekday Slots */}
@@ -280,14 +296,7 @@ const SheduleDoctors = ({ open, setOpen }) => {
                   }
                   label={<strong>{weekDay}</strong>}
                 />
-
-                <IconButton
-                  color="primary"
-                  disabled={!isChecked}
-                  onClick={() => addTimeSlot(weekIndex)}
-                >
-                  <AddCircleOutlineIcon sx={{ color: "#115E59" }} />
-                </IconButton>
+                
               </Stack>
 
               {/* Time Slots */}
@@ -306,6 +315,8 @@ const SheduleDoctors = ({ open, setOpen }) => {
                     disabled={!isChecked}
                     menuOptions={TIME_SLOTS_HOURS_OPTIONS}
                     placeholderText="Start Time"
+                    labelSx={compactLabelSx}
+                    inputSx={compactInputSx}
                     onChangeHandler={(val) =>
                       handleSlotChange(weekIndex, slotIndex, "startTime", val)
                     }
@@ -315,10 +326,10 @@ const SheduleDoctors = ({ open, setOpen }) => {
                     name="endTime"
                     value={endTime}
                     disabled={!isChecked || !startTime}
-                    menuOptions={
-                      startTime ? getFilteredEndTimes(startTime) : []
-                    }
+                    menuOptions={startTime ? getFilteredEndTimes(startTime) : []}
                     placeholderText="End Time"
+                    labelSx={compactLabelSx}
+                    inputSx={compactInputSx}
                     onChangeHandler={(val) =>
                       handleSlotChange(weekIndex, slotIndex, "endTime", val)
                     }
@@ -328,9 +339,14 @@ const SheduleDoctors = ({ open, setOpen }) => {
                     name="totalSlots"
                     value={totalSlots}
                     disabled
-                    InputSxProps={{ minWidth: "120px" }}
+                    labelSx={compactLabelSx}
+                    InputSxProps={{
+                      minWidth: "120px",
+                      height: 40,
+                      fontSize: "0.9rem",
+                    }}
                   />
-                  {slotIndex > 0 && (
+                  {slotIndex > 0 ? (
                     <IconButton
                       color="error"
                       onClick={() =>
@@ -345,7 +361,13 @@ const SheduleDoctors = ({ open, setOpen }) => {
                     >
                       <DeleteForeverIcon />
                     </IconButton>
-                  )}
+                  ): <IconButton
+                  color="primary"
+                  disabled={!isChecked}
+                  onClick={() => addTimeSlot(weekIndex)}
+                >
+                  <AddCircleOutlineIcon sx={{ color: "#115E59" }} />
+                </IconButton>}
                 </Stack>
               ))}
             </Box>
@@ -358,10 +380,13 @@ const SheduleDoctors = ({ open, setOpen }) => {
             mt={3}
             justifyContent="space-between"
           >
+            <Box>
             <DatePickerComponent
               name="leaveStartDate"
               value={leaveStartDate}
               label="Leave Start Date"
+              labelSx={compactLabelSx}
+              inputSx={compactInputSx}
               onChange={(e) =>
                 onChangeSheduleDoctor({
                   [e.target.name]: e.target.value,
@@ -369,18 +394,23 @@ const SheduleDoctors = ({ open, setOpen }) => {
                 })
               }
             />
+            </Box>
+            <Box>
             <DatePickerComponent
               name="leaveEndDate"
               value={leaveEndDate}
               disabled={!leaveStartDate}
               minDate={dayjs(leaveStartDate)}
               label="Leave End Date"
+              labelSx={compactLabelSx}
+              inputSx={compactInputSx}
               onChange={(e) =>
                 onChangeSheduleDoctor({
                   [e.target.name]: e.target.value,
                 })
               }
             />
+            </Box>
           </Stack>
         </DialogContent>
 
