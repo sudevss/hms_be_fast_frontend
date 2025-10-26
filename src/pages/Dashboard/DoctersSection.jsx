@@ -41,9 +41,9 @@ function DoctorsSection({ filteredDoctors = [] }) {
         width: {
           //  xs: "100%", // Mobile phones (0px - 599px)
           sm: "100vw", // Small tablets (600px - 899px)
-          md: "24vw", // Tablets / small laptops (900px - 1199px)
-          lg: "20vw", // Desktops (1200px - 1535px)
-          xl: "14vw",
+          md: "65%", // Tablets / small laptops (900px - 1199px)
+          lg: "65%", // Desktops (1200px - 1535px)
+          xl: "65%",
         },
         // width: expanded ? { xs: "100%", md: "25vw" } : "25vw",
         transition: "width 0.35s ease-in-out",
@@ -103,7 +103,8 @@ function DoctorsSection({ filteredDoctors = [] }) {
               placeholder="Search doctors..."
               value={doctorSearch}
               onChange={(val) => setDoctorSearch(val)}
-              fullWidth
+              // fullWidth
+              sx={{ width: isMobile ? "90%" : "90%" }}
             />
           <Tooltip title="Reset Filter">
             <IconButton

@@ -257,7 +257,8 @@ const AppointmentsTable = ({
         )}
         <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
           <IconButton
-            backgroundColor="#115E59"
+            color="#115E59"
+            disabled={row.original.is_paid || row.original.paid}
             onClick={() => updatePaymentStatus(row.original)}
           >
             <CurrencyRupeeIcon color="#115E59" />
