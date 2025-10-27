@@ -255,3 +255,4 @@ export const uploadPatientReportFiles = async ({
     .then((response) => response.data);
 
 };
+
