@@ -52,7 +52,7 @@ const AddDoctor = ({ open, setOpen }) => {
   const mutateAddDoctor = useMutation({
     mutationFn: () =>
       doctorState?.id
-        ? putUpdateDoctor(doctorState)
+        ? putUpdateDoctor({...doctorState, facility_id: 1})
         : postNewDoctor(doctorState),
     onSuccess: () => {
       const message = doctorState?.id
