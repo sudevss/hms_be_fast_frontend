@@ -97,13 +97,13 @@ function DoctorsPage() {
               gap: 1,
             }}
           >
-            <Tooltip title="Toggle Status" arrow>
+            {/* <Tooltip title="Toggle Status" arrow>
               <IconButton
                 onClick={() => alert("Toggle status for " + row.original.id)}
               >
                 <ToggleOffOutlinedIcon sx={{ color: "#115E59" }} />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip title="Edit Doctor" arrow>
               <IconButton
                 onClick={() => {

@@ -24,7 +24,7 @@ import PageLoader from "@pages/PageLoader";
 
 import {
   INITIAL_SHOW_ALERT,
-  TIME_SLOTS_HOURS_OPTIONS,
+  DOCTOR_SHEDULE_SLOTS_OPTIONS,
 } from "@data/staticData";
 import {
   useSheduleDoctor,
@@ -187,7 +187,7 @@ const SheduleDoctors = ({ open, setOpen }) => {
   };
 
   const getFilteredEndTimes = (startTime) =>
-    TIME_SLOTS_HOURS_OPTIONS.filter(
+    DOCTOR_SHEDULE_SLOTS_OPTIONS.filter(
       ({ value }) => convertTo24Hour(value) > convertTo24Hour(startTime)
     );
 
@@ -313,7 +313,7 @@ const SheduleDoctors = ({ open, setOpen }) => {
                     name="startTime"
                     value={startTime}
                     disabled={!isChecked}
-                    menuOptions={TIME_SLOTS_HOURS_OPTIONS}
+                    menuOptions={DOCTOR_SHEDULE_SLOTS_OPTIONS}
                     placeholderText="Start Time"
                     labelSx={compactLabelSx}
                     inputSx={compactInputSx}
