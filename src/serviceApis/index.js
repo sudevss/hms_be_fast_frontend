@@ -52,7 +52,7 @@ export const postNewDoctor = (payload) =>
 
 export const putUpdateDoctor = (payload) =>
   api
-    .put(`/doctors/${payload?.id}`, payload)
+    .put(`/doctors/${payload?.id}?facility_id=${payload?.facility_id}`, payload)
     .then((response) => response.data);
 
 export const getAllDoctorsDetails = async ({ facility_id }) => {
