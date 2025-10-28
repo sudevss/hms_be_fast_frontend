@@ -312,7 +312,7 @@ const AppointmentsTable = ({
     );
     const actionsCell = ({ row }) => (
       <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
-        {["Scheduled"].includes(tabName) && isDashboard && (
+        {["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
