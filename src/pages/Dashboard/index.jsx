@@ -279,6 +279,8 @@ function DashboardPage() {
       <AddOrEditBooking open={isBookingOpen} setOpen={setIsBookingOpen} />
 
       <Dialog
+      fullWidth
+      maxWidth="xl"
         open={isCheckinOpen}
         onClose={() => {
           setIsCheckinOpen(false);
@@ -286,7 +288,7 @@ function DashboardPage() {
         }}
         slotProps={{
           paper: {
-            sx: { width: { xs: "95%", md: "80vw" }, borderRadius: 2, p: 2 },
+            sx: { width: { xs: "95%", md: "80vw", }, borderRadius: 2, p: 2 },
           },
         }}
       >
