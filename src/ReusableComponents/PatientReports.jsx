@@ -230,11 +230,12 @@ const PatientReports = ({
                   <DownloadIcon />
                 </IconButton>
               </Tooltip>
+              {!reportObj?.upload_id && (
               <Tooltip title="Remove">
                 <IconButton color="error" onClick={handleRemove}>
                   <DeleteIcon />
                 </IconButton>
-              </Tooltip>
+              </Tooltip>)}
             </Box>
           </Box>
         ))}
