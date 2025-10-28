@@ -145,7 +145,6 @@ const PatientReports = ({
 
   const reportsData = queryGetPatientReports?.data || [];
 
-  console.log("reportsData", patientReportsObj);
 
   return (
     <Dialog

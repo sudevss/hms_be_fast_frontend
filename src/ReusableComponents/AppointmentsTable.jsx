@@ -203,7 +203,6 @@ const AppointmentsTable = ({
   const handleDelete = (row) => mutationDelete.mutate(row);
   const handleCheckin = (row) => mutationCheckin.mutate(row);
   const handleDiagnosis = (row) => {
-    console.log("row", row);
     if (row?.diagnosis_id) mutationGetDiagnosis.mutate(row);
     else {
       setPatientDiagnosis({
@@ -225,6 +224,7 @@ const AppointmentsTable = ({
   const columns = useMemo(() => {
     const paymentCell = ({ row }) => (
       <Box sx={{ display: "flex", justifyContent: "center" }}>
+        
         <Tooltip
           title={
             row.original.is_paid || row.original.paid ? "Paid" : "Not Paid"
@@ -312,7 +312,7 @@ const AppointmentsTable = ({
     );
     const actionsCell = ({ row }) => (
       <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
-        {!["Completed"].includes(tabName) && (
+        {["Scheduled"].includes(tabName) && isDashboard && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
@@ -322,7 +322,9 @@ const AppointmentsTable = ({
             </IconButton>
           </Tooltip>
         )}
+        {["Completed"].includes(tabName) && (
         <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+          
           <IconButton
             backgroundColor="#115E59"
             disabled={row.original.is_paid || row.original.paid}
@@ -332,7 +334,7 @@ const AppointmentsTable = ({
           >
             <CurrencyRupeeIcon color="#115E59" />
           </IconButton>
-        </Tooltip>
+        </Tooltip>)}
         {!["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
             <IconButton

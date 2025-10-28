@@ -48,7 +48,7 @@ const Sidebar = ({ mobileOpen, onClose }) => {
   ];
 
   const bottomItems = [
-    { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
+    // { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
     { icon: <LogOut size={18} />, label: "Logout", action: handleLogout },
   ];
 
