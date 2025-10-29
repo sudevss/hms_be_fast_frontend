@@ -32,6 +32,7 @@ import axios from "axios";
 import AlertSnackbar from "@components/AlertSnackbar";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { useShowAlert } from "@/stores/showAlertStore";
+import DialogMessage from "@components/DialogMessage";
 
 const PatientReports = ({
   open,
@@ -145,6 +146,20 @@ const PatientReports = ({
 
   const reportsData = queryGetPatientReports?.data || [];
 
+  if (!patientReportsObj?.diagnosis_id && patientReportsObj?.appointment_id) {
+    return (
+      <DialogMessage
+        messageType={open ? "Warning" : ""}
+        message="You can upload reports only after adding a diagnosis. Please add a diagnosis first."
+        setMessageType={() => setOpen(false)}
+        handleOnClose={() => {
+          setOpen(false);
+          onResetAlert();
+          setPatientReportObj("");
+        }}
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -231,11 +246,12 @@ const PatientReports = ({
                 </IconButton>
               </Tooltip>
               {!reportObj?.upload_id && (
-              <Tooltip title="Remove">
-                <IconButton color="error" onClick={handleRemove}>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>)}
+                <Tooltip title="Remove">
+                  <IconButton color="error" onClick={handleRemove}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </Box>
         ))}
@@ -295,13 +311,14 @@ const PatientReports = ({
       </DialogContent>
       <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
         {patientReportsObj?.diagnosis_id && (
-        <StyledButton
-          variant="contained"
-          disabled={mutationFileUpload.isPending || !files.length > 0}
-          onClick={handleUpload}
-        >
-          Upload All
-        </StyledButton>)}
+          <StyledButton
+            variant="contained"
+            disabled={mutationFileUpload.isPending || !files.length > 0}
+            onClick={handleUpload}
+          >
+            Upload All
+          </StyledButton>
+        )}
       </DialogActions>
       <AlertSnackbar
         message={showAlert.message}
