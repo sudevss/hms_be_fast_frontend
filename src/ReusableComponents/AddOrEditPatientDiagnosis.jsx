@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
 import PageLoader from "@pages/PageLoader";
 import DatePickerComponent from "@components/DatePicker";
 import AlertSnackbar from "@components/AlertSnackbar";
-import { usePatientDiagnosis } from "@/stores/patientStore";
+import { usePatient, usePatientDiagnosis } from "@/stores/patientStore";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { useShowAlert } from "@/stores/showAlertStore";
 import dayjs from "dayjs";
@@ -50,6 +50,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     diagnosis_id,
     setPatientDiagnosis,
   } = usePatientDiagnosis();
+
+
 
 
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
@@ -109,7 +111,6 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
 
   useEffect(() => {
     onResetAlert();
-    onReset();
   }, [open, setOpen]);
   
 
