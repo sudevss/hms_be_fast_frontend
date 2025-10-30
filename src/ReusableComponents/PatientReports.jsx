@@ -53,6 +53,8 @@ const PatientReports = ({
     enabled: patientReportsObj?.patient_id ? true : false,
   });
 
+  console.log(patientReportsObj)
+
   const handleDownload = (response) => {
     if (!response) return;
 
