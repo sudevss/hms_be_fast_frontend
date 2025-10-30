@@ -109,7 +109,16 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
 
   useEffect(() => {
     onResetAlert();
-  }, [open]);
+    onReset();
+  }, [open, setOpen]);
+  
+  useEffect(() => {
+    // ✅ This runs when the component mounts or dependencies change
+    return () => {
+      onResetAlert();
+      onReset();
+    };
+  }, []); // empty dependency → runs once on mount/unmount
 
   return (
     <Dialog
@@ -198,9 +207,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
             }
             LabelSxProps={{ fontWeight: 600 }}
           />
-          
         </Stack>
-         <Stack flexDirection="row" gap={2}>
+        <Stack flexDirection="row" gap={2}>
           <TextInputWithLabel
             type="text"
             name="height"
@@ -256,7 +264,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           <Box>
             <DatePickerComponent
               name="diagnosis_date"
-              value={diagnosis_date }
+              value={diagnosis_date}
               required={true}
               showInputLabel={true}
               disabled
