@@ -58,7 +58,7 @@ export const usePatient = create((set) => ({
 
 export const usePatientDiagnosis = create((set) => ({
   ...initialStatePatientDiagnosis,
-  onReset: () => set(() => initialState),
+  onReset: () => set(() => initialStatePatientDiagnosis),
   setPatientDiagnosis: (obj) => set((state) => ({ ...state, ...obj })),
   onChangePatientDiagnosis: (name, value) =>
     set((state) => ({ ...state, [name]: value })),

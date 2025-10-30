@@ -51,7 +51,6 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     setPatientDiagnosis,
   } = usePatientDiagnosis();
 
-  const patientDiagnosisObj = usePatientDiagnosis();
 
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
 
@@ -60,6 +59,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
   const mutationAddOrUpdatePatientDiagnosis = useMutation({
     mutationFn: (payload) => putAddPatientDiagnosis(payload),
     onSuccess: (res) => {
+      onReset();
       setShowAlert({
         show: true,
         message: `Patient Diagnosis update has successfully`,
@@ -71,7 +71,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
         refetchActive: true,
         refetchInactive: false,
       });
-      onReset();
+     
       setOpen(false);
     },
     onError: (error) => {
@@ -112,13 +112,6 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
     onReset();
   }, [open, setOpen]);
   
-  useEffect(() => {
-    // ✅ This runs when the component mounts or dependencies change
-    return () => {
-      onResetAlert();
-      onReset();
-    };
-  }, []); // empty dependency → runs once on mount/unmount
 
   return (
     <Dialog
