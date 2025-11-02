@@ -1,23 +1,13 @@
 import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
-  IconButton,
-  Stack,
-  Tooltip,
-} from "@mui/material";
+import { Box, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Stack, Tooltip } from "@mui/material";
 
 import {
   deleteAppoinmentBooking,
   getAppointmentsAndBookings,
   getPatientDiagnosis,
   postCheckinAppoinmentBooking,
+  getAppointmentDetailsById,
   postUpdateAppointmentStatus,
   postUpdatePaymentStatus,
 } from "@/serviceApis";
@@ -34,6 +24,7 @@ import { BiSolidReport } from "react-icons/bi";
 import ToggleOffOutlinedIcon from "@mui/icons-material/ToggleOffOutlined";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
@@ -43,6 +34,8 @@ import { convertUTCClockToIST, dayjs } from "@utils/dateUtils";
 import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import StyledButton from "@components/StyledButton";
 import EditAttributesIcon from "@mui/icons-material/EditAttributes";
+import ViewAppointmentDetails from "@/ReusableComponents/AppointmentDetailsDialog";
+
 
 const AppointmentsTable = ({
   setIsCheckinOpen,
@@ -63,6 +56,9 @@ const AppointmentsTable = ({
   const [openDiagnosis, setOpenDiagnosis] = useState(false);
   const [openReports, setOpenReports] = useState(false);
   const [patientReportsObj, setPatientReportObj] = useState("");
+  const [openViewDetails, setOpenViewDetails] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   const [paymentObj, setPaymentObj] = useState({
     appointment_id: "",
     facility_id: 1,
@@ -199,6 +195,22 @@ const AppointmentsTable = ({
     },
   });
 
+  const mutationGetAppointmentDetails = useMutation({
+  mutationFn: (payload) => getAppointmentDetailsById(payload),
+  onSuccess: (data) => {
+    const normalized = Array.isArray(data) ? data?.[0] : data;
+    setSelectedAppointment(normalized);
+    setOpenViewDetails(true);
+  },
+  onError: () => {
+    setShowAlert({
+      show: true,
+      message: "Failed to fetch appointment details",
+      status: "error",
+    });
+  },
+});
+
   // 🔹 Table Action Helpers
   const handleDelete = (row) => mutationDelete.mutate(row);
   const handleCheckin = (row) => mutationCheckin.mutate(row);
@@ -312,6 +324,20 @@ const AppointmentsTable = ({
     );
     const actionsCell = ({ row }) => (
       <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
+         <Tooltip placement="top" title="View Appointment" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => {
+                mutationGetAppointmentDetails.mutate({
+                  appointment_id: row.original.appointment_id,
+                  facility_id: row.original.facility_id,
+                });
+              }}
+            >
+            <VisibilityIcon color="#115E59" />
+            </IconButton>
+          </Tooltip>
+
         {["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
             <IconButton
@@ -322,19 +348,22 @@ const AppointmentsTable = ({
             </IconButton>
           </Tooltip>
         )}
-        {["Completed"].includes(tabName) && (
-        <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
-          
-          <IconButton
-            backgroundColor="#115E59"
-            disabled={row.original.is_paid || row.original.paid}
-            onClick={() => {
-              updatePaymentStatus(row.original);
-            }}
-          >
-            <CurrencyRupeeIcon color="#115E59" />
-          </IconButton>
-        </Tooltip>)}
+
+        {["Completed"].includes(tabName) && (<>
+      <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+        <IconButton
+          backgroundColor="#115E59"
+          disabled={row.original.is_paid || row.original.paid}
+          onClick={() => {
+            updatePaymentStatus(row.original);
+          }}
+        >
+          <CurrencyRupeeIcon color="#115E59" />
+        </IconButton>
+      </Tooltip>
+    </>
+  )}
+
         {!["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
             <IconButton
@@ -505,6 +534,14 @@ const AppointmentsTable = ({
           </StyledButton>
         </DialogActions>
       </Dialog>
+
+      <ViewAppointmentDetails
+        open={openViewDetails}
+        onClose={() => setOpenViewDetails(false)}
+        appointment={selectedAppointment}
+        showDiagnosis={tabName === "Completed"}
+      />
+
 
       {/* Modals */}
       <AddOrEditPatientDiagnosis
