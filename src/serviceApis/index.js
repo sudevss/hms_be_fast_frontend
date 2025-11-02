@@ -154,8 +154,19 @@ export const postCheckinPayment = (payload) =>
       payload
     )
     .then((response) =>  response.data);
-    
 
+export const getAppointmentDetailsById = async ({ appointment_id, facility_id }) => {
+  try {
+    const response = await api.get(
+      `/appointments/${appointment_id}?facility_id=${facility_id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching appointment details:", error);
+    throw error;
+  }
+};
+    
 export const putAddPatientDiagnosis = (payload) =>
   api
     .put(`${`/patient_diagnosis/`}`, payload)
