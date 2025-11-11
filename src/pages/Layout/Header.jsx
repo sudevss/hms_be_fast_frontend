@@ -2,7 +2,9 @@ import React from "react";
 import { Box, IconButton, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 
-const Header = ({ onMenuClick }) => {
+const EXPANDED_WIDTH = "185px";
+const COLLAPSED_WIDTH = "60px";
+const Header = ({ onMenuClick, isSidebarCollapsed = false }) => {
   return (
     <Box
       component="header"
@@ -10,11 +12,13 @@ const Header = ({ onMenuClick }) => {
       sx={{
         position: "fixed",
         top: 0,
-        left: { xs: 0, md: "7rem" }, // same width as sidebar
+        left: { xs: 0, md: isSidebarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH },
+        width: { xs: "100%", md: `calc(100% - ${isSidebarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH})` },
         right: 0,
         height: { xs: "2rem", sm: "64px", md: "3.5rem" },
         zIndex: 1100,
         borderColor: "#E0E0E0",
+        transition: "all 0.3s ease-in-out",
       }}
     >
       {/* Left: Menu Button for Mobile */}

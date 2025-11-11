@@ -20,7 +20,7 @@ const PatientHistoryTable = ({ open, setOpen }) => {
   return (
     <Dialog
       open={open || false}
-      onClose={handleClose}
+      // onClose={handleClose}
       fullWidth
       maxWidth="lg"
       aria-labelledby="patient-history-title"

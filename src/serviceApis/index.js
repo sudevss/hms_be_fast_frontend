@@ -129,6 +129,18 @@ export const getPaientDetailsByPhone = async ({
     )
     .then((response) => response.data);
 
+export const getPatientDetailsById = async ({ patient_id, facility_id }) => {
+  try {
+    const response = await api.get(
+      `/patients/${patient_id}?facility_id=${facility_id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching patient details:", error);
+    throw error;
+  }
+};
+
 export const getPaientsDetails = async ({ facility_id }) =>
   api
     .get(`${`/patients/?facility_id=${facility_id}`}`)
@@ -266,7 +278,3 @@ export const uploadPatientReportFiles = async ({
     .then((response) => response.data);
 
 };
-
-
-
-
