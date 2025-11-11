@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Chip,
@@ -18,6 +18,11 @@ import StyledButton from "@/components/StyledButton";
 import { dayjs } from "@/utils/dateUtils";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientDiagnosis } from "@/serviceApis";
+import { getPatientDetailsById } from "@/serviceApis";
+import { getPatientReports } from "@/serviceApis";
+import { getPatientReportFileDownload } from "@/serviceApis";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center" };
 const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center" };
@@ -40,6 +45,7 @@ const Field = ({ label, value }) => (
 // No custom Section; we use MUI Accordion for collapsible sections
 
 const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = true }) => {
+
   const normalized = useMemo(() => {
     if (!appointment) return null;
     const a = appointment;
@@ -79,14 +85,162 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
     select: (arr) => arr?.[0],
   });
 
+  const { data: patientDetails } = useQuery({
+    queryKey: [
+      "queryGetPatientDetails",
+      normalized?.patient_id,
+      normalized?.facility_id,
+    ],
+    queryFn: () =>
+      getPatientDetailsById({
+        patient_id: normalized.patient_id,
+        facility_id: normalized.facility_id,
+      }),
+    enabled:
+      open && Boolean(normalized?.patient_id && normalized?.facility_id),
+  });
+
+  const { data: reports = [], isLoading: isReportsLoading } = useQuery({
+    queryKey: [
+      "queryGetPatientReports",
+      normalized?.patient_id,
+      normalized?.appointment_id,
+      normalized?.facility_id,
+    ],
+    queryFn: () =>
+      getPatientReports({
+        patient_id: normalized.patient_id,
+        appointment_id: normalized.appointment_id,
+        facility_id: normalized.facility_id,
+      }),
+    enabled: showDiagnosis && open && Boolean(normalized?.patient_id && normalized?.appointment_id),
+  });
+
+  const ReportThumb = ({ report }) => {
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [dataUrl, setDataUrl] = useState(undefined);
+
+    const { data: blob } = useQuery({
+      queryKey: [
+        "queryGetPatientReportFile",
+        normalized?.patient_id,
+        normalized?.facility_id,
+        report?.upload_id,
+      ],
+      queryFn: () =>
+        getPatientReportFileDownload({
+          patient_id: normalized.patient_id,
+          facility_id: normalized.facility_id,
+          upload_id: report.upload_id,
+        }),
+      enabled: open && Boolean(report?.upload_id),
+    });
+
+    // Convert blob to data URL so the thumbnail/preview keeps working even after dialogs mount/unmount
+    useEffect(() => {
+      if (!blob) {
+        setDataUrl(undefined);
+        return;
+      }
+
+      let cancelled = false;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (!cancelled) setDataUrl(reader.result);
+      };
+      reader.onerror = () => {
+        if (!cancelled) setDataUrl(undefined);
+      };
+      reader.readAsDataURL(blob);
+
+      return () => {
+        cancelled = true;
+        // reader.abort may not be available in all browsers but call if present
+        try { reader.abort && reader.abort(); } catch (e) {}
+      };
+    }, [blob]);
+
+    const handleView = () => {
+      if (!dataUrl) return;
+      setPreviewOpen(true);
+    };
+
+    const handleClosePreview = () => {
+      setPreviewOpen(false);
+    };
+
+    return (
+      <>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+          <Box sx={{
+            width: 72,
+            height: 72,
+            borderRadius: 1,
+            overflow: "hidden",
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#fafafa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            {dataUrl ? (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <img src={dataUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <Box sx={{ fontSize: 12, color: "#6b7280" }}>Preview</Box>
+            )}
+          </Box>
+          <IconButton size="small" onClick={handleView} disabled={!dataUrl}>
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Dialog
+          open={previewOpen}
+          // onClose={handleClosePreview}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 700 }}>Report Preview</DialogTitle>
+          <DialogContent>
+            <Box sx={{ 
+              width: "100%", 
+              display: "flex", 
+              justifyContent: "center", 
+              alignItems: "center",
+              minHeight: "60vh"
+            }}>
+              {dataUrl && (
+                <img
+                  src={dataUrl}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "70vh",
+                    objectFit: "contain"
+                  }}
+                  alt="Report Preview"
+                />
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <StyledButton onClick={handleClosePreview}>Close</StyledButton>
+          </DialogActions>
+        </Dialog>
+      </>
+    );
+  };
+
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} // onClose={onClose}
+ maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, textAlign: "center" }}>
         Appointment
       </DialogTitle>
       <DialogContent>
         {normalized && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Appointment Details</Typography>
@@ -121,6 +275,31 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
               </AccordionDetails>
             </Accordion>
 
+            <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Patient Details</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {!normalized?.patient_id ? (
+                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No patient details available</Typography>
+                ) : !patientDetails ? (
+                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading patient details...</Typography>
+                ) : (
+                  <Grid container spacing={3}>
+                <Grid item xs={6} md={3}><Field label="Patient ID" value={patientDetails.id || patientDetails.patient_id} /></Grid>
+                <Grid item xs={6} md={3}><Field label="First Name" value={patientDetails.firstname} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Last Name" value={patientDetails.lastname} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Age" value={patientDetails.age} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Date of Birth" value={patientDetails.dob ? dayjs(patientDetails.dob).format("DD-MM-YYYY") : "-"} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Contact Number" value={patientDetails.contact_number} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Gender" value={patientDetails.gender} /></Grid>
+                <Grid item xs={6} md={3}><Field label="Address" value={patientDetails.address} /></Grid>
+                <Grid item xs={6} md={3}><Field label="ABDM ABHA ID" value={patientDetails.ABDM_ABHA_id} /></Grid>
+                  </Grid>
+                )}
+              </AccordionDetails>
+            </Accordion>
+
             {showDiagnosis && (
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -143,6 +322,29 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                 <Grid item xs={6} md={3}><Field label="chief complaint" value={diagnosis?.chief_complaint} /></Grid>
                 <Grid item xs={6} md={3}><Field label="assessment notes" value={diagnosis?.assessment_notes} /></Grid>
               </Grid>
+              </AccordionDetails>
+            </Accordion>
+            )}
+
+            {showDiagnosis && (
+            <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Reports</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {isReportsLoading ? (
+                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading reports…</Typography>
+                ) : reports && reports.length > 0 ? (
+                  <Grid container spacing={2}>
+                    {reports.map((rep) => (
+                      <Grid item key={rep.upload_id} xs={4} md={2}>
+                        <ReportThumb report={rep} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No reports found</Typography>
+                )}
               </AccordionDetails>
             </Accordion>
             )}

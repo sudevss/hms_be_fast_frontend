@@ -10,8 +10,10 @@ const Layout = () => {
   const userObj = userLoginDetails.getState();
   const { access_token } = userObj || {};
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const SIDEBAR_WIDTH = "6.1rem"; // sidebar width for desktop
+  const EXPANDED_WIDTH = "185px";
+  const COLLAPSED_WIDTH = "60px";
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -32,10 +34,7 @@ const Layout = () => {
           <Sidebar
             mobileOpen={mobileOpen}
             onClose={handleDrawerToggle}
-            sx={{
-              width: { md: SIDEBAR_WIDTH, xs: "0" },
-              flexShrink: 0,
-            }}
+            onCollapse={setIsCollapsed}
           />
         )}
 
@@ -47,25 +46,27 @@ const Layout = () => {
             flexDirection: "column",
             height: "100vh",
             width: "100%",
-            ml: { md: access_token ? SIDEBAR_WIDTH : 0 },
-            transition: "margin-left 0.3s ease-in-out",
+            ml: { 
+              xs: 0,
+              md: access_token ? (isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH) : 0 
+            },
+            transition: "all 0.3s ease-in-out",
           }}
         >
           {/* Header */}
-          {access_token && <Header onMenuClick={handleDrawerToggle} />}
+          {access_token && <Header onMenuClick={handleDrawerToggle} isSidebarCollapsed={isCollapsed} />}
 
           {/* Main Content (scrollable area) */}
           <Box
             component="main"
             sx={{
               flex: 1,
-              maxHeight: access_token ? "calc(100vh - 3.5rem - 60px)" : "100vh",  
+              maxHeight: access_token ? "calc(100vh - 3.8 - 60px)" : "100vh",  
               overflowY: "auto",
-              p: { xs: 2, sm: 2, md: 1 },
-              pt: { xs: 2, sm: 2, md: 2 },
-              pb:0,
-              mt: access_token ? "0.5rem" : 0, // header height offset
-              // mb: "60px", // footer height offset
+              p: { xs: 2, sm: 2, md: 2},
+              pt: { xs: 3, sm: 3, md: 3},
+              pb: 0,
+              mt: access_token ? "4rem" : 0, // increased top margin to move content down
               backgroundColor: "#f9fafb",
             }}
           >
@@ -77,9 +78,15 @@ const Layout = () => {
             sx={{
               position: "fixed",
               bottom: 0,
-              left: access_token ? { md: SIDEBAR_WIDTH, xs: 0 } : 0,
+              left: { 
+                xs: 0,
+                md: access_token ? (isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH) : 0 
+              },
               width: access_token
-                ? { md: `calc(100% - ${SIDEBAR_WIDTH})`, xs: "100%" }
+                ? { 
+                    xs: "100%",
+                    md: `calc(100% - ${isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH})`
+                  }
                 : "100%",
               backgroundColor: "#fff",
               borderTop: "1px solid #e5e7eb",
@@ -91,7 +98,7 @@ const Layout = () => {
               px: 2,
             }}
           >
-            <Footer />
+            <Footer isSidebarCollapsed={isCollapsed} />
           </Box>
         </Box>
       </Box>

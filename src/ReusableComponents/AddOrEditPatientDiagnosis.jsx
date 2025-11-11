@@ -117,11 +117,11 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
   return (
     <Dialog
       open={open || false}
-      onClose={() => {
-        onReset();
-        onResetAlert();
-        setOpen(false);
-      }}
+      // onClose={() => {
+      //   onReset();
+      //   onResetAlert();
+      //   setOpen(false);
+      // }}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       sx={{

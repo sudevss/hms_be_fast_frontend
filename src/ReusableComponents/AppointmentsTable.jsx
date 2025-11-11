@@ -25,6 +25,7 @@ import ToggleOffOutlinedIcon from "@mui/icons-material/ToggleOffOutlined";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import CloseIcon from "@mui/icons-material/Close";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
@@ -486,7 +487,7 @@ const AppointmentsTable = ({
       />
       <Dialog
         open={paymentObj?.open}
-        onClose={() => setPaymentObj({ appointment_id: "", open: false })}
+        // onClose={() => setPaymentObj({ appointment_id: "", open: false })}
       >
         <DialogTitle
           sx={{
@@ -496,6 +497,13 @@ const AppointmentsTable = ({
         >
           Update Payment
         </DialogTitle>
+        <IconButton
+          aria-label="close"
+          onClick={() => setPaymentObj({ appointment_id: "", open: false })}
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
         <DialogContent>
           <FormControlLabel
             control={
