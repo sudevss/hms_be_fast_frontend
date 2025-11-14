@@ -1,6 +1,7 @@
 // src/pages/Layout/PrivateRoute.jsx
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { userLoginDetails } from "@/stores/LoginStore";
+//import Layout from "./Layout";
 
 export function PrivateRoute() {
   const location = useLocation();
@@ -20,6 +21,13 @@ export function PrivateRoute() {
 
   // If logged in → just render the nested routes
   return <Outlet />;
+
+  //return (
+    //<Layout>
+     // <Outlet />
+   // </Layout>
+  //);
+
 }
 
 export default PrivateRoute;
