@@ -5,6 +5,8 @@ import {
   Select,
   Stack,
   useTheme,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 import PropTypes from "prop-types";
 
@@ -27,6 +29,9 @@ function SelectWithLabel({
   minWidth = 240,
   required,
   error,
+  searchable = false,
+  searchPlaceholder = "",
+  searchProps = {},
   ...rest
 }) {
   const theme = useTheme();
@@ -110,70 +115,105 @@ function SelectWithLabel({
         {label}
       </InputLabel>
 
-      {/* Select Field */}
-      <Select
-        {...rest}
-        id={`menu-${name}`}
-        name={name}
-        value={value}
-        onChange={handleChange}
-        displayEmpty
-        sx={{
-          borderRadius: "8px",
-          backgroundColor:
-            theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
-          height: 42,
-          fontWeight: 500,
-          fontSize: "14px",
-          color: theme.palette.text.primary,
-          "& .MuiSelect-select": {
-            padding: "8px 12px",
-            display: "flex",
-            alignItems: "center",
-          },
-          "& fieldset": {
-            borderColor: error
-              ? theme.palette.error.main
-              : theme.palette.grey[400],
-          },
-          "&:hover fieldset": {
-            borderColor: theme.palette.primary.main,
-          },
-          "&.Mui-focused fieldset": {
-            borderColor: theme.palette.primary.main,
-            borderWidth: "2px",
-          },
-          "& .placeholder-text": {
-            color: theme.palette.text.secondary,
-            opacity: 0.7,
-            fontWeight: 400,
-          },
-          ...SelectSxProps,
-        }}
-        MenuProps={{
-          PaperProps: {
+      {/* Select Field - renders Autocomplete when searchable=true */}
+      {searchable ? (
+        <Autocomplete
+          id={`search-${name}`}
+          options={menuOptions || []}
+          getOptionLabel={(opt) => (opt ? opt.label || "" : "")}
+          value={menuOptions?.find((o) => o.value === value) ?? null}
+          onChange={(e, newVal) => onChangeHandler(newVal ? newVal.value : "")}
+          isOptionEqualToValue={(option, val) => option.value === val.value}
+          fullWidth
+          size="small"
+          disableClearable={false}
+          clearOnEscape
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder={searchPlaceholder || placeholderText}
+              size="small"
+              sx={{
+                borderRadius: "8px",
+                backgroundColor:
+                  theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+                fontWeight: 900,
+                fontSize: "14px",
+                color: theme.palette.text.primary,
+                ...SelectSxProps,
+                "& .MuiOutlinedInput-input": {
+                  padding: "8px 12px",
+                },
+              }}
+            />
+          )}
+          {...searchProps}
+        />
+      ) : (
+        <Select
+          {...rest}
+          id={`menu-${name}`}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          displayEmpty
+          sx={{
+            borderRadius: "8px",
+            backgroundColor:
+              theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+            height: 42,
+            fontWeight: 500,
+            fontSize: "14px",
+            color: theme.palette.text.primary,
+            "& .MuiSelect-select": {
+              padding: "8px 12px",
+              display: "flex",
+              alignItems: "center",
+            },
+            "& fieldset": {
+              borderColor: error
+                ? theme.palette.error.main
+                : theme.palette.grey[400],
+            },
+            "&:hover fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+              borderWidth: "2px",
+            },
+            "& .placeholder-text": {
+              color: theme.palette.text.secondary,
+              opacity: 0.7,
+              fontWeight: 400,
+            },
+            ...SelectSxProps,
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                borderRadius: "8px",
+                maxHeight: 260,
+                boxShadow:
+                  "0px 1px 5px rgba(80,9,181,0.1), 0px 8px 24px rgba(43,27,73,0.15)",
+              },
+            },
             sx: {
-              borderRadius: "8px",
-              maxHeight: 260,
-              boxShadow:
-                "0px 1px 5px rgba(80,9,181,0.1), 0px 8px 24px rgba(43,27,73,0.15)",
+              "& .MuiList-root": {
+                maxWidth: "100%",
+              },
             },
-          },
-          sx: {
-            "& .MuiList-root": {
-              maxWidth: "100%",
-            },
-          },
-        }}
-        renderValue={(selected) => {
-          if (!selected && placeholderText) {
-            return <span className="placeholder-text">{placeholderText}</span>;
-          }
-          return renderValue ? renderValue(selected) : selected;
-        }}
-      >
-        {MenuOptionElements}
-      </Select>
+          }}
+          renderValue={(selected) => {
+            if (!selected && placeholderText) {
+              return <span className="placeholder-text">{placeholderText}</span>;
+            }
+            return renderValue ? renderValue(selected) : selected;
+          }}
+        >
+          {MenuOptionElements}
+        </Select>
+      )}
 
       {/* Helper Text */}
       {helperText && (
@@ -223,6 +263,9 @@ SelectWithLabel.propTypes = {
   showOptionsNotAvailableStatus: PropTypes.bool,
   width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   minWidth: PropTypes.number,
+  searchable: PropTypes.bool,
+  searchPlaceholder: PropTypes.string,
+  searchProps: PropTypes.object,
   required: PropTypes.bool,
   error: PropTypes.bool,
 };
@@ -240,6 +283,9 @@ SelectWithLabel.defaultProps = {
   showOptionsNotAvailableStatus: true,
   width: "100%",
   minWidth: 240,
+  searchable: false,
+  searchPlaceholder: "",
+  searchProps: {},
   required: false,
   error: false,
 };

@@ -393,6 +393,8 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           label="Doctor"
           width="100%"
           placeholderText="Select Doctor"
+          searchable
+          searchPlaceholder="Search doctor"
           onChangeHandler={(val) => {
             const doctor_id = doctorMenuOptions?.find(
               ({ label }) => label === val
@@ -480,6 +482,8 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           width="100%"
           placeholderText="Select Payment Method"
           menuOptions={PAYMENT_METHODS}
+          searchable
+          searchPlaceholder="Search payment method"
           minWidth={210}
           onChangeHandler={(value) => onChangeBooking("payment_method", value)}
           // renderValue={(value) => onChangeBooking("gender", value)}
