@@ -117,7 +117,7 @@ const AddOrEditPatient = ({ open, setOpen }) => {
   return (
     <Dialog
       open={open || false}
-      // onClose={handleClose}
+      onClose={handleClose}
       aria-labelledby="edit-patient-dialog"
       sx={{
         maxHeight: "calc(100% - 100px)",

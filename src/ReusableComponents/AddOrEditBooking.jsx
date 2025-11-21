@@ -185,12 +185,12 @@ const AddOrEditBooking = ({ open, setOpen }) => {
   return (
     <Dialog
       open={open || false}
-      // onClose={() => {
-      //   onReset();
-      //   setSelectPaientName({});
-      //   onResetAlert();
-      //   setOpen(false);
-      // }}
+      onClose={() => {
+        onReset();
+        setSelectPaientName({});
+        onResetAlert();
+        setOpen(false);
+      }}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       sx={{

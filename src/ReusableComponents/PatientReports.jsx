@@ -167,11 +167,11 @@ const PatientReports = ({
     <Dialog
       fullWidth
       open={open || false}
-      // onClose={() => {
-      //   setOpen(false);
-      //   onResetAlert();
-      //   setPatientReportObj("");
-      // }}
+      onClose={() => {
+        setOpen(false);
+        onResetAlert();
+        setPatientReportObj("");
+      }}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       sx={{

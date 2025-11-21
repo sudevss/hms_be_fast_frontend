@@ -282,10 +282,10 @@ function DashboardPage() {
       fullWidth
       maxWidth="xl"
         open={isCheckinOpen}
-        // onClose={() => {
-        //   setIsCheckinOpen(false);
-        //   onResetAlert();
-        // }}
+        onClose={() => {
+          setIsCheckinOpen(false);
+          onResetAlert();
+        }}
         slotProps={{
           paper: {
             sx: { width: { xs: "95%", md: "80vw", }, borderRadius: 2, p: 2 },

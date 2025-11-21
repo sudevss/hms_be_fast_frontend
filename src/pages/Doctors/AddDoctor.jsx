@@ -96,7 +96,7 @@ const AddDoctor = ({ open, setOpen }) => {
     <>
       <Dialog
         open={open || false}
-        // onClose={handleClose}
+        onClose={handleClose}
         fullWidth
         maxWidth="sm"
         sx={{
