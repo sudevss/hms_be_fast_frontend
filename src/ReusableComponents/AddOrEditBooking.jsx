@@ -14,8 +14,8 @@ import {
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import StyledButton from "@components/StyledButton";
-import TextInputWithLabel from "@components/Inputs/TextInputWithLabel";
-import SelectWithLabel from "@components/Inputs/SelectWithLabel";
+import TextInputWithLabel from "@components/inputs/TextInputWithLabel";
+import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import {
   GENDER_DATA,
   INITIAL_SHOW_ALERT,
@@ -24,7 +24,7 @@ import {
   TOKEN_TYPES,
 } from "@data/staticData";
 import { bookingRequiredFileds, useBooking } from "@/stores/bookingStore";
-import TextAreaInputWithLabel from "@components/Inputs/TextAreaInputWithLabel";
+import TextAreaInputWithLabel from "@components/inputs/TextAreaInputWithLabel";
 import {
   getAllDoctorsDetails,
   getPaientDetailsByPhone,
@@ -343,6 +343,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
             <SelectWithLabel
               type="text"
               name="gender"
+              fullWidth
               value={gender}
               label="Gender"
               width="100%"
@@ -385,6 +386,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         )}
         <SelectWithLabel
           type="text"
+          fullWidth
           name="doctorName"
           value={doctorName}
           menuOptions={doctorMenuOptions}
@@ -417,6 +419,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           </Box>
           <SelectWithLabel
             type="text"
+            fullWidth
             disabled={!AppointmentDate}
             name="AppointmentTime"
             value={AppointmentTime}
@@ -456,6 +459,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
 
         <SelectWithLabel
           type="text"
+          fullWidth
           name="AppointmentMode"
           value={AppointmentMode}
           label="Token Type"
@@ -469,6 +473,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         />
         <SelectWithLabel
           type="text"
+          fullWidth
           name="payment_method"
           value={payment_method}
           label="Payment Method"

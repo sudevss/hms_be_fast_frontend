@@ -1,21 +1,27 @@
 import {
-  Heart,
-  Search,
-  Calendar,
-  Users,
-  UserCog,
-  Settings,
-  LogOut,
-  LayoutGrid,
-  Clock,
-  Check,
+  Box,
+  IconButton,
+  Stack,
+  Typography,
+  Radio,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
+  Collapse,
+} from "@mui/material";
+import {
+  ChevronLeft,
+  ChevronRight,
+  // RestartAlt,
 } from "lucide-react";
-import { Button, IconButton, Radio } from "@mui/material";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { useState } from "react";
 import { useDashboardStore } from "@/stores/dashboardStore";
-import SearchTextInput from "@components/Inputs/SearchTextInput";
+import SearchTextInput from "@components/inputs/SearchTextInput";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
-function DoctorsSection({ filteredDoctors }) {
+function DoctorsSection({ filteredDoctors = [] }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const {
     setdoctor_id,
     doctor_id: doctorId,
@@ -23,86 +29,216 @@ function DoctorsSection({ filteredDoctors }) {
     setDoctorSearch,
   } = useDashboardStore();
 
+
+  const handleReset = () => {
+    setDoctorSearch("");
+    setdoctor_id("");
+  };
+
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-lg font-bold">Doctors</span>
-      </div>
-      <div className="relative mb-4 w-[100%] flex flex-row ">
-        <SearchTextInput
-          name="Search"
-          label=""
-          placeholder="Search..."
-          value={doctorSearch}
-          onChange={(value) => setDoctorSearch(value)}
-          fullWidth
-        />
-        {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search doctors..."
-          value={doctorSearch}
-          onChange={(e) => setDoctorSearch(e.target.value)}
-          className="pl-10 pr-3 py-1.5 w-full rounded-lg border border-gray-300 text-sm"
-        /> */}
+    <Box
+      sx={{
+        width: {
+          //  xs: "100%", // Mobile phones (0px - 599px)
+          sm: "100vw", // Small tablets (600px - 899px)
+          md: "65%", // Tablets / small laptops (900px - 1199px)
+          lg: "65%", // Desktops (1200px - 1535px)
+          xl: "65%",
+        },
+        // width: expanded ? { xs: "100%", md: "25vw" } : "25vw",
+        transition: "width 0.35s ease-in-out",
+        backgroundColor: "#fff",
+        // borderLeft: "1px solid #e5e7eb",
+        // borderRadius: expanded ? "0" : "8px 0 0 8px",
+        height: "100%",
+        display: "flex",
+        // width: "90vw",
+        flexDirection: "column",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Expand/Collapse Toggle */}
+      {/* <Tooltip title={expanded ? "Collapse" : "Expand"} placement="left">
         <IconButton
-          onClick={() => {
-            setDoctorSearch("");
-            setdoctor_id("");
+          onClick={() => setExpanded(!expanded)}
+          sx={{
+            position: "absolute",
+            left: expanded ? -20 : "auto",
+            right: expanded ? "auto" : -20,
+            top: 10,
+            backgroundColor: theme.palette.primary.main,
+            color: "#fff",
+            "&:hover": { backgroundColor: theme.palette.primary.dark },
+            transition: "all 0.3s ease",
+            zIndex: 2,
+          }}
+          size="small"
+        >
+          {expanded ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </IconButton>
+      </Tooltip> */}
+
+      {/* Collapsible Content */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          p: 1,
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          textAlign="center"
+          justifyContent="space-between"
+          sx={{ mb: 1 }}
+        >
+          {/* Search Box */}
+            <SearchTextInput
+              name="doctorSearch"
+              placeholder="Search doctors..."
+              value={doctorSearch}
+              onChange={(val) => setDoctorSearch(val)}
+              // fullWidth
+              sx={{ width: isMobile ? "90%" : "90%" }}
+            />
+          <Tooltip title="Reset Filter">
+            <IconButton
+              size="small"
+              onClick={handleReset}
+              sx={{
+                color: theme.palette.grey[700],
+                "&:hover": { backgroundColor: theme.palette.action.hover },
+              }}
+            >
+              <RestartAltIcon  />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        {/* Doctor List */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            pr: 0.5,
+            "&::-webkit-scrollbar": { width: "6px" },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#ccc",
+              borderRadius: "6px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": { backgroundColor: "#999" },
           }}
         >
-          <RestartAltIcon />
-        </IconButton>
-      </div>
-
-      <div className="space-y-2">
-        {filteredDoctors.map(
-          (
-            {
-              doctor_id,
-              name,
-              specialization,
-              total_slots,
-              available_slots,
-              status,
-            },
-            index
-          ) => (
-            <div
-              key={index}
-              className="flex justify-between items-center p-2 rounded hover:bg-gray-50"
+          {filteredDoctors.length === 0 ? (
+            <Typography
+              variant="body2"
+              textAlign="center"
+              color="text.secondary"
+              sx={{ mt: 2 }}
             >
-              <div className="flex items-center space-x-2">
-                <Radio
-                  checked={doctorId === doctor_id}
+              No doctors found
+            </Typography>
+          ) : (
+            filteredDoctors.map(
+              (
+                {
+                  doctor_id,
+                  name,
+                  specialization,
+                  total_slots,
+                  available_slots,
+                  status,
+                },
+                index
+              ) => (
+                <Stack
+                  key={index}
+                  direction="row"
+                  alignItems="flex-start"
+                  justifyContent="space-between"
+                  sx={{
+                    pr: 1.2,
+                    mb: 1,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                    backgroundColor:
+                      doctorId === doctor_id
+                        ? theme.palette.primary.light
+                        : "transparent",
+                    "&:hover": { backgroundColor: theme.palette.action.hover },
+                  }}
                   onClick={() => setdoctor_id(doctor_id)}
-                  value={doctorId}
-                  name="doctor-radio-buttons"
-                  // inputProps={{ "aria-label": doctor.name }}
-                />
-                <div>
-                  <div className="font-semibold text-sm">{name}</div>
-                  <div className="text-xs text-gray-500">{specialization}</div>
-                  <div className="text-xs text-gray-500">
-                    Total slots: {total_slots}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Available slots: {available_slots}
-                  </div>
-                </div>
-              </div>
-              <span
-                className={`text-xs ${
-                  status === "On Duty" ? "text-green-500" : "text-red-500"
-                }`}
-              >
-                {status}
-              </span>
-            </div>
-          )
-        )}
-      </div>
-    </div>
+                >
+                  {/* Doctor Info */}
+                  <Stack direction="row" alignItems="flex-start" spacing={1}>
+                    <Radio
+                      checked={doctorId === doctor_id}
+                      onChange={() => setdoctor_id(doctor_id)}
+                      size={isMobile ? "small" : "medium"}
+                      sx={{ mt: 0.5 }}
+                    />
+                    <Stack spacing={0.3}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                        }}
+                      >
+                        {name}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.8rem" }}
+                      >
+                        {specialization || "—"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.75rem" }}
+                      >
+                        Total Slots: {total_slots ?? 0}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.75rem" }}
+                      >
+                        Available: {available_slots ?? 0}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  {/* Status */}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color:
+                        status === "On Duty"
+                          ? theme.palette.success.main
+                          : theme.palette.error.main,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {status}
+                  </Typography>
+                </Stack>
+              )
+            )
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

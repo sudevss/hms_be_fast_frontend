@@ -32,7 +32,7 @@ const initialStatePatientDiagnosis = {
   appointment_id: "",
   assessment_notes: "",
   chief_complaint: "",
-  diagnosis_date: "",
+  diagnosis_date: dayjs().format("YYYY-MM-DD"),
   doctor_id: "",
   facility_id: "",
   followup_date: "",
@@ -44,6 +44,8 @@ const initialStatePatientDiagnosis = {
   vital_spo2: "",
   vital_temp: "",
   assessment_notes: "",
+  height: "",
+  weight: "",
 };
 
 export const usePatient = create((set) => ({
@@ -56,7 +58,7 @@ export const usePatient = create((set) => ({
 
 export const usePatientDiagnosis = create((set) => ({
   ...initialStatePatientDiagnosis,
-  onReset: () => set(() => initialState),
+  onReset: () => set(() => initialStatePatientDiagnosis),
   setPatientDiagnosis: (obj) => set((state) => ({ ...state, ...obj })),
   onChangePatientDiagnosis: (name, value) =>
     set((state) => ({ ...state, [name]: value })),

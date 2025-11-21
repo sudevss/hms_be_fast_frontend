@@ -8,6 +8,7 @@ import AddOrEditBooking from "@/ReusableComponents/AddOrEditBooking";
 import AppointmentsTable from "../../ReusableComponents/AppointmentsTable";
 import EnhancedTabs from "@components/Tabs/EnhancedTabs";
 import { APPOINTMENTS_TABS } from "@data/staticData";
+import { Box } from "@mui/material";
 
 function AppointmentsPage() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -35,9 +36,25 @@ function AppointmentsPage() {
   const tokenData = queryGetDashboard?.data?.token_data || [];
 
   return (
-    <div className="flex flex-row min-h-screen bg-gray-50 w-full">
+    <div>
       {/* Main Content */}
-      <div className="flex-1 p-5  overflow-y-auto w-[100%]">
+      {/* <div className="flex-1 p-5  overflow-y-auto w-[85vw]"> */}
+      <Box
+        sx={{
+          width: {
+            xs: "95vw",
+            sm: "90vw",
+            md: "80vw",
+            lg: "80vw",
+            xl: "85vw",
+          },
+          mx: "auto",
+          bgcolor: "#fff",
+          borderRadius: 2,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+          p: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
         <div className="flex-1   overflow-y-auto">
           {/* Top Search Bar */}
           <div className="flex justify-between items-center mb-6 ">
@@ -81,8 +98,8 @@ function AppointmentsPage() {
             tabName={APPOINTMENTS_TABS[tabIndex]}
           />
         </div>
-      </div>
-
+        {/* </div> */}
+      </Box>
       <AddOrEditBooking open={isBookingOpen} setOpen={setIsBookingOpen} />
     </div>
   );

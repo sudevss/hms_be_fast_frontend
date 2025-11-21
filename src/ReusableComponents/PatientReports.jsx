@@ -21,43 +21,18 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DownloadIcon from "@mui/icons-material/Download";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { getPatientReportFileDownload, getPatientReports } from "@/serviceApis";
+import {
+  getPatientReportFileDownload,
+  getPatientReports,
+  uploadPatientReportFiles,
+} from "@/serviceApis";
 import PageLoader from "@pages/PageLoader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import AlertSnackbar from "@components/AlertSnackbar";
 import { INITIAL_SHOW_ALERT } from "@data/staticData";
 import { useShowAlert } from "@/stores/showAlertStore";
-
-const uploadFiles = async ({
-  files,
-  facility_id,
-  patient_id,
-  appointment_id,
-  diagnosis_id,
-}) => {
-  const formData = new FormData();
-  files.forEach((file) => {
-    formData.append("facility_id", facility_id);
-    formData.append("patient_id", patient_id);
-    formData.append("report_date", "2025-10-05");
-    formData.append("appointment_id", appointment_id);
-    formData.append("diagnosis_id", diagnosis_id);
-    formData.append("files", file); // Adjust field name as per your API
-  });
-
-  const response = await axios.post(
-    "https://hms-be-fast-six.vercel.app/patient_reports/upload",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
-  return response.data;
-};
+import DialogMessage from "@components/DialogMessage";
 
 const PatientReports = ({
   open,
@@ -77,6 +52,8 @@ const PatientReports = ({
     queryFn: () => getPatientReports({ ...patientReportsObj }),
     enabled: patientReportsObj?.patient_id ? true : false,
   });
+
+  console.log(patientReportsObj)
 
   const handleDownload = (response) => {
     if (!response) return;
@@ -122,7 +99,7 @@ const PatientReports = ({
   });
 
   const mutationFileUpload = useMutation({
-    mutationFn: () => uploadFiles({ files, ...patientReportsObj }),
+    mutationFn: () => uploadPatientReportFiles({ files, ...patientReportsObj }),
     onSuccess: (data) => {
       console.log("Upload success:", data);
       setShowAlert({
@@ -170,6 +147,21 @@ const PatientReports = ({
   }, [open]);
 
   const reportsData = queryGetPatientReports?.data || [];
+
+  if (!patientReportsObj?.diagnosis_id && patientReportsObj?.appointment_id) {
+    return (
+      <DialogMessage
+        messageType={open ? "Warning" : ""}
+        message="You can upload reports only after adding a diagnosis. Please add a diagnosis first."
+        setMessageType={() => setOpen(false)}
+        handleOnClose={() => {
+          setOpen(false);
+          onResetAlert();
+          setPatientReportObj("");
+        }}
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -255,11 +247,13 @@ const PatientReports = ({
                   <DownloadIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Remove">
-                <IconButton color="error" onClick={handleRemove}>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
+              {!reportObj?.upload_id && (
+                <Tooltip title="Remove">
+                  <IconButton color="error" onClick={handleRemove}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </Box>
         ))}
@@ -267,16 +261,17 @@ const PatientReports = ({
         <Divider sx={{ mb: 3 }} />
 
         <Stack spacing={2}>
-          <Button
-            sx={{ width: "40%" }}
-            variant="contained"
-            component="label"
-            startIcon={<CloudUploadIcon />}
-          >
-            Select Files
-            <input type="file" hidden multiple onChange={handleFileChange} />
-          </Button>
-
+          {patientReportsObj?.diagnosis_id && (
+            <Button
+              sx={{ width: "40%" }}
+              variant="contained"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+            >
+              Select Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+          )}
           {files.length > 0 && (
             <Box>
               <Typography variant="h5" gutterBottom>
@@ -317,13 +312,15 @@ const PatientReports = ({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
-        <StyledButton
-          variant="contained"
-          disabled={mutationFileUpload.isPending || !files.length > 0}
-          onClick={handleUpload}
-        >
-          Upload All
-        </StyledButton>
+        {patientReportsObj?.diagnosis_id && (
+          <StyledButton
+            variant="contained"
+            disabled={mutationFileUpload.isPending || !files.length > 0}
+            onClick={handleUpload}
+          >
+            Upload All
+          </StyledButton>
+        )}
       </DialogActions>
       <AlertSnackbar
         message={showAlert.message}

@@ -1,0 +1,18 @@
+/* Responsive utility helpers */
+@media (max-width: 1024px) {
+  .responsive-text {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-padding {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-hide {
+    display: none;
+  }
+}
