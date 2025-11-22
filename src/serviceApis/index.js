@@ -1,5 +1,6 @@
 import axios from "axios";
 import api from "./apiConfig";
+import dayjs from "dayjs";
 
 const API_BASE_URL = `https://hms-be-fast-six.vercel.app`;
 
@@ -260,13 +261,19 @@ export const uploadPatientReportFiles = async ({
   diagnosis_id,
 }) => {
   const formData = new FormData();
+  formData.append("facility_id", facility_id || "1");
+  formData.append("patient_id", patient_id);
+  formData.append("appointment_id", appointment_id);
+  formData.append("diagnosis_id", diagnosis_id);
+  formData.append("report_date", dayjs().format("YYYY-MM-DD"));
+
   files.forEach((file) => {
-    formData.append("facility_id", facility_id);
-    formData.append("patient_id", patient_id);
-    formData.append("report_date", "2025-10-05");
-    formData.append("appointment_id", appointment_id);
-    formData.append("diagnosis_id", diagnosis_id);
-    formData.append("files", file); // Adjust field name as per your API
+    // formData.append("facility_id", facility_id);
+    // formData.append("patient_id", patient_id);
+    // formData.append("report_date", "2025-10-05");
+    // formData.append("appointment_id", appointment_id);
+    // formData.append("diagnosis_id", diagnosis_id);
+    formData.append("files", file);
   });
 
  return api

@@ -67,13 +67,10 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
         message: `Patient Diagnosis update has successfully`,
         status: "success",
       });
-      queryClient.invalidateQueries({
-        queryKey: ["queryGetAppointmentsAndBookings"],
-        exact: false,
-        refetchActive: true,
-        refetchInactive: false,
-      });
-     
+      queryClient.invalidateQueries({ queryKey: ["queryGetAppointmentsAndBookings"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["queryGetDiagnosisForDetails"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["queryGetDiagnosisForHistory"], exact: false });
+      
       setOpen(false);
     },
     onError: (error) => {

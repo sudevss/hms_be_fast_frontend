@@ -12,6 +12,8 @@ import {
 import ModeEditOutlineOutlinedIcon from "@mui/icons-material/ModeEditOutlineOutlined";
 import WorkHistoryOutlinedIcon from "@mui/icons-material/WorkHistoryOutlined";
 import { BiSolidReport } from "react-icons/bi";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import PatientDetailsDialog from "@/ReusableComponents/PatientDetailsDialog";
 
 import StyledButton from "@components/StyledButton";
 import MuiReactTableComponent from "@components/Table/MuiReactTableComponent";
@@ -28,6 +30,8 @@ function PatientsPage() {
   const [openPatient, setOpenPatient] = useState(false);
   const [openHistory, setOpenHistory] = useState(false);
   const [openReports, setOpenReports] = useState(false);
+  const [openViewDetails, setOpenViewDetails] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   const { setPatientData, onReset } = usePatient();
   const patientData = usePatient();
@@ -68,6 +72,17 @@ function PatientsPage() {
               alignItems: "center",
             }}
           >
+            <Tooltip title="View" arrow>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setSelectedPatientId(row.original.id);
+                  setOpenViewDetails(true);
+                }}
+              >
+                <VisibilityIcon fontSize="small" sx={{ color: "#115E59" }} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Edit Patient" arrow>
               <IconButton
                 size="small"
@@ -219,6 +234,11 @@ function PatientsPage() {
         setPatientReportObj={onReset}
         open={openReports}
         setOpen={setOpenReports}
+      />
+      <PatientDetailsDialog
+        open={openViewDetails}
+        onClose={() => setOpenViewDetails(false)}
+        patientId={selectedPatientId}
       />
 
       <PageLoader show={isLoading} />

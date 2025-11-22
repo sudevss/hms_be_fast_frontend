@@ -38,6 +38,7 @@ import DatePickerComponent from "@components/DatePicker";
 import AlertSnackbar from "@components/AlertSnackbar";
 import { useShowAlert } from "@/stores/showAlertStore";
 import { calculateAge } from "@/stores/patientStore";
+import { dayjs } from "@utils/dateUtils";
 
 const AddOrEditBooking = ({ open, setOpen }) => {
   const {
@@ -111,6 +112,26 @@ const AddOrEditBooking = ({ open, setOpen }) => {
     payment_method,
   });
   const queryClient = useQueryClient();
+
+  const parseSlotMinutes = (label) => {
+    const m = label.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
+    if (!m) return 0;
+    let h = parseInt(m[1], 10);
+    const mins = m[2] ? parseInt(m[2], 10) : 0;
+    const isPM = m[3].toLowerCase() === "pm";
+    h = h % 12 + (isPM ? 12 : 0);
+    return h * 60 + mins;
+  };
+
+  const getFilteredTimeSlots = () => {
+    if (!AppointmentDate) return TIME_SLOTS_HOURS_OPTIONS;
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    const selectedStr = dayjs(AppointmentDate).format("YYYY-MM-DD");
+    if (todayStr !== selectedStr) return TIME_SLOTS_HOURS_OPTIONS;
+    const threshold = dayjs().subtract(15, "minute");
+    const thresholdMin = threshold.hour() * 60 + threshold.minute();
+    return TIME_SLOTS_HOURS_OPTIONS.filter(({ value }) => parseSlotMinutes(value) >= thresholdMin);
+  };
 
   const mutationAddBooikng = useMutation({
     mutationFn: (payload) =>
@@ -429,7 +450,8 @@ const AddOrEditBooking = ({ open, setOpen }) => {
             label="Time Slot"
             width="100%"
             placeholderText="Time Slot"
-            menuOptions={TIME_SLOTS_HOURS_OPTIONS}
+            //menuOptions={TIME_SLOTS_HOURS_OPTIONS}
+            menuOptions={getFilteredTimeSlots()}
             onChangeHandler={
               (value) => onChangeBooking("AppointmentTime", value)
               //   onChangeDoctor("gender", value)

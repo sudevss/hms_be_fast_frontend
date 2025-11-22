@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   IconButton,
@@ -11,6 +11,7 @@ import {
 import ToggleOffOutlinedIcon from "@mui/icons-material/ToggleOffOutlined";
 import ModeEditOutlineOutlinedIcon from "@mui/icons-material/ModeEditOutlineOutlined";
 import WorkHistoryOutlinedIcon from "@mui/icons-material/WorkHistoryOutlined";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -24,6 +25,7 @@ import AddDoctor from "./AddDoctor";
 import SheduleDoctors from "./SheduleDoctors";
 import PageLoader from "@pages/PageLoader";
 import { useDoctor, useSheduleDoctor } from "@/stores/doctorStore";
+import DoctorDetailsDialog from "@/ReusableComponents/DoctorDetailsDialog";
 
 function DoctorsPage() {
   const [openAddDoctor, setOpenAddDoctor] = useState(false);
@@ -33,6 +35,10 @@ function DoctorsPage() {
   const { setDoctorData } = useDoctor();
   const { setDoctorSheduleData } = useSheduleDoctor();
 
+  const [openViewDoctor, setOpenViewDoctor] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -41,6 +47,12 @@ function DoctorsPage() {
     queryKey: ["queryGetAllDoctorsDetails"],
     queryFn: () => getAllDoctorsDetails({ facility_id: 1 }),
   });
+
+  useEffect(() => {
+    if (!selectedDoctor?.id || !Array.isArray(doctorsData)) return;
+    const updated = doctorsData.find((d) => d.id === selectedDoctor.id);
+    if (updated) setSelectedDoctor(updated);
+  }, [doctorsData]);
 
   // 🔹 Fetch schedule for a specific doctor
   const mutationByDoctorId = useMutation({
@@ -97,6 +109,17 @@ function DoctorsPage() {
               gap: 1,
             }}
           >
+        {/* View Doctor Button */}
+        <Tooltip title="View Doctor" arrow>
+          <IconButton
+              onClick={() => {
+              setSelectedDoctor(row.original);
+              setOpenViewDoctor(true);
+            }}
+          >
+            <VisibilityIcon sx={{ color: "#115E59" }} />
+          </IconButton>
+        </Tooltip>
             {/* <Tooltip title="Toggle Status" arrow>
               <IconButton
                 onClick={() => alert("Toggle status for " + row.original.id)}
@@ -230,6 +253,21 @@ function DoctorsPage() {
           setOpen={setOpenSheduleDoctor}
         />
       )}
+
+      <DoctorDetailsDialog
+        open={openViewDoctor}
+        onClose={() => setOpenViewDoctor(false)}
+        doctor={selectedDoctor}
+        onEdit={(doc) => {
+          setDoctorData(doc);
+          setOpenAddDoctor(true);
+        }}
+        onEditSchedule={(doc) => {
+          if (!doc?.id) return;
+          setDoctorId(doc.id);
+          mutationByDoctorId.mutate(doc.id);
+        }}
+      />
 
       <PageLoader show={isLoading || mutationByDoctorId?.isPending} />
     </Box>

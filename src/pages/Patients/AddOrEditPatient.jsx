@@ -83,11 +83,10 @@ const AddOrEditPatient = ({ open, setOpen }) => {
         message: `Patient details updated successfully.`,
         status: "success",
       });
-      queryClient.invalidateQueries({
-        queryKey: ["queryGetPaientsDetails"],
-        exact: false,
-        refetchActive: true,
-      });
+      queryClient.invalidateQueries({ queryKey: ["queryGetPaientsDetails"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["queryGetPatientDetails"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["queryGetAppointmentsAndBookings"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
       onReset();
       setOpen(false);
     },

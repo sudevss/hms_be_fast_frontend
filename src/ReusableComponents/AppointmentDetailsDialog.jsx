@@ -14,6 +14,8 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import StyledButton from "@/components/StyledButton";
 import { dayjs } from "@/utils/dateUtils";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +25,9 @@ import { getPatientReports } from "@/serviceApis";
 import { getPatientReportFileDownload } from "@/serviceApis";
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import AddOrEditPatientDiagnosis from "@/ReusableComponents/AddOrEditPatientDiagnosis";
+import { usePatientDiagnosis } from "@/stores/patientStore";
+import PatientReports from "@/ReusableComponents/PatientReports";
 
 const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center" };
 const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center" };
@@ -32,6 +37,13 @@ const get = (obj, keys) => {
     if (obj?.[k] !== undefined && obj?.[k] !== null && obj?.[k] !== "") return obj[k];
   }
   return undefined;
+};
+
+// To Prevent accordion toggle
+const handleIconClick = (e, fn) => {
+  e.stopPropagation();
+  e.preventDefault();
+  fn();
 };
 
 const Field = ({ label, value }) => (
@@ -115,6 +127,65 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
       }),
     enabled: showDiagnosis && open && Boolean(normalized?.patient_id && normalized?.appointment_id),
   });
+
+  // Add/Edit Diagnosis dialog control
+  const [diagOpen, setDiagOpen] = useState(false);
+  const { setPatientDiagnosis, onReset: resetDiagnosis } = usePatientDiagnosis();
+  const [openReports, setOpenReports] = useState(false);
+  const [patientReportsObj, setPatientReportsObj] = useState({});
+
+  const handleOpenAddDiagnosis = () => {
+    resetDiagnosis();
+    setPatientDiagnosis({
+      appointment_id: normalized?.appointment_id,
+      doctor_id: normalized?.doctor_id,
+      facility_id: normalized?.facility_id,
+      patient_id: normalized?.patient_id,
+      diagnosis_date: dayjs().format("YYYY-MM-DD"),
+    });
+    setDiagOpen(true);
+  };
+
+  const handleOpenEditDiagnosis = () => {
+    setPatientDiagnosis({
+      appointment_id: diagnosis?.appointment_id ?? normalized?.appointment_id,
+      doctor_id: diagnosis?.doctor_id ?? normalized?.doctor_id,
+      facility_id: diagnosis?.facility_id ?? normalized?.facility_id,
+      patient_id: diagnosis?.patient_id ?? normalized?.patient_id,
+      diagnosis_id: diagnosis?.diagnosis_id,
+      diagnosis_date: diagnosis?.diagnosis_date ?? dayjs().format("YYYY-MM-DD"),
+      chief_complaint: diagnosis?.chief_complaint,
+      assessment_notes: diagnosis?.assessment_notes,
+      treatment_plan: diagnosis?.treatment_plan,
+      recomm_tests: diagnosis?.recomm_tests,
+      vital_bp: diagnosis?.vital_bp,
+      vital_hr: diagnosis?.vital_hr,
+      vital_temp: diagnosis?.vital_temp,
+      vital_spo2: diagnosis?.vital_spo2,
+      height: diagnosis?.height,
+      weight: diagnosis?.weight,
+      followup_date: diagnosis?.followup_date,
+    });
+    setDiagOpen(true);
+  };
+
+  const seedReportsObj = () => ({
+    appointment_id: normalized?.appointment_id,
+    patient_id: normalized?.patient_id,
+    doctor_id: normalized?.doctor_id,
+    diagnosis_id: diagnosis?.diagnosis_id,
+    facility_id: normalized?.facility_id,
+  });
+
+  const handleOpenAddReports = () => {
+    setPatientReportsObj(seedReportsObj());
+    setOpenReports(true);
+  };
+
+  const handleOpenEditReports = () => {
+    setPatientReportsObj(seedReportsObj());
+    setOpenReports(true);
+  };
 
   const ReportThumb = ({ report }) => {
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -233,7 +304,9 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
 
 
   return (
-    <Dialog open={open} // onClose={onClose}
+    <>
+    <Dialog open={open} 
+      // onClose={onClose}
  maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, textAlign: "center" }}>
         Appointment
@@ -241,12 +314,34 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
       <DialogContent>
         {normalized && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {/* Patient Details moved above and accordion removed */}
+            <Box sx={{ borderRadius: 2, border: "1px solid #e5e7eb", p: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left", mb: 2 }}>Patient Details</Typography>
+              {!normalized?.patient_id ? (
+                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No patient details available</Typography>
+              ) : !patientDetails ? (
+                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading patient details...</Typography>
+              ) : (
+                <Grid container spacing={3}>
+                  <Grid item xs={6} md={3}><Field label="Patient ID" value={patientDetails.id || patientDetails.patient_id} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="First Name" value={patientDetails.firstname} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Last Name" value={patientDetails.lastname} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Age" value={patientDetails.age} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Date of Birth" value={patientDetails.dob ? dayjs(patientDetails.dob).format("DD-MM-YYYY") : "-"} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Contact Number" value={patientDetails.contact_number} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Gender" value={patientDetails.gender} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="Address" value={patientDetails.address} /></Grid>
+                  <Grid item xs={6} md={3}><Field label="ABDM ABHA ID" value={patientDetails.ABDM_ABHA_id} /></Grid>
+                </Grid>
+              )}
+            </Box>
+
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Appointment Details</Typography>
               </AccordionSummary>
               <AccordionDetails>
-              <Grid container spacing={3}>
+              <Grid container spacing={3} textAlign="center">
                 <Grid item xs={6} md={3}><Field label="Appointment ID" value={normalized.appointment_id} /></Grid>
                 <Grid item xs={6} md={3}><Field label="Patient Name" value={normalized.patient_name} /></Grid>
                 <Grid item xs={6} md={3}><Field label="Contact" value={normalized.contact} /></Grid>
@@ -275,35 +370,33 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
               </AccordionDetails>
             </Accordion>
 
-            <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Patient Details</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {!normalized?.patient_id ? (
-                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No patient details available</Typography>
-                ) : !patientDetails ? (
-                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading patient details...</Typography>
-                ) : (
-                  <Grid container spacing={3}>
-                <Grid item xs={6} md={3}><Field label="Patient ID" value={patientDetails.id || patientDetails.patient_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="First Name" value={patientDetails.firstname} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Last Name" value={patientDetails.lastname} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Age" value={patientDetails.age} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Date of Birth" value={patientDetails.dob ? dayjs(patientDetails.dob).format("DD-MM-YYYY") : "-"} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Contact Number" value={patientDetails.contact_number} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Gender" value={patientDetails.gender} /></Grid>
-                <Grid item xs={6} md={3}><Field label="Address" value={patientDetails.address} /></Grid>
-                <Grid item xs={6} md={3}><Field label="ABDM ABHA ID" value={patientDetails.ABDM_ABHA_id} /></Grid>
-                  </Grid>
-                )}
-              </AccordionDetails>
-            </Accordion>
-
             {showDiagnosis && (
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Diagnosis Details</Typography>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left" }}>Diagnosis Details</Typography>
+                  {diagnosis ? (
+                    <IconButton
+                      size="small"
+                      aria-label="Edit Diagnosis"
+                      onClick={(e) => handleIconClick(e, handleOpenEditDiagnosis)}
+                      onFocus={(e) => e.stopPropagation()}
+                    >
+                      <EditOutlinedIcon />
+                    </IconButton>
+
+                  ) : (
+                    <IconButton
+                      size="small"
+                      aria-label="Add Diagnosis"
+                      onClick={(e) => handleIconClick(e, handleOpenAddDiagnosis)}
+                      onFocus={(e) => e.stopPropagation()}
+                    >
+                      <AddCircleOutlineIcon />
+                    </IconButton>
+
+                  )}
+                </Box>
               </AccordionSummary>
               <AccordionDetails>
               <Grid container spacing={3}>
@@ -329,7 +422,28 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
             {showDiagnosis && (
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Reports</Typography>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left" }}>Reports</Typography>
+                  {reports && reports.length > 0 ? (
+                    <IconButton
+                      size="small"
+                      aria-label="Edit Reports"
+                      onClick={(e) => handleIconClick(e, handleOpenEditReports)}
+                      onFocus={(e) => e.stopPropagation()}
+                    >
+                      <EditOutlinedIcon />
+                    </IconButton>
+                  ) : (
+                    <IconButton
+                      size="small"
+                      aria-label="Add Reports"
+                      onClick={(e) => handleIconClick(e, handleOpenAddReports)}
+                      onFocus={(e) => e.stopPropagation()}
+                    >
+                      <AddCircleOutlineIcon />
+                    </IconButton>
+                  )}
+                </Box>
               </AccordionSummary>
               <AccordionDetails>
                 {isReportsLoading ? (
@@ -355,6 +469,14 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
         <StyledButton variant="outlined" onClick={onClose}>Close</StyledButton>
       </DialogActions>
     </Dialog>
+    <PatientReports
+      open={openReports}
+      setOpen={setOpenReports}
+      patientReportsObj={patientReportsObj}
+      setPatientReportObj={setPatientReportsObj}
+    />
+    <AddOrEditPatientDiagnosis open={diagOpen} setOpen={setDiagOpen} />
+  </>
   );
 };
 
