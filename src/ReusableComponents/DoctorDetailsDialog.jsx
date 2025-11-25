@@ -6,8 +6,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useQuery } from "@tanstack/react-query";
 import { getDoctorSheduleDetails } from "@/serviceApis";
 
-const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center" };
-const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center" };
+const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center", fontSize: "0.95rem" };
+const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center", fontSize: "1.05rem" };
 
 const Field = ({ label, value }) => (
   <Box>
@@ -27,8 +27,8 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
   });
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md">
-      <DialogTitle sx={{ fontWeight: 700, textAlign: "center" }}>
+    <Dialog open={open} fullWidth maxWidth="lg">
+      <DialogTitle sx={{ fontWeight: 700, textAlign: "center", fontSize: "1.2rem" }}>
         Doctor Information
       </DialogTitle>
 
@@ -49,7 +49,7 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
               mb: 2,
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
               Doctor Details
             </Typography>
 
@@ -58,7 +58,7 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
             aria-label="Edit Doctor"
             size="small"
           >
-            <EditOutlinedIcon />
+            <EditOutlinedIcon sx={{color: "#115E59", fontSize: "1.65rem"}} />
           </IconButton>
         </Box>
 
@@ -82,7 +82,7 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
               expandIcon={<ExpandMoreIcon />}
               sx={{ display: "flex", alignItems: "center" }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, flexGrow: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, flexGrow: 1, fontSize: "1.1rem" }}>
                 Doctor Schedule
               </Typography>
 
@@ -95,13 +95,13 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
                 onFocus={(e) => e.stopPropagation()}
                 aria-label="Edit Doctor Schedule"
               >
-                <EditOutlinedIcon />
+                <EditOutlinedIcon sx={{color: "#115E59", fontSize: "1.65rem"}} />
               </IconButton>
             </AccordionSummary>
 
             <AccordionDetails>
               {isScheduleLoading ? (
-                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading schedule…</Typography>
+                <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>Loading schedule…</Typography>
               ) : schedule?.weekDaysList && schedule.weekDaysList.length > 0 ? (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {schedule.weekDaysList.map((day) => (
@@ -127,7 +127,7 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
                               ))}
                             </Grid>
                           ) : (
-                            <Typography variant="body2" sx={{ color: "#6b7280" }}>No slots</Typography>
+                            <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>No slots</Typography>
                           );
                         })()}
                       </AccordionDetails>
@@ -135,7 +135,7 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
                   ))}
                 </Box>
               ) : (
-                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No schedule found</Typography>
+                <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>No schedule found</Typography>
               )}
             </AccordionDetails>
           </Accordion>

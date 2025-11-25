@@ -29,8 +29,8 @@ import AddOrEditPatientDiagnosis from "@/ReusableComponents/AddOrEditPatientDiag
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import PatientReports from "@/ReusableComponents/PatientReports";
 
-const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center" };
-const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center" };
+const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center", fontSize: "1.00rem" };
+const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center", fontSize: "1.15rem" };
 
 const get = (obj, keys) => {
   for (const k of keys) {
@@ -78,7 +78,7 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
     };
   }, [appointment]);
 
-  const { data: diagnosis } = useQuery({
+  const { data: diagnosis, isLoading: isDiagLoading } = useQuery({
     queryKey: [
       "queryGetDiagnosisForDetails",
       normalized?.patient_id,
@@ -307,8 +307,8 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
     <>
     <Dialog open={open} 
       // onClose={onClose}
- maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, textAlign: "center" }}>
+ maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700, textAlign: "center", fontSize: "1.3rem" }}>
         Appointment
       </DialogTitle>
       <DialogContent>
@@ -316,11 +316,11 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {/* Patient Details moved above and accordion removed */}
             <Box sx={{ borderRadius: 2, border: "1px solid #e5e7eb", p: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left", mb: 2 }}>Patient Details</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left", mb: 2, fontSize: "1.10rem" }}>Patient Details</Typography>
               {!normalized?.patient_id ? (
-                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No patient details available</Typography>
+                <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>No patient details available</Typography>
               ) : !patientDetails ? (
-                <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading patient details...</Typography>
+                <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>Loading patient details...</Typography>
               ) : (
                 <Grid container spacing={3}>
                   <Grid item xs={6} md={3}><Field label="Patient ID" value={patientDetails.id || patientDetails.patient_id} /></Grid>
@@ -338,7 +338,7 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
 
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left" }}>Appointment Details</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, width: "100%", textAlign: "left", fontSize: "1.10rem" }}>Appointment Details</Typography>
               </AccordionSummary>
               <AccordionDetails>
               <Grid container spacing={3} textAlign="center">
@@ -374,8 +374,8 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left" }}>Diagnosis Details</Typography>
-                  {diagnosis ? (
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left", fontSize: "1.10rem" }}>Diagnosis Details</Typography>
+                  {/* {diagnosis ? (
                     <IconButton
                       size="small"
                       aria-label="Edit Diagnosis"
@@ -394,27 +394,32 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                     >
                       <AddCircleOutlineIcon />
                     </IconButton>
-
-                  )}
+                  )} */}
                 </Box>
               </AccordionSummary>
               <AccordionDetails>
-              <Grid container spacing={3}>
-                <Grid item xs={6} md={3}><Field label="diagnosis id" value={diagnosis?.diagnosis_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="facility id" value={diagnosis?.facility_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="patient id" value={diagnosis?.patient_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="diagnosis date" value={diagnosis?.diagnosis_date} /></Grid>
-                <Grid item xs={6} md={3}><Field label="appointment id" value={diagnosis?.appointment_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="doctor id" value={diagnosis?.doctor_id} /></Grid>
-                <Grid item xs={6} md={3}><Field label="vital bp" value={diagnosis?.vital_bp} /></Grid>
-                <Grid item xs={6} md={3}><Field label="vital hr" value={diagnosis?.vital_hr} /></Grid>
-                <Grid item xs={6} md={3}><Field label="vital temp" value={diagnosis?.vital_temp} /></Grid>
-                <Grid item xs={6} md={3}><Field label="vital spo2" value={diagnosis?.vital_spo2} /></Grid>
-                <Grid item xs={6} md={3}><Field label="weight" value={diagnosis?.weight} /></Grid>
-                <Grid item xs={6} md={3}><Field label="height" value={diagnosis?.height} /></Grid>
-                <Grid item xs={6} md={3}><Field label="chief complaint" value={diagnosis?.chief_complaint} /></Grid>
-                <Grid item xs={6} md={3}><Field label="assessment notes" value={diagnosis?.assessment_notes} /></Grid>
-              </Grid>
+                {isDiagLoading ? (
+                  <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>Loading Diagnosis...</Typography>
+                ) : !diagnosis ? (
+                  <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.0rem" }}>No Diagnosis Found</Typography>
+                ) : (
+                  <Grid container spacing={3}>
+                    <Grid item xs={6} md={3}><Field label="diagnosis id" value={diagnosis?.diagnosis_id} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="facility id" value={diagnosis?.facility_id} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="patient id" value={diagnosis?.patient_id} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="diagnosis date" value={diagnosis?.diagnosis_date} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="appointment id" value={diagnosis?.appointment_id} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="doctor id" value={diagnosis?.doctor_id} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="vital bp" value={diagnosis?.vital_bp} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="vital hr" value={diagnosis?.vital_hr} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="vital temp" value={diagnosis?.vital_temp} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="vital spo2" value={diagnosis?.vital_spo2} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="weight" value={diagnosis?.weight} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="height" value={diagnosis?.height} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="chief complaint" value={diagnosis?.chief_complaint} /></Grid>
+                    <Grid item xs={6} md={3}><Field label="assessment notes" value={diagnosis?.assessment_notes} /></Grid>
+                  </Grid>
+                )}
               </AccordionDetails>
             </Accordion>
             )}
@@ -423,8 +428,8 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
             <Accordion defaultExpanded sx={{ borderRadius: 2, border: "1px solid #e5e7eb", boxShadow: "none" }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left" }}>Reports</Typography>
-                  {reports && reports.length > 0 ? (
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: "left", fontSize: "1.10rem" }}>Reports</Typography>
+                  {/* {reports && reports.length > 0 ? (
                     <IconButton
                       size="small"
                       aria-label="Edit Reports"
@@ -433,21 +438,21 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                     >
                       <EditOutlinedIcon />
                     </IconButton>
-                  ) : (
+                  ) : ( */}
                     <IconButton
                       size="small"
                       aria-label="Add Reports"
                       onClick={(e) => handleIconClick(e, handleOpenAddReports)}
                       onFocus={(e) => e.stopPropagation()}
                     >
-                      <AddCircleOutlineIcon />
+                      <AddCircleOutlineIcon sx={{ color: "#115E59", fontSize: "1.55rem" }} />
                     </IconButton>
-                  )}
+                  {/* )} */}
                 </Box>
               </AccordionSummary>
               <AccordionDetails>
                 {isReportsLoading ? (
-                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>Loading reports…</Typography>
+                  <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.00rem" }}>Loading reports…</Typography>
                 ) : reports && reports.length > 0 ? (
                   <Grid container spacing={2}>
                     {reports.map((rep) => (
@@ -457,7 +462,7 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                     ))}
                   </Grid>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "#6b7280", textAlign: "center" }}>No reports found</Typography>
+                  <Typography variant="body2" sx={{ color: "#000000ff", textAlign: "center", fontSize: "1.00rem" }}>No reports found</Typography>
                 )}
               </AccordionDetails>
             </Accordion>
