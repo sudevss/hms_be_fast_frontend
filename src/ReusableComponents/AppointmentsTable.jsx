@@ -1,6 +1,6 @@
 import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 import { useEffect, useMemo, useState } from "react";
-import { Box, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Stack, Tooltip } from "@mui/material";
+import { Box, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 
 import {
   deleteAppoinmentBooking,
@@ -17,6 +17,8 @@ import AlertSnackbar from "@components/AlertSnackbar";
 import DatePickerComponent from "@components/DatePicker";
 import AddOrEditPatientDiagnosis from "@/ReusableComponents/AddOrEditPatientDiagnosis";
 import PatientReports from "@/ReusableComponents/PatientReports";
+import ViewScreen from "@/pages/DoctorDiagnosis/ViewScreen";
+import PrescriptionSection from "@pages/DoctorDiagnosis/PrescriptionSection";
 
 import { FaDiagnoses, FaCheck } from "react-icons/fa";
 import { FcCancel } from "react-icons/fc";
@@ -26,6 +28,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloseIcon from "@mui/icons-material/Close";
+import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
@@ -59,6 +62,8 @@ const AppointmentsTable = ({
   const [patientReportsObj, setPatientReportObj] = useState("");
   const [openViewDetails, setOpenViewDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [openDoctorDiagnosisPrompt, setOpenDoctorDiagnosisPrompt] = useState(false);
+  const [openDoctorDiagnosis, setOpenDoctorDiagnosis] = useState(false);
 
   const [paymentObj, setPaymentObj] = useState({
     appointment_id: "",
@@ -376,6 +381,19 @@ const AppointmentsTable = ({
           </Tooltip>
         )}
         {tabName === "Completed" && (
+        <Tooltip placement="top" title="Doctor Diagnosis" arrow enterDelay={100}>
+          <IconButton
+            backgroundColor="#115E59"
+            onClick={() => {
+              setSelectedAppointment(row.original);
+              setOpenDoctorDiagnosisPrompt(true);
+            }}
+          >
+            <MedicalInformationIcon sx={{ color: "#115E59" }} />
+          </IconButton>
+        </Tooltip>
+        )}
+        {tabName === "Completed" && (
           <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
@@ -562,6 +580,47 @@ const AppointmentsTable = ({
         setPatientReportObj={setPatientReportObj}
         patientReportsObj={patientReportsObj}
       />
+
+      <Dialog
+        open={openDoctorDiagnosisPrompt}
+        onClose={() => setOpenDoctorDiagnosisPrompt(false)}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Doctor Diagnosis
+        </DialogTitle>
+
+      <DialogContent>
+        <Typography>
+          Doctor Diagnosis screen will be opened. Click on continue to proceed.
+        </Typography>
+      </DialogContent>
+
+      <DialogActions>
+        <StyledButton
+          variant="outlined"
+          onClick={() => setOpenDoctorDiagnosisPrompt(false)}
+        >
+          Cancel
+        </StyledButton>
+
+        <StyledButton
+          variant="contained"
+          onClick={() => {
+          setOpenDoctorDiagnosisPrompt(false);
+          setOpenDoctorDiagnosis(true);
+          }}
+        >
+          Continue
+        </StyledButton>
+      </DialogActions>
+    </Dialog>
+
+    {/* 🔹 NEW — Fullscreen Doctor Diagnosis Dialog */}
+    <ViewScreen
+      open={openDoctorDiagnosis}
+      onClose={() => setOpenDoctorDiagnosis(false)}
+      appointment={selectedAppointment}
+    />
     </>
   );
 };
