@@ -26,10 +26,17 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { usePrescriptionStore } from "@/stores/prescriptionStore";
 
-const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
+const PrescriptionSection = ({
+  patientId,
+  patientName,
+  tokenNumber,
+  appointmentDate,
+  appointmentId,
+  doctorName,
+}) => {
   const prescriptionStore = usePrescriptionStore();
   const { prescriptions, setPrescriptions } = prescriptionStore;
-  
+
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -52,17 +59,23 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
     queryKey: ["queryGetDrugMaster"],
     queryFn: () => getDrugMasterList(),
   });
-  
+
   // Sync store with local data when prescriptions change externally
   useEffect(() => {
-    if (prescriptions.length > 0 && data.length === 0 && drugOptions.length > 0) {
+    if (
+      prescriptions.length > 0 &&
+      data.length === 0 &&
+      drugOptions.length > 0
+    ) {
       // Only sync if data is empty (initial load)
       const tableData = prescriptions.map((prescription, index) => {
         const morning = prescription.morning_dosage ?? "0";
         const afternoon = prescription.afternoon_dosage ?? "0";
         const night = prescription.night_dosage ?? "0";
         // Look up medicine details from master list
-        const medicineOption = drugOptions.find(d => d.medicine_id === prescription.medicine_id);
+        const medicineOption = drugOptions.find(
+          (d) => d.medicine_id === prescription.medicine_id
+        );
         return {
           id: `prescription-${index}-${Date.now()}`,
           medicine_id: prescription.medicine_id,
@@ -76,7 +89,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
           food_timing: prescription.food_timing || "",
           duration_days: prescription.duration_days || "",
           special_instructions: prescription.special_instructions || "",
-        }; 
+        };
       });
       setData(tableData);
     }
@@ -100,10 +113,14 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       const apiTemplate = response?.data ?? response;
       const prescriptions = apiTemplate?.prescriptions || [];
 
-      const existing = new Set(data.map((r) => r.medicine_name?.trim().toLowerCase()));
+      const existing = new Set(
+        data.map((r) => r.medicine_name?.trim().toLowerCase())
+      );
 
       const mapped = prescriptions
-        .filter((rx) => !existing.has((rx.medicine_name || "").trim().toLowerCase()))
+        .filter(
+          (rx) => !existing.has((rx.medicine_name || "").trim().toLowerCase())
+        )
         .map((rx, index) => {
           const morning = rx.morning_dosage ?? "0";
           const afternoon = rx.afternoon_dosage ?? "0";
@@ -128,7 +145,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       }
 
       setData((prev) => [...prev, ...mapped]);
-      
+
       // Update store
       const newPrescriptions = mapped.map((m) => ({
         medicine_id: m.medicine_id,
@@ -139,7 +156,10 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
         duration_days: m.duration_days || 0,
         special_instructions: m.special_instructions || "",
       }));
-      setPrescriptions([...prescriptionStore.prescriptions, ...newPrescriptions]);
+      setPrescriptions([
+        ...prescriptionStore.prescriptions,
+        ...newPrescriptions,
+      ]);
     } catch (error) {
       setLoadError("Failed to load template");
     } finally {
@@ -196,6 +216,22 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
 
   // ---------------------- TABLE COLUMNS ---------------------------
 
+  // For delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
+
+  const frequencyOptions = [
+    "0-0-1",
+    "0-1-0",
+    "1-0-0",
+    "1-1-0",
+    "1-0-1",
+    "0-1-1",
+    "1-1-1",
+  ];
+
+  const timingOptions = ["Before Food", "After Food"];
+
   const columns = useMemo(
     () => [
       {
@@ -207,8 +243,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
 
           const selectedValue =
             drugOptions.find(
-              (m) =>
-                m.medicine_name?.trim().toLowerCase() === currentValue
+              (m) => m.medicine_name?.trim().toLowerCase() === currentValue
             ) || null;
 
           return (
@@ -248,7 +283,11 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "generic_name", e.target.value)
+              table.options.meta.updateData(
+                row.index,
+                "generic_name",
+                e.target.value
+              )
             }
           />
         ),
@@ -263,7 +302,11 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "strength", e.target.value)
+              table.options.meta.updateData(
+                row.index,
+                "strength",
+                e.target.value
+              )
             }
           />
         ),
@@ -283,10 +326,26 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
               const formattedValue = formatDosage(e.target.value);
               // Parse dosage and update individual fields
               const parts = formattedValue.split("-");
-              table.options.meta.updateData(row.index, "dosage", formattedValue);
-              table.options.meta.updateData(row.index, "morning_dosage", parts[0] || "0");
-              table.options.meta.updateData(row.index, "afternoon_dosage", parts[1] || "0");
-              table.options.meta.updateData(row.index, "night_dosage", parts[2] || "0");
+              table.options.meta.updateData(
+                row.index,
+                "dosage",
+                formattedValue
+              );
+              table.options.meta.updateData(
+                row.index,
+                "morning_dosage",
+                parts[0] || "0"
+              );
+              table.options.meta.updateData(
+                row.index,
+                "afternoon_dosage",
+                parts[1] || "0"
+              );
+              table.options.meta.updateData(
+                row.index,
+                "night_dosage",
+                parts[2] || "0"
+              );
             }}
             placeholder="e.g. 1-0-1"
           />
@@ -303,7 +362,11 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "food_timing", e.target.value)
+              table.options.meta.updateData(
+                row.index,
+                "food_timing",
+                e.target.value
+              )
             }
           >
             {timingOptions.map((t) => (
@@ -324,7 +387,11 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "duration_days", e.target.value)
+              table.options.meta.updateData(
+                row.index,
+                "duration_days",
+                e.target.value
+              )
             }
           />
         ),
@@ -445,7 +512,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
         }))
     );
   };
-  
+
   // Sync data to store when editing is saved
   const syncToStore = () => {
     setPrescriptions(
@@ -482,7 +549,9 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             options={templateOptions}
             value={selectedTemplateOption}
             onChange={(e, val) => handleTemplateSelect(val)}
-            isOptionEqualToValue={(opt, val) => opt?.template_id === val?.template_id}
+            isOptionEqualToValue={(opt, val) =>
+              opt?.template_id === val?.template_id
+            }
             getOptionLabel={(opt) => opt?.template_name || ""}
             filterOptions={(options, state) =>
               options.filter((o) =>
@@ -560,7 +629,9 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
                         setEditingRowId(null);
                       }}
                     >
-                      <SaveIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
+                      <SaveIcon
+                        sx={{ color: "#115E59", fontSize: "1.25rem" }}
+                      />
                     </IconButton>
                   </Tooltip>
 
@@ -573,7 +644,9 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
                         setEditingRowId(null);
                       }}
                     >
-                      <CancelIcon sx={{ color: "#dc2626", fontSize: "1.25rem" }} />
+                      <CancelIcon
+                        sx={{ color: "#dc2626", fontSize: "1.25rem" }}
+                      />
                     </IconButton>
                   </Tooltip>
                 </>
@@ -651,7 +724,10 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       </div>
 
       {/* DELETE CONFIRMATION */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
 
         <DialogContent>
