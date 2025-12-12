@@ -276,7 +276,7 @@ export const uploadPatientReportFiles = async ({
     formData.append("files", file);
   });
 
- return api
+  return api
     .post(`/patient_reports/upload`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -285,3 +285,39 @@ export const uploadPatientReportFiles = async ({
     .then((response) => response.data);
 
 };
+
+// export const postloadtemplate = (payload) =>
+//   axios
+//     .post(`${API_BASE_URL}/patient_diagnosis/load-template`, payload)
+//     .then((response) => response.data);
+
+export const postloadtemplate = (payload) =>  
+ api
+    .post(`${API_BASE_URL}/patient_diagnosis/load-template`, payload)
+    .then((response) => response.data);
+
+export const getTemplateById = async ({ template_id }) =>
+  api
+    .get(`/templates/${template_id}`)
+    .then((response) => response.data);
+
+export const getTemplatesList = async () =>
+  api
+    .get(`/templates/all/list`)
+    .then((response) => response.data);
+
+export const getDrugMasterList = async () =>
+  api
+    .get(`/templates/drug-master`)
+    .then((response) => response.data);
+
+export const getLabMasterList = async () =>
+  api
+  .get(`/templates/lab-master`)
+  .then((response) => response.data);
+    
+export const getSymptomMasterList = async () =>
+  api
+    .get(`/templates/symptom-master`)
+    .then((response) => response.data);
+
