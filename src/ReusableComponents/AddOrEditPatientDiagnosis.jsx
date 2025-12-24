@@ -354,7 +354,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           LabelSxProps={{ fontWeight: 600 }}
         />
 
-        <TextAreaInputWithLabel
+        {/* <TextAreaInputWithLabel
           type="text"
           name="assessment_notes"
           value={localValues.assessment_notes ?? assessment_notes}
@@ -365,8 +365,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           onChange={(e) => handleInputChange(e.target.name, e.target.value)}
           onBlur={(e) => handleBlur(e.target.name)}
           LabelSxProps={{ fontWeight: 600 }}
-        />
-        <TextAreaInputWithLabel
+        /> */}
+        {/* <TextAreaInputWithLabel
           type="text"
           name="treatment_plan"
           value={localValues.treatment_plan ?? treatment_plan}
@@ -377,8 +377,8 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           onChange={(e) => handleInputChange(e.target.name, e.target.value)}
           onBlur={(e) => handleBlur(e.target.name)}
           LabelSxProps={{ fontWeight: 600 }}
-        />
-        <TextAreaInputWithLabel
+        /> */}
+        {/* <TextAreaInputWithLabel
           type="text"
           name="recomm_tests"
           value={localValues.recomm_tests ?? recomm_tests}
@@ -388,7 +388,7 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
           onChange={(e) => handleInputChange(e.target.name, e.target.value)}
           onBlur={(e) => handleBlur(e.target.name)}
           LabelSxProps={{ fontWeight: 600 }}
-        />
+        /> */}
         <Box>
           <DatePickerComponent
             name="followup_date"

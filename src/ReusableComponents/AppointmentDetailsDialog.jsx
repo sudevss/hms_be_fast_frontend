@@ -417,7 +417,7 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                     <Grid item xs={6} md={3}><Field label="weight" value={diagnosis?.weight} /></Grid>
                     <Grid item xs={6} md={3}><Field label="height" value={diagnosis?.height} /></Grid>
                     <Grid item xs={6} md={3}><Field label="chief complaint" value={diagnosis?.chief_complaint} /></Grid>
-                    <Grid item xs={6} md={3}><Field label="assessment notes" value={diagnosis?.assessment_notes} /></Grid>
+                    {/* <Grid item xs={6} md={3}><Field label="assessment notes" value={diagnosis?.assessment_notes} /></Grid> */}
                   </Grid>
                 )}
               </AccordionDetails>
