@@ -51,6 +51,7 @@ function DashboardPage() {
     queryKey: ["dashboard", doctor_id, date],
     queryFn: () => getDashBoardDetails({ date, facility_id: 1, doctor_id }),
     enabled: true,
+    refetchInterval: 60000,
   });
 
   const {

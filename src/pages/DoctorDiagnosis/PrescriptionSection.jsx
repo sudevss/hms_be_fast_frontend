@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Autocomplete,
 } from "@mui/material";
 
 import StyledButton from "@components/StyledButton";
@@ -17,98 +18,234 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
+import {
+  postloadtemplate,
+  getTemplatesList,
+  getDrugMasterList,
+} from "@/serviceApis";
+import { useQuery } from "@tanstack/react-query";
 
 const PrescriptionSection = () => {
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
-
-  // For delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
 
-  const frequencyOptions = [
-    "0-0-1",
-    "0-1-0",
-    "1-0-0",
-    "1-1-0",
-    "1-0-1",
-    "0-1-1",
-    "1-1-1",
-  ];
-
   const timingOptions = ["Before Food", "After Food"];
+
+  const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  const { data: templateOptions = [] } = useQuery({
+    queryKey: ["queryGetTemplatesList"],
+    queryFn: () => getTemplatesList(),
+  });
+
+  const { data: drugOptions = [] } = useQuery({
+    queryKey: ["queryGetDrugMaster"],
+    queryFn: () => getDrugMasterList(),
+  });
+
+  // ---------------------- TEMPLATE LOAD ---------------------------
+
+  const handleTemplateSelect = async (selected) => {
+    setLoadError("");
+    setSelectedTemplateOption(selected);
+    if (!selected) return;
+
+    setLoading(true);
+
+    try {
+      const response = await postloadtemplate({
+        template_id: selected.template_id,
+        template_name: selected.template_name,
+      });
+
+      const apiTemplate = response?.data ?? response;
+      const prescriptions = apiTemplate?.prescriptions || [];
+
+      const existing = new Set(data.map((r) => r.medicine_name?.trim().toLowerCase()));
+
+      const mapped = prescriptions
+        .filter((rx) => !existing.has((rx.medicine_name || "").trim().toLowerCase()))
+        .map((rx, index) => {
+          const morning = rx.morning_dosage ?? "0";
+          const afternoon = rx.afternoon_dosage ?? "0";
+          const night = rx.night_dosage ?? "0";
+
+          return {
+            id: `tmpl-${selected.template_id}-${index}-${Date.now()}`,
+            medicine_id: rx.medicine_id,
+            medicine_name: rx.medicine_name || "",
+            generic_name: rx.generic_name || "",
+            strength: rx.strength || "",
+            dosage: `${morning}-${afternoon}-${night}`,
+            food_timing: rx.food_timing || "",
+            duration_days: rx.default_duration_days ?? rx.duration_days ?? "",
+            special_instructions:
+              rx.default_remarks ?? rx.special_instructions ?? "",
+          };
+        });
+
+      if (!mapped.length) {
+        setLoadError("No prescriptions or already loaded");
+      }
+
+      setData((prev) => [...prev, ...mapped]);
+    } catch (error) {
+      setLoadError("Failed to load template");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------------- MEDICINE AUTOFILL ---------------------------
+
+  const handleMedicineSelect = (rowIndex, selectedMedicine) => {
+    if (!selectedMedicine) return; // avoid breaking MUI internals
+
+    setData((prev) =>
+      prev.map((row, idx) => {
+        if (idx === rowIndex) {
+          const morning = selectedMedicine.morning_dosage ?? "0";
+          const afternoon = selectedMedicine.afternoon_dosage ?? "0";
+          const night = selectedMedicine.night_dosage ?? "0";
+
+          return {
+            ...row,
+            medicine_id: selectedMedicine.medicine_id,
+            medicine_name: selectedMedicine.medicine_name,
+            generic_name: selectedMedicine.generic_name || "",
+            strength: selectedMedicine.strength || "",
+            dosage: `${morning}-${afternoon}-${night}`,
+            food_timing: selectedMedicine.food_timing || "",
+            duration_days: selectedMedicine.duration_days || "",
+            special_instructions: selectedMedicine.special_instructions || "",
+            morning_dosage: morning,
+            afternoon_dosage: afternoon,
+            night_dosage: night,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  // ---------------------- TABLE COLUMNS ---------------------------
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "medicine_name",
         header: "Medicine Name",
+        Edit: ({ cell, row, table }) => {
+          // normalize lookup
+          const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
+
+          const selectedValue =
+            drugOptions.find(
+              (m) =>
+                m.medicine_name?.trim().toLowerCase() === currentValue
+            ) || null;
+
+          return (
+            <Autocomplete
+              fullWidth
+              size="small"
+              options={drugOptions}
+              value={selectedValue}
+              getOptionLabel={(option) =>
+                typeof option === "string" ? option : option.medicine_name
+              }
+              isOptionEqualToValue={(option, value) =>
+                option?.medicine_name?.trim().toLowerCase() ===
+                value?.medicine_name?.trim().toLowerCase()
+              }
+              onChange={(event, selectedMedicine) => {
+                if (!selectedMedicine) {
+                  table.options.meta.updateData(row.index, "medicine_name", "");
+                  return;
+                }
+                handleMedicineSelect(row.index, selectedMedicine);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} placeholder="Search medicine..." />
+              )}
+            />
+          );
+        },
+      },
+
+      // ---------- Generic Name ----------
+      {
+        accessorKey: "generic_name",
+        header: "Generic Name",
         Edit: ({ cell, row, table }) => (
           <TextField
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(
-                row.index,
-                "medicine_name",
-                e.target.value
-              )
+              table.options.meta.updateData(row.index, "generic_name", e.target.value)
             }
           />
         ),
       },
 
+      // ---------- Strength ----------
       {
-        accessorKey: "frequency",
-        header: "Frequency",
-        Cell: ({ row }) => row.original.frequency,
+        accessorKey: "strength",
+        header: "Strength",
         Edit: ({ cell, row, table }) => (
           <TextField
-            select
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(
-                row.index,
-                "frequency",
-                e.target.value
-              )
+              table.options.meta.updateData(row.index, "strength", e.target.value)
             }
-          >
-            {frequencyOptions.map((f) => (
-              <MenuItem key={f} value={f}>
-                {f}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
         ),
       },
 
+      // ---------- Dosage ----------
       {
         accessorKey: "dosage",
         header: "Dosage",
+        Cell: ({ row }) => row.original.dosage,
         Edit: ({ cell, row, table }) => (
           <TextField
             fullWidth
+            size="small"
             value={cell.getValue() ?? ""}
+            error={
+              cell.getValue() &&
+              !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
+            }
+            helperText={
+              cell.getValue() &&
+              !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
+                ? "Format must be like 1-0-1"
+                : ""
+            }
             onChange={(e) =>
               table.options.meta.updateData(row.index, "dosage", e.target.value)
             }
+            placeholder="e.g. 1-0-1"
           />
         ),
       },
 
+      // ---------- Food Timing ----------
       {
-        accessorKey: "timing",
-        header: "Timing",
-        Cell: ({ row }) => row.original.timing,
+        accessorKey: "food_timing",
+        header: "Food Timing",
         Edit: ({ cell, row, table }) => (
           <TextField
             select
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "timing", e.target.value)
+              table.options.meta.updateData(row.index, "food_timing", e.target.value)
             }
           >
             {timingOptions.map((t) => (
@@ -120,29 +257,25 @@ const PrescriptionSection = () => {
         ),
       },
 
+      // ---------- Duration ----------
       {
-        accessorKey: "duration",
+        accessorKey: "duration_days",
         header: "Duration (Days)",
         Edit: ({ cell, row, table }) => (
           <TextField
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(
-                row.index,
-                "duration",
-                e.target.value
-              )
+              table.options.meta.updateData(row.index, "duration_days", e.target.value)
             }
           />
         ),
       },
 
-      // --- NEW REMARKS COLUMN ---
+      // ---------- Special Instructions ----------
       {
-        accessorKey: "remarks",
-        header: "Remarks",
-        Cell: ({ row }) => row.original.remarks || "",
+        accessorKey: "special_instructions",
+        header: "Special Instructions",
         Edit: ({ cell, row, table }) => (
           <TextField
             fullWidth
@@ -150,26 +283,35 @@ const PrescriptionSection = () => {
             minRows={2}
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "remarks", e.target.value)
+              table.options.meta.updateData(
+                row.index,
+                "special_instructions",
+                e.target.value
+              )
             }
           />
         ),
       },
     ],
-    []
+    [drugOptions]
   );
 
+  // ---------------------- ADD / DELETE ROW ---------------------------
+
   const handleAddRow = () => {
-    const newRow = {
-      id: Date.now(),
-      medicine_name: "",
-      frequency: "",
-      dosage: "",
-      timing: "",
-      duration: "",
-      remarks: "",
-    };
-    setData((prev) => [newRow, ...prev]);
+    setData((prev) => [
+      {
+        id: Date.now(),
+        medicine_name: "",
+        generic_name: "",
+        strength: "",
+        dosage: "",
+        food_timing: "",
+        duration_days: "",
+        special_instructions: "",
+      },
+      ...prev,
+    ]);
   };
 
   const handlePrint = () => window.print();
@@ -177,6 +319,8 @@ const PrescriptionSection = () => {
   const handleDeleteRow = ({ row }) => {
     setData((prev) => prev.filter((r) => r.id !== row.original.id));
   };
+
+  // ---------------------- RENDER ---------------------------
 
   return (
     <Box sx={{ borderRadius: 2, border: "1px solid #e5e7eb", p: 2, mt: 3 }}>
@@ -189,10 +333,38 @@ const PrescriptionSection = () => {
         }}
       >
         <Box sx={{ fontWeight: 700, fontSize: "1.0rem" }}>Prescription</Box>
+
         <Box sx={{ display: "flex", gap: 1 }}>
+          <Autocomplete
+            options={templateOptions}
+            value={selectedTemplateOption}
+            onChange={(e, val) => handleTemplateSelect(val)}
+            isOptionEqualToValue={(opt, val) => opt?.template_id === val?.template_id}
+            getOptionLabel={(opt) => opt?.template_name || ""}
+            filterOptions={(options, state) =>
+              options.filter((o) =>
+                (o?.template_name || "")
+                  .toLowerCase()
+                  .includes(state.inputValue.toLowerCase())
+              )
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                label="Template"
+                sx={{ minWidth: 280 }}
+                disabled={loading}
+                error={Boolean(loadError)}
+                helperText={loadError || ""}
+              />
+            )}
+          />
+
           <StyledButton variant="outlined" onClick={handlePrint}>
             Print
           </StyledButton>
+
           <StyledButton variant="contained" onClick={handleAddRow}>
             Add
           </StyledButton>
@@ -213,11 +385,10 @@ const PrescriptionSection = () => {
             ),
         }}
         onEditingRowSave={({ row }) => {
-          setData((prev) =>
-            prev.map((r) =>
-              r.id === row.original.id ? { ...row.original } : r
-            )
+          const updated = data.map((r) =>
+            r.id === row.original.id ? { ...row.original } : r
           );
+          setData(updated);
           setEditingRowId(null);
         }}
         renderRowActions={({ row, table }) => {
@@ -286,11 +457,8 @@ const PrescriptionSection = () => {
         }}
       />
 
-      {/* DELETE CONFIRMATION DIALOG */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-      >
+      {/* DELETE CONFIRMATION */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
 
         <DialogContent>
@@ -309,9 +477,7 @@ const PrescriptionSection = () => {
             variant="contained"
             color="error"
             onClick={() => {
-              if (rowToDelete) {
-                handleDeleteRow({ row: rowToDelete });
-              }
+              if (rowToDelete) handleDeleteRow({ row: rowToDelete });
               setDeleteConfirmOpen(false);
               setRowToDelete(null);
             }}

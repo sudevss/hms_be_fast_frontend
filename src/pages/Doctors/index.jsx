@@ -62,12 +62,27 @@ function DoctorsPage() {
         doctor_id: id,
       }),
     onSuccess: (data) => {
-      const updatedData = data?.weekDaysList.map((_obj) => ({
-        ..._obj,
-        isChecked: _obj?.slotWeeks?.some(({ windowNum }) => windowNum),
-      }));
+      const source = data?.payload || data;
+      const updatedData = (source?.weekDaysList || []).map((_obj) => {
+        const normalizedSlotWeeksRaw = (_obj?.slotWeeks || [])
+          .filter((s) => (s.startTime && s.endTime) || s.window || s.window_num || s.windowNum)
+          .map((slot, j) => ({
+            ...slot,
+            windowNum: slot.windowNum || slot.window_num || slot.window || j + 1,
+          }));
+        const duration = Number((_obj?.slotWeeks || [])[0]?.slotDurationMinutes) || 15;
+        const normalizedSlotWeeks =
+          normalizedSlotWeeksRaw.length > 0
+            ? normalizedSlotWeeksRaw
+            : [{ startTime: "", endTime: "", totalSlots: "", slotDurationMinutes: duration, windowNum: "" }];
+        return {
+          ..._obj,
+          slotWeeks: normalizedSlotWeeks,
+          isChecked: normalizedSlotWeeks.some((s) => s.windowNum),
+        };
+      });
       if (updatedData) {
-        setDoctorSheduleData({ ...data, weekDaysList: [...updatedData] });
+        setDoctorSheduleData({ ...source, weekDaysList: [...updatedData] });
         setOpenSheduleDoctor(true);
       }
     },

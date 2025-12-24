@@ -13,11 +13,11 @@ const DiagnosisRightSidebar = ({ isOpen, onToggle, patientId }) => {
       sx={{
         width: isOpen
           ? {
-              xs: "85vw",
-              sm: "75vw",
-              md: "40vw",
-              lg: "35vw",
-              xl: "28vw",
+              xs: "90vw",
+              sm: "80vw",
+              md: "50vw",
+              lg: "45vw",
+              xl: "40vw",
             }
           : `${COLLAPSED_WIDTH}px`,
         transition: "width 0.3s ease",

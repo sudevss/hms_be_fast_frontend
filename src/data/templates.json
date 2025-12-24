@@ -1,0 +1,194 @@
+[
+  {
+    "template_id": 1,
+    "facility_id": 1,
+    "template_name": "Common Viral Fever",
+    "template_type": "FEVER",
+    "description": "Standard protocol for viral fever treatment",
+    "is_active": true,
+    "symptoms": [
+      {
+        "symptom_id": 1,
+        "symptom_name": "Fever",
+        "default_duration_days": 3,
+        "default_remarks": "High fever above 39°C"
+      },
+      {
+        "symptom_id": 2,
+        "symptom_name": "Headache",
+        "default_duration_days": 3,
+        "default_remarks": "Throbbing headache with malaise"
+      }
+    ],
+    "prescriptions": [
+      {
+        "medicine_id": 1,
+        "medicine_name": "Paracetamol",
+        "generic_name": "Acetaminophen",
+        "strength": "500mg",
+        "morning_dosage": "1",
+        "afternoon_dosage": "0",
+        "night_dosage": "1",
+        "food_timing": "After Food",
+        "duration_days": 5,
+        "special_instructions": "Take with plenty of water"
+      }
+    ],
+    "lab_tests": [
+      {
+        "test_id": 1,
+        "test_name": "Complete Blood Count",
+        "description": "Comprehensive blood analysis",
+        "prerequisite_text": "No fasting required",
+        "price": 300.0
+      }
+    ]
+  },
+  {
+    "template_id": 2,
+    "facility_id": 1,
+    "template_name": "Acute Viral URI",
+    "template_type": "URI",
+    "description": "Management of acute upper respiratory viral infection",
+    "is_active": true,
+    "symptoms": [
+      {
+        "symptom_id": 10,
+        "symptom_name": "Cough",
+        "default_duration_days": 5,
+        "default_remarks": "Dry cough, worse at night"
+      },
+      {
+        "symptom_id": 11,
+        "symptom_name": "Sore Throat",
+        "default_duration_days": 4,
+        "default_remarks": "Irritation and pain on swallowing"
+      }
+    ],
+    "prescriptions": [
+      {
+        "medicine_id": 21,
+        "medicine_name": "Cetirizine",
+        "generic_name": "Cetirizine",
+        "strength": "10mg",
+        "morning_dosage": "0",
+        "afternoon_dosage": "0",
+        "night_dosage": "1",
+        "food_timing": "After Food",
+        "duration_days": 7,
+        "special_instructions": "May cause drowsiness"
+      },
+      {
+        "medicine_id": 22,
+        "medicine_name": "Dextromethorphan Syrup",
+        "generic_name": "Dextromethorphan",
+        "strength": "10mg/5ml",
+        "morning_dosage": "1",
+        "afternoon_dosage": "1",
+        "night_dosage": "1",
+        "food_timing": "After Food",
+        "duration_days": 5,
+        "special_instructions": "Do not exceed recommended dose"
+      }
+    ],
+    "lab_tests": [
+      {
+        "test_id": 5,
+        "test_name": "CBC",
+        "description": "Rule out secondary bacterial infection",
+        "prerequisite_text": "No fasting required",
+        "price": 300.0
+      },
+      {
+        "test_id": 6,
+        "test_name": "Chest X-Ray",
+        "description": "If persistent cough or chest pain",
+        "prerequisite_text": "No special preparation",
+        "price": 500.0
+      }
+    ]
+  },
+
+  {
+    "template_id": 3,
+    "facility_id": 1,
+    "template_name": "Acute Gastroenteritis",
+    "template_type": "GASTRO",
+    "description": "Treatment protocol for viral or bacterial gastroenteritis",
+    "is_active": true,
+    "symptoms": [
+      {
+        "symptom_id": 20,
+        "symptom_name": "Vomiting",
+        "default_duration_days": 2,
+        "default_remarks": "Frequent vomiting leading to dehydration risk"
+      },
+      {
+        "symptom_id": 21,
+        "symptom_name": "Diarrhea",
+        "default_duration_days": 3,
+        "default_remarks": "Loose stools with abdominal cramps"
+      },
+      {
+        "symptom_id": 22,
+        "symptom_name": "Abdominal Pain",
+        "default_duration_days": 2,
+        "default_remarks": "Colicky pain, often relieved after bowel movement"
+      }
+    ],
+    "prescriptions": [
+      {
+        "medicine_id": 31,
+        "medicine_name": "ORS Solution",
+        "generic_name": "Oral Rehydration Salts",
+        "strength": "Standard",
+        "morning_dosage": "1",
+        "afternoon_dosage": "1",
+        "night_dosage": "1",
+        "food_timing": "Before Food",
+        "duration_days": 3,
+        "special_instructions": "Sip continuously to avoid dehydration"
+      },
+      {
+        "medicine_id": 32,
+        "medicine_name": "Ondansetron",
+        "generic_name": "Ondansetron",
+        "strength": "4mg",
+        "morning_dosage": "1",
+        "afternoon_dosage": "0",
+        "night_dosage": "1",
+        "food_timing": "After Food",
+        "duration_days": 2,
+        "special_instructions": "Use only when vomiting persists"
+      },
+      {
+        "medicine_id": 33,
+        "medicine_name": "Racecadotril",
+        "generic_name": "Racecadotril",
+        "strength": "100mg",
+        "morning_dosage": "1",
+        "afternoon_dosage": "1",
+        "night_dosage": "1",
+        "food_timing": "After Food",
+        "duration_days": 3,
+        "special_instructions": "Reduces frequency of diarrhea"
+      }
+    ],
+    "lab_tests": [
+      {
+        "test_id": 12,
+        "test_name": "Stool Routine",
+        "description": "Checks for infection, blood, or parasites",
+        "prerequisite_text": "Collect fresh sample",
+        "price": 250.0
+      },
+      {
+        "test_id": 13,
+        "test_name": "Electrolyte Panel",
+        "description": "Assess dehydration severity",
+        "prerequisite_text": "No fasting required",
+        "price": 400.0
+      }
+    ]
+  }
+]

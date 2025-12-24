@@ -94,7 +94,7 @@ const MuiReactTableComponent = ({
                 value={date}
                 required
                 showInputLabel
-                disableFuture
+                // disableFuture
                 label={dateLabel}
                 sxLabel={{ fontWeight: 600 }}
                 onChange={(e) => setDate(e.target.value)}
