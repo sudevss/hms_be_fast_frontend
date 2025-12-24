@@ -443,7 +443,7 @@ const updatePaymentStatus = async (row) => {
             </IconButton>
           </Tooltip>
 
-        {tabName === "Scheduled" && (
+        {/* {tabName === "Scheduled" && (
           <Tooltip placement="top" title="Edit" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
@@ -452,7 +452,7 @@ const updatePaymentStatus = async (row) => {
               <EditOutlinedIcon sx={{ color: "#115E59" }} />
             </IconButton>
           </Tooltip>
-        )}
+        )} */}
 
         {["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
