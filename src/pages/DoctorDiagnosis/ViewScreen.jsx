@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import CloseIcon from "@mui/icons-material/Close";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useIsFetching } from "@tanstack/react-query";
 import { dayjs } from "@/utils/dateUtils";
 import { getPatientDiagnosis } from "@/serviceApis";
 import DiagnosisSection from "./DiagnosisSection";
@@ -125,6 +125,22 @@ const ViewScreen = ({ open, onClose, appointment }) => {
     setPendingTemplateId("");
   }, [currentAppointment?.patient_id, currentAppointment?.appointment_id]);
 
+  const fetchingCount = useIsFetching({
+    predicate: (query) => {
+      const key0 = Array.isArray(query.queryKey)
+        ? query.queryKey[0]
+        : query.queryKey;
+      return [
+        "queryGetDiagnosisForViewScreen",
+        "queryGetTemplatesList",
+        "queryGetSymptomMaster",
+        "queryGetDrugMaster",
+        "queryGetPatientReports",
+        "queryGetAppointmentsAndBookings",
+      ].includes(key0);
+    },
+  });
+  const showPageLoader = fetchingCount > 0;
   const handleTemplateChange = (templateId) => {
     setPendingTemplateId(templateId);
     if (!templateId) return;
@@ -141,6 +157,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
   // Render
   return (
     <Dialog fullScreen open={open} onClose={onClose}>
+      <PageLoader show={showPageLoader} />
       <AppBar
         sx={{
           position: "fixed",

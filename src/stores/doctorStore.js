@@ -5,6 +5,8 @@ export const timeSlotObj = {
   startTime: "",
   endTime: "",
   totalSlots: "",
+  slotDurationMinutes: 15,
+  windowNum: "",
 };
 
 const initialStateDoctor = {
@@ -27,12 +29,17 @@ const initialStateDoctorShedule = {
   facility_id: 1,
   doctor_id: "",
   endDate: "",
+  // Deprecated single leave range fields (kept for backward compatibility)
   leaveStartDate: "",
   leaveEndDate: "",
+  // New: multiple leave periods to be synced with
+  // GET /doctor-schedule/{facility_id}/{doctor_id} -> leavePeriods
+  // Shape: [{ leaveStartDate: "YYYY-MM-DD", leaveEndDate: "YYYY-MM-DD" }]
+  leavePeriods: [],
   weekDaysList: WEEK_DAYS.map(({ value }) => ({
     weekDay: value,
     isChecked: false,
-    slotWeeks: [timeSlotObj],
+    slotWeeks: [],
   })),
 };
 

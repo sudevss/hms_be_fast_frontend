@@ -13,19 +13,26 @@ export const getDashBoardDetails = ({ date, facility_id, doctor_id }) => {
 };
 
 export const getDoctorSheduleDetails = async ({
-  facility_id = "1",
+  facility_id,
   doctor_id,
 }) => {
   try {
-    const response = await api.get(
-      `${`/doctor-schedule/${facility_id}/${doctor_id}`}`
-    );
+    let url = `/doctor-schedule/${doctor_id}`;
+    if (facility_id !== undefined && facility_id !== null) {
+      url += `?facility_id=${facility_id}`;
+    }
+    const response = await api.get(url);
     return response?.data;
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;
   }
 };
+
+export const patchDoctorShedule = (facility_id, doctor_id, payload) =>
+  api
+    .patch(`/doctor-schedule/${facility_id}/${doctor_id}`, payload)
+    .then((response) => response.data);
 
 export const postDoctorShedule = (payload) =>
   api
@@ -34,16 +41,15 @@ export const postDoctorShedule = (payload) =>
 
 export const deleteDoctorSheduleSlot = async ({
   facility_id,
-  startDate,
-  endDate,
   doctor_id,
-  windowNum,
+  week_day,
+  window_num,
 }) => {
-  api
-    .delete(
-      `${`/doctor-schedule/${facility_id}/${doctor_id}/${startDate}/${endDate}/${windowNum}`}`
-    )
-    .then((response) => response);
+  let url = `/doctor-schedule/${doctor_id}/${week_day}/${window_num}`;
+  if (facility_id !== undefined && facility_id !== null) {
+    url += `?facility_id=${facility_id}`;
+  }
+  return api.delete(url);
 };
 
 export const postNewDoctor = (payload) =>

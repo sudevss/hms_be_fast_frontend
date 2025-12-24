@@ -1,6 +1,6 @@
 import MuiReactTableComponent from "@/components/Table/MuiReactTableComponent";
 import { useEffect, useMemo, useState } from "react";
-import { Box, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
 
 import {
   deleteAppoinmentBooking,
@@ -29,6 +29,7 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloseIcon from "@mui/icons-material/Close";
 import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
@@ -62,14 +63,19 @@ const AppointmentsTable = ({
   const [patientReportsObj, setPatientReportObj] = useState("");
   const [openViewDetails, setOpenViewDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
+  const [openingPaymentDialog, setOpeningPaymentDialog] = useState(false);
   const [openDoctorDiagnosisPrompt, setOpenDoctorDiagnosisPrompt] = useState(false);
   const [openDoctorDiagnosis, setOpenDoctorDiagnosis] = useState(false);
+  
 
   const [paymentObj, setPaymentObj] = useState({
     appointment_id: "",
     facility_id: 1,
     payment_status: false,
     payment_method: "",
+    payment_comments: "",
+    consultation_fee: 0,
     open: false,
   });
 
@@ -112,15 +118,100 @@ const AppointmentsTable = ({
     enabled: true,
   });
 
-  const updatePaymentStatus = (row) => {
-    setPaymentObj({ ...paymentObj, ...row, open: true });
-    // const payment_status = row.paid ? false : true;
-    // mutationAppoinmentStatusUpdate.mutate({
-    //   appointment_id: row.appointment_id,
-    //   payment_status,
-    //   payment_method: row.payment_method || "Cash",
-    // });
-  };
+const handleMoveToCompleted = async (row) => {
+  if (row.is_paid || row.paid) {
+    // User is paid, show confirmation with payment details
+    updateAppointmentStatus(row);
+  } else {
+    // User not paid, show payment dialog
+    // If consultation_fee is not available, fetch appointment details first
+    if (!row.consultation_fee && !row.doctor_consultation_fee && !row.fee) {
+      try {
+        const data = await getAppointmentDetailsById({
+          appointment_id: row.appointment_id,
+          facility_id: row.facility_id,
+        });
+        
+        const normalized = Array.isArray(data) ? data?.[0] : data;
+        
+        setPendingStatusUpdate(row);
+        setPaymentObj({ 
+          ...paymentObj, 
+          appointment_id: row.appointment_id,
+          facility_id: row.facility_id,
+          consultation_fee: normalized.consultation_fee || normalized.doctor_consultation_fee || 0,
+          payment_comments: row.payment_comments || "",
+          open: true 
+        });
+        return;
+      } catch (error) {
+        setShowAlert({
+          show: true,
+          message: "Failed to fetch appointment details",
+          status: "error",
+        });
+        return;
+      }
+    }
+    
+    const fee = row.consultation_fee || row.doctor_consultation_fee || row.fee || 0;
+    
+    setPendingStatusUpdate(row);
+    setPaymentObj({ 
+      ...paymentObj, 
+      appointment_id: row.appointment_id,
+      facility_id: row.facility_id,
+      consultation_fee: fee,
+      payment_comments: row.payment_comments || "",
+      open: true 
+    });
+  }
+};
+
+const updatePaymentStatus = async (row) => {
+  // If consultation_fee is not available, fetch appointment details first
+  if (!row.consultation_fee && !row.doctor_consultation_fee && !row.fee) {
+    try {
+      const data = await getAppointmentDetailsById({
+        appointment_id: row.appointment_id,
+        facility_id: row.facility_id,
+      });
+      
+      const normalized = Array.isArray(data) ? data?.[0] : data;
+      
+      setPaymentObj({
+        ...paymentObj,
+        appointment_id: normalized.appointment_id,
+        facility_id: normalized.facility_id,
+        payment_status: normalized.is_paid || normalized.paid || false,
+        payment_method: normalized.payment_method || normalized.payment_type || "",
+        consultation_fee: normalized.consultation_fee || normalized.doctor_consultation_fee || 0,
+        payment_comments: normalized.payment_comments || "",
+        open: true
+      });
+    } catch (error) {
+      setShowAlert({
+        show: true,
+        message: "Failed to fetch appointment details",
+        status: "error",
+      });
+    }
+    return;
+  }
+  
+  const fee = row.consultation_fee || row.doctor_consultation_fee || row.fee || 0;
+  
+  setPaymentObj({ 
+    ...paymentObj, 
+    appointment_id: row.appointment_id,
+    facility_id: row.facility_id,
+    payment_status: row.is_paid || row.paid || false,
+    payment_method: row.payment_method || row.payment_type || "",
+    consultation_fee: fee,
+    payment_comments: row.payment_comments || "",
+    open: true 
+  });
+};
 
   const mutationPaymentStatusUpdate = useMutation({
     mutationFn: (payload) => postUpdatePaymentStatus(payload),
@@ -131,7 +222,14 @@ const AppointmentsTable = ({
         status: "success",
       });
       queryClient.invalidateQueries(["dashboard"]);
-      setPaymentObj({ appointment_id: "", open: false });
+      
+      // If there's a pending status update, trigger it now
+      if (pendingStatusUpdate) {
+        updateAppointmentStatus(pendingStatusUpdate);
+        setPendingStatusUpdate(null);
+      }
+      
+      setPaymentObj({ appointment_id: "", open: false, payment_comments: "" });
       onResetAlert();
     },
     onError: () => {
@@ -140,6 +238,7 @@ const AppointmentsTable = ({
         message: `Payment update failed`,
         status: "error",
       });
+      setPendingStatusUpdate(null);
     },
   });
 
@@ -271,7 +370,7 @@ const AppointmentsTable = ({
           >
             <IconButton
               backgroundColor="#115E59"
-              onClick={() => updateAppointmentStatus(row.original)}
+              onClick={() => handleMoveToCompleted(row.original)}
             >
               <EditAttributesIcon color="#115E59" />
             </IconButton>
@@ -343,6 +442,17 @@ const AppointmentsTable = ({
             <VisibilityIcon color="#115E59" />
             </IconButton>
           </Tooltip>
+
+        {tabName === "Scheduled" && (
+          <Tooltip placement="top" title="Edit" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => {}}
+            >
+              <EditOutlinedIcon sx={{ color: "#115E59" }} />
+            </IconButton>
+          </Tooltip>
+        )}
 
         {["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
@@ -505,7 +615,10 @@ const AppointmentsTable = ({
       />
       <Dialog
         open={paymentObj?.open}
-        // onClose={() => setPaymentObj({ appointment_id: "", open: false })}
+        onClose={() => {
+          setPaymentObj({ appointment_id: "", open: false, payment_comments: "" });
+          setPendingStatusUpdate(null);
+        }}
       >
         <DialogTitle
           sx={{
@@ -513,16 +626,29 @@ const AppointmentsTable = ({
             textAlign: "center",
           }}
         >
-          Update Payment
+          {pendingStatusUpdate ? "Payment Required to Complete" : "Update Payment"}
         </DialogTitle>
         <IconButton
           aria-label="close"
-          onClick={() => setPaymentObj({ appointment_id: "", open: false })}
+          onClick={() => {
+            setPaymentObj({ appointment_id: "", open: false, payment_comments: "" });
+            setPendingStatusUpdate(null);
+          }}
           sx={{ position: "absolute", right: 8, top: 8 }}
         >
           <CloseIcon />
         </IconButton>
         <DialogContent>
+          {pendingStatusUpdate && (
+            <Typography sx={{ mb: 2, color: "text.secondary" }}>
+              Please complete payment before moving this appointment to completed status.
+            </Typography>
+          )}
+          
+          <Typography sx={{ mb: 2, fontWeight: 600, fontSize: "1.1rem" }}>
+            Consultation Fee: ₹{paymentObj?.consultation_fee || 0}
+          </Typography>
+
           <FormControlLabel
             control={
               <Checkbox
@@ -552,6 +678,21 @@ const AppointmentsTable = ({
                 payment_method: value,
               }))
             }
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Payment Comments"
+            value={paymentObj?.payment_comments || ""}
+            onChange={(e) =>
+              setPaymentObj((prev) => ({
+                ...prev,
+                payment_comments: e.target.value,
+              }))
+            }
+            sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", mb: 2 }}>
