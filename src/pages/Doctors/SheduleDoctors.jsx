@@ -71,6 +71,9 @@ const deleteDoctorSlot = (weekdaysSlots, weekIndex, slotIndex) =>
       : day
   );
 
+// Generate a small unique id for temporary rows (used when there are no slots yet)
+const genId = (prefix = "id-") => `${prefix}${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
 // 🔹 Main Component
 const SheduleDoctors = ({ open, setOpen }) => {
   const {
@@ -134,10 +137,15 @@ const SheduleDoctors = ({ open, setOpen }) => {
         queryClient.invalidateQueries({ queryKey: ["queryGetDoctorSheduleDetails", doctor_id] });
       }
     },
-    onError: () => {
+    onError: (err) => {
+      // Log network/server error for debugging
+      try {
+        // eslint-disable-next-line no-console
+        console.error("mutationAddSchedule error:", err?.response || err);
+      } catch (e) {}
       setShowAlert({
         show: true,
-        message: "Failed to add schedule",
+        message: (err?.response?.data?.detail || err?.message) || "Failed to add schedule",
         status: "error",
       });
     },
@@ -221,21 +229,56 @@ const SheduleDoctors = ({ open, setOpen }) => {
       weekDaysList: filteredWeeks,
       leavePeriods: validLeavePeriods,
     };
+
+    // Client-side validation
+    if (!payload?.doctor_id) {
+      setShowAlert({ show: true, message: "No doctor selected. Please open schedule from a specific doctor.", status: "error" });
+      return;
+    }
+    if (!Array.isArray(filteredWeeks) || filteredWeeks.length === 0) {
+      setShowAlert({ show: true, message: "Please select at least one weekday and add valid start/end slots.", status: "error" });
+      return;
+    }
+
+    try {
+      // eslint-disable-next-line no-console
+      console.log("handleSubmit - payload", JSON.stringify(payload, null, 2));
+    } catch (e) {}
     mutationAddSchedule.mutate(payload);
   };
 
   const addTimeSlot = (weekIndex) => {
-    const nextRaw = weekDaysList.map((day, i) =>
-      i === weekIndex ? { ...day, slotWeeks: [...day.slotWeeks, timeSlotObj] } : day
-    );
-    const next = nextRaw.map((day) => ({
-      ...day,
-      slotWeeks: (day.slotWeeks || []).map((slot, j) => ({
+    // create a fresh slot object to avoid shared references across weekdays
+    const duration = slotDurations[weekIndex] || 15;
+    const newSlotBase = { ...timeSlotObj, slotDurationMinutes: duration, id: genId(`tmp-${weekIndex}-`) };
+
+    const next = weekDaysList.map((day, i) => {
+      if (i !== weekIndex) return {
+        ...day,
+        // ensure we don't accidentally keep shared arrays; clone existing slotWeeks
+        slotWeeks: Array.isArray(day.slotWeeks) ? [...day.slotWeeks] : [],
+      };
+
+      const current = Array.isArray(day.slotWeeks) ? day.slotWeeks : [];
+
+      // If current has no meaningful slots (all blank), replace with a single new slot
+      const hasMeaningful = current.some((s) => Boolean(s && (s.windowNum || s.window || s.window_num || (s.startTime && s.endTime) || s.startTime || s.endTime)));
+
+      const updatedSlotWeeks = hasMeaningful
+        ? [...current, { ...newSlotBase, windowNum: current.length + 1 }]
+        : [{ ...newSlotBase, windowNum: 1 }];
+
+      // normalize windowNum for safety
+      const normalized = updatedSlotWeeks.map((slot, j) => ({
         ...slot,
         windowNum: slot.windowNum || slot.window_num || slot.window || j + 1,
-      })),
-    }));
+      }));
+
+      return { ...day, slotWeeks: normalized };
+    });
+
     setDoctorSheduleSlots(next);
+
     if (doctor_id) {
       queryClient.setQueryData(["queryGetDoctorSheduleDetails", doctor_id], (old) => {
         if (!old) return old;
@@ -497,79 +540,104 @@ const SheduleDoctors = ({ open, setOpen }) => {
 
               {/* Time Slots */}
               {(() => {
-                const rows = slotWeeks.length ? slotWeeks : [{ ...timeSlotObj, id: genId(`tmp-${weekIndex}-`) }];
-                return rows.map(({ startTime, endTime, totalSlots, windowNum, id }, slotIndex) => (
-                  <Stack
-                    key={id || windowNum || `${weekIndex}-${slotIndex}`}
-                    direction={isMobile ? "column" : "row"}
-                    spacing={1.5}
-                    alignItems="center"
-                    mt={1}
-                    pl={4}
-                  >
-                    <SelectWithLabel
-                      name="startTime"
-                      value={startTime}
-                      disabled={!isChecked}
-                      menuOptions={DOCTOR_SHEDULE_SLOTS_OPTIONS}
-                      placeholderText="Start Time"
-                      labelSx={compactLabelSx}
-                      inputSx={compactInputSx}
-                      onChangeHandler={(val) =>
-                        handleSlotChange(weekIndex, slotIndex, "startTime", val)
-                      }
-                      minWidth={100}
-                    />
-                    <SelectWithLabel
-                      name="endTime"
-                      value={endTime}
-                      disabled={!isChecked || !startTime}
-                      menuOptions={startTime ? getFilteredEndTimes(startTime) : []}
-                      placeholderText="End Time"
-                      labelSx={compactLabelSx}
-                      inputSx={compactInputSx}
-                      onChangeHandler={(val) =>
-                        handleSlotChange(weekIndex, slotIndex, "endTime", val)
-                      }
-                      minWidth={100}
-                    />
-                    <TextInputWithLabel
-                      name="totalSlots"
-                      value={totalSlots}
-                      disabled
-                      labelSx={compactLabelSx}
-                      InputSxProps={{
-                        minWidth: "120px",
-                        height: 40,
-                        fontSize: "0.9rem",
-                      }}
-                    />
-                    <IconButton
-                      color="error"
-                      onClick={() =>
-                        handleDeleteSlot({
-                          weekIndex,
-                          slotIndex,
-                          startDate,
-                          endDate,
-                          windowNum,
-                        })
-                      }
+                // Determine whether there are any meaningful slots (not just blank placeholders)
+                const hasMeaningfulSlot =
+                  Array.isArray(slotWeeks) &&
+                  slotWeeks.some((s) =>
+                    Boolean(
+                      s && (s.windowNum || s.window || s.window_num || (s.startTime && s.endTime) || s.startTime || s.endTime)
+                    )
+                  );
+
+                if (hasMeaningfulSlot) {
+                  return (slotWeeks || []).map(({ startTime, endTime, totalSlots, windowNum, id }, slotIndex) => (
+                    <Stack
+                      key={id || windowNum || `${weekIndex}-${slotIndex}`}
+                      direction={isMobile ? "column" : "row"}
+                      spacing={1.5}
+                      alignItems="center"
+                      mt={1}
+                      pl={4}
                     >
-                      <DeleteForeverIcon />
-                    </IconButton>
-                    {slotIndex === rows.length - 1 && (
-                      <IconButton
-                        color="primary"
+                      <SelectWithLabel
+                        name="startTime"
+                        value={startTime}
                         disabled={!isChecked}
-                        onClick={() => addTimeSlot(weekIndex)}
+                        menuOptions={DOCTOR_SHEDULE_SLOTS_OPTIONS}
+                        placeholderText="Start Time"
+                        labelSx={compactLabelSx}
+                        inputSx={compactInputSx}
+                        onChangeHandler={(val) =>
+                          handleSlotChange(weekIndex, slotIndex, "startTime", val)
+                        }
+                        minWidth={100}
+                      />
+                      <SelectWithLabel
+                        name="endTime"
+                        value={endTime}
+                        disabled={!isChecked || !startTime}
+                        menuOptions={startTime ? getFilteredEndTimes(startTime) : []}
+                        placeholderText="End Time"
+                        labelSx={compactLabelSx}
+                        inputSx={compactInputSx}
+                        onChangeHandler={(val) =>
+                          handleSlotChange(weekIndex, slotIndex, "endTime", val)
+                        }
+                        minWidth={100}
+                      />
+                      <TextInputWithLabel
+                        name="totalSlots"
+                        value={totalSlots}
+                        disabled
+                        labelSx={compactLabelSx}
+                        InputSxProps={{
+                          minWidth: "120px",
+                          height: 40,
+                          fontSize: "0.9rem",
+                        }}
+                      />
+                      <IconButton
+                        color="error"
+                        onClick={() =>
+                          handleDeleteSlot({
+                            weekIndex,
+                            slotIndex,
+                            startDate,
+                            endDate,
+                            windowNum,
+                          })
+                        }
                       >
-                        <AddCircleOutlineIcon sx={{ color: "#115E59" }} />
+                        <DeleteForeverIcon />
                       </IconButton>
-                    )}
-                  </Stack>
-                ));
+                      {slotIndex === (slotWeeks || []).length - 1 && (
+                        <IconButton
+                          color="primary"
+                          disabled={!isChecked}
+                          onClick={() => addTimeSlot(weekIndex)}
+                        >
+                          <AddCircleOutlineIcon sx={{ color: "#115E59" }} />
+                        </IconButton>
+                      )}
+                    </Stack>
+                  ));
+                }
+
+                // No meaningful slots — show centered add icon
+                return (
+                  <Box sx={{ display: "flex", justifyContent: "center", mt: 2, mb: 1 }}>
+                    <IconButton
+                      color="primary"
+                      disabled={!isChecked}
+                      onClick={() => addTimeSlot(weekIndex)}
+                      aria-label="Add slot"
+                    >
+                      <AddCircleOutlineIcon sx={{ color: isChecked ? "#115E59" : undefined }} />
+                    </IconButton>
+                  </Box>
+                );
               })()}
+
             </Box>
           ))}
           <Divider sx={{ my: 2 }} />
