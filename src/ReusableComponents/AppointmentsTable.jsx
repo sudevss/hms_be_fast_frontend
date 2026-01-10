@@ -8,6 +8,7 @@ import {
   getPatientDiagnosis,
   postCheckinAppoinmentBooking,
   getAppointmentDetailsById,
+  getPatientDetailsById,
   postUpdateAppointmentStatus,
   postUpdatePaymentStatus,
 } from "@/serviceApis";
@@ -16,6 +17,7 @@ import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
 import DatePickerComponent from "@components/DatePicker";
 import AddOrEditPatientDiagnosis from "@/ReusableComponents/AddOrEditPatientDiagnosis";
+import AddOrEditBooking from "@/ReusableComponents/AddOrEditBooking";
 import PatientReports from "@/ReusableComponents/PatientReports";
 import ViewScreen from "@/pages/DoctorDiagnosis/ViewScreen";
 import PrescriptionSection from "@pages/DoctorDiagnosis/PrescriptionSection";
@@ -33,6 +35,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePatientDiagnosis } from "@/stores/patientStore";
+import { useBooking } from "@/stores/bookingStore";
 import { useShowAlert } from "@/stores/showAlertStore";
 import { INITIAL_SHOW_ALERT, PAYMENT_METHODS } from "@data/staticData";
 import { convertUTCClockToIST, dayjs } from "@utils/dateUtils";
@@ -67,6 +70,8 @@ const AppointmentsTable = ({
   const [openingPaymentDialog, setOpeningPaymentDialog] = useState(false);
   const [openDoctorDiagnosisPrompt, setOpenDoctorDiagnosisPrompt] = useState(false);
   const [openDoctorDiagnosis, setOpenDoctorDiagnosis] = useState(false);
+  const [openEditBooking, setOpenEditBooking] = useState(false);
+  const [editBookingTitle, setEditBookingTitle] = useState("");
   
 
   const [paymentObj, setPaymentObj] = useState({
@@ -80,6 +85,7 @@ const AppointmentsTable = ({
   });
 
   const { setPatientDiagnosis } = usePatientDiagnosis();
+  const bookingStore = useBooking();
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
   const queryClient = useQueryClient();
 
@@ -250,6 +256,8 @@ const updatePaymentStatus = async (row) => {
     mutationFn: (payload) => deleteAppoinmentBooking(payload),
     onSuccess: () => {
       queryClient.invalidateQueries(["queryGetAppointmentsAndBookings"]);
+      // Ensure dashboard counts and charts are updated too
+      queryClient.invalidateQueries(["dashboard"]);
       refetch();
       setShowAlert({
         show: true,
@@ -280,7 +288,11 @@ const updatePaymentStatus = async (row) => {
         status: "success",
       });
       refetchDashBoard?.();
-      setIsCheckinOpen?.(false);
+      // Refresh the local appointments query used in this table (useful for check-in dialog)
+      refetch?.();
+      // Keep the check-in dialog open so user can continue to use it; remove forced close
+      // If you prefer to close it automatically, uncomment the next line:
+      // setIsCheckinOpen?.(false);
     },
     onError: () => {
       setShowAlert({
@@ -332,6 +344,80 @@ const updatePaymentStatus = async (row) => {
       setOpenDiagnosis(true);
     }
   };
+  const handleEditBooking = async (row) => {
+    try {
+      const appt = await getAppointmentDetailsById({
+        appointment_id: row.appointment_id,
+        facility_id: row.facility_id,
+      });
+      const normalized = Array.isArray(appt) ? appt?.[0] : appt;
+      setEditBookingTitle(String(normalized?.appointment_id || row.appointment_id));
+      bookingStore.onReset();
+      const apptModeRaw =
+        normalized?.appointment_mode || normalized?.AppointmentMode || "";
+      const apptModeLabel =
+        String(apptModeRaw).toLowerCase() === "walkin" ? "Walk-in" : "Appointment";
+      // Appointment meta
+      bookingStore.setBookingData({
+        doctor_id: normalized?.doctor_id,
+        doctorName:
+          row?.doctor_name && row?.specialization
+            ? `${row.doctor_name} - ${row.specialization}`
+            : "",
+        facility_id: normalized?.facility_id || 1,
+        AppointmentDate: normalized?.appointment_date || normalized?.date || "",
+        AppointmentTime: normalized?.time_slot || "",
+        AppointmentMode: apptModeLabel,
+        payment_status: normalized?.is_paid || normalized?.paid ? 1 : 0,
+        payment_method: normalized?.payment_method || normalized?.payment_type || "",
+        Reason: normalized?.reason || "",
+      });
+      // Patient details
+      if (normalized?.patient_id) {
+        try {
+          const patient = await getPatientDetailsById({
+            patient_id: normalized.patient_id,
+            facility_id: normalized.facility_id || 1,
+          });
+          const p = Array.isArray(patient) ? patient?.[0] : patient;
+          bookingStore.setBookingData({
+            firstname: p?.firstname || p?.name || "",
+            lastname: p?.lastname || "",
+            age: p?.age || "",
+            dob: p?.dob || "",
+            contact_number: p?.contact_number || p?.phone_number || "",
+            address: p?.address || "",
+            gender: p?.gender || "",
+            email_id: p?.email_id || "",
+            ABDM_ABHA_id: p?.ABDM_ABHA_id || "",
+          });
+          // Re-apply appointment fields to ensure they persist after patient merge
+          bookingStore.setBookingData({
+            doctor_id: normalized?.doctor_id,
+            doctorName:
+              row?.doctor_name && row?.specialization
+                ? `${row.doctor_name} - ${row.specialization}`
+                : bookingStore.doctorName,
+            facility_id: normalized?.facility_id || 1,
+            AppointmentDate: normalized?.appointment_date || normalized?.date || "",
+            AppointmentTime: normalized?.time_slot || "",
+            AppointmentMode: apptModeLabel,
+            payment_status: normalized?.is_paid || normalized?.paid ? 1 : 0,
+            payment_method:
+              normalized?.payment_method || normalized?.payment_type || "",
+            Reason: normalized?.reason || "",
+          });
+        } catch {}
+      }
+      setOpenEditBooking(true);
+    } catch (error) {
+      setShowAlert({
+        show: true,
+        message: "Failed to fetch appointment details",
+        status: "error",
+      });
+    }
+  };
   const handleReports = (row) => {
     setPatientReportObj({ ...row });
     setOpenReports(true);
@@ -339,17 +425,27 @@ const updatePaymentStatus = async (row) => {
 
   // 🔹 Columns (memoized)
   const columns = useMemo(() => {
+    const isReview = (data) => {
+      const val = data?.is_review;
+      return val === true || val === 1 || val === "1" || val === "true";
+    };
+
     const paymentCell = ({ row }) => (
       <Box sx={{ display: "flex", justifyContent: "center" }}>
-        
         <Tooltip
           title={
-            row.original.is_paid || row.original.paid ? "Paid" : "Not Paid"
+            isReview(row.original)
+              ? "Payment not required"
+              : row.original.is_paid || row.original.paid
+              ? "Paid"
+              : "Not Paid"
           }
           arrow
         >
           <IconButton>
-            {row.original.is_paid || row.original.paid ? (
+            {isReview(row.original) ||
+            row.original.is_paid ||
+            row.original.paid ? (
               <FaCheck color="#115E59" />
             ) : (
               <FcCancel />
@@ -376,17 +472,19 @@ const updatePaymentStatus = async (row) => {
             </IconButton>
           </Tooltip>
         )}
-        <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
-          <IconButton
-            color="#115E59"
-            disabled={row.original.is_paid || row.original.paid}
-            onClick={() => {
-              updatePaymentStatus(row.original);
-            }}
-          >
-            <CurrencyRupeeIcon color="#115E59" />
-          </IconButton>
-        </Tooltip>
+        {!isReview(row.original) && (
+          <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+            <IconButton
+              color="#115E59"
+              disabled={row.original.is_paid || row.original.paid}
+              onClick={() => {
+                updatePaymentStatus(row.original);
+              }}
+            >
+              <CurrencyRupeeIcon color="#115E59" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
           <IconButton
             backgroundColor="#115E59"
@@ -443,16 +541,16 @@ const updatePaymentStatus = async (row) => {
             </IconButton>
           </Tooltip>
 
-        {/* {tabName === "Scheduled" && (
+        {tabName === "Scheduled" && (
           <Tooltip placement="top" title="Edit" arrow enterDelay={100}>
             <IconButton
               backgroundColor="#115E59"
-              onClick={() => {}}
+              onClick={() => handleEditBooking(row.original)}
             >
               <EditOutlinedIcon sx={{ color: "#115E59" }} />
             </IconButton>
           </Tooltip>
-        )} */}
+        )}
 
         {["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Checkin" arrow enterDelay={100}>
@@ -465,20 +563,26 @@ const updatePaymentStatus = async (row) => {
           </Tooltip>
         )}
 
-        {["Completed"].includes(tabName) && (<>
-      <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
-        <IconButton
-          backgroundColor="#115E59"
-          disabled={row.original.is_paid || row.original.paid}
-          onClick={() => {
-            updatePaymentStatus(row.original);
-          }}
-        >
-          <CurrencyRupeeIcon color="#115E59" />
-        </IconButton>
-      </Tooltip>
-    </>
-  )}
+        {["Completed"].includes(tabName) && !isReview(row.original) && (
+          <>
+            <Tooltip
+              placement="top"
+              title="Payment Update"
+              arrow
+              enterDelay={100}
+            >
+              <IconButton
+                backgroundColor="#115E59"
+                disabled={row.original.is_paid || row.original.paid}
+                onClick={() => {
+                  updatePaymentStatus(row.original);
+                }}
+              >
+                <CurrencyRupeeIcon color="#115E59" />
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
 
         {!["Scheduled"].includes(tabName) && (
           <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
@@ -545,8 +649,25 @@ const updatePaymentStatus = async (row) => {
       { accessorKey: "actions", header: "Actions", Cell: dashboardActionsCell },
     ];
 
+    const firstColumn =
+      tabName === "Scheduled"
+        ? { accessorKey: "appointment_id", header: "APP. ID", size: 100 }
+        : {
+            accessorKey: "token_id",
+            header: "Token ID",
+            size: 120,
+            Cell: ({ row }) => (
+              <span>
+                {row.original.token_id ||
+                  row.original.TokenID ||
+                  row.original.token ||
+                  row.original.token_number ||
+                  "-"}
+              </span>
+            ),
+          };
     const appointmentColumn = [
-      { accessorKey: "appointment_id", header: "ID", size: 80 },
+      firstColumn,
       { accessorKey: "name", header: "Patient Name" },
       { accessorKey: "phone", header: "Mobile", size: 120 },
       { accessorKey: "doctor", header: "Doctor", size: 150 },
@@ -563,7 +684,34 @@ const updatePaymentStatus = async (row) => {
     initialState: {
       showGlobalFilter: true,
       showColumnFilters: true,
-      columnPinning: { right: ["actions"], left: ["appointment_id"] },
+      columnPinning: {
+        right: ["actions"],
+        left: [tabName === "Scheduled" ? "appointment_id" : "token_id"],
+      },
+      columnOrder:
+        tabName === "Scheduled"
+          ? [
+              "appointment_id",
+              "name",
+              "phone",
+              "doctor",
+              "time_slot",
+              "payment_method",
+              "paid",
+              "consultation_fee",
+              "actions",
+            ]
+          : [
+              "token_id",
+              "name",
+              "phone",
+              "doctor",
+              "time_slot",
+              "payment_method",
+              "paid",
+              "consultation_fee",
+              "actions",
+            ],
     },
   };
 
@@ -577,15 +725,17 @@ const updatePaymentStatus = async (row) => {
   // 🔹 Render End Date Filter (for Completed tab)
   const renderTopToolbarComponent = () => (
     <Stack direction="row" alignItems="center" gap={2}>
-      <Box width="12vw">
-        <DatePickerComponent
-          name="endDate"
-          value={endDate}
-          label="End Date"
-          onChange={(e) => setEndDate(e.target.value)}
-          dateProps={{ disableFuture: true }}
-        />
-      </Box>
+      {["Completed"].includes(tabName) && (
+        <Box width="12vw">
+          <DatePickerComponent
+            name="endDate"
+            value={endDate}
+            label="End Date"
+            onChange={(e) => setEndDate(e.target.value)}
+            dateProps={{ disableFuture: true }}
+          />
+        </Box>
+      )}
     </Stack>
   );
 
@@ -609,9 +759,7 @@ const updatePaymentStatus = async (row) => {
         columns={columns}
         tableProps={tableProps}
         maxHeight="40vh"
-        CustomRenderTopToolbar={
-          ["Completed"].includes(tabName) && renderTopToolbarComponent
-        }
+        CustomRenderTopToolbar={renderTopToolbarComponent}
       />
       <Dialog
         open={paymentObj?.open}
@@ -762,6 +910,15 @@ const updatePaymentStatus = async (row) => {
       onClose={() => setOpenDoctorDiagnosis(false)}
       appointment={selectedAppointment}
     />
+    {openEditBooking && (
+      <AddOrEditBooking
+        open={openEditBooking}
+        setOpen={setOpenEditBooking}
+        title={editBookingTitle}
+        appointmentId={editBookingTitle}
+        isEdit={true}
+      />
+    )}
     </>
   );
 };
