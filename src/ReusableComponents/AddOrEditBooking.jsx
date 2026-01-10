@@ -9,6 +9,8 @@ import {
   Typography,
   Stack,
   Box,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 
 import IconButton from "@mui/material/IconButton";
@@ -26,10 +28,12 @@ import {
 import { bookingRequiredFileds, useBooking } from "@/stores/bookingStore";
 import TextAreaInputWithLabel from "@components/inputs/TextAreaInputWithLabel";
 import {
+  getAppointmentsAndBookings,
   getAllDoctorsDetails,
   getPaientDetailsByPhone,
   postNewAppoinmentBooking,
   postNewAppoinmentBookingWithExistingPatient,
+  putUpdateBooking,
 } from "@/serviceApis";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -40,7 +44,7 @@ import { useShowAlert } from "@/stores/showAlertStore";
 import { calculateAge } from "@/stores/patientStore";
 import { dayjs } from "@utils/dateUtils";
 
-const AddOrEditBooking = ({ open, setOpen }) => {
+const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId }) => {
   const {
     firstname,
     lastname,
@@ -70,6 +74,46 @@ const AddOrEditBooking = ({ open, setOpen }) => {
   const [paientDetailsByNum, setPaientDetailsByNum] = useState([]);
   const [selectPaientName, setSelectPaientName] = useState({});
   const { showAlert, setShowAlert, onResetAlert } = useShowAlert();
+  const [isReviewChecked, setIsReviewChecked] = useState(false);
+  const [isReviewEnabled, setIsReviewEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkReviewEligibility = async () => {
+      if (AppointmentDate && doctor_id && selectPaientName?.id) {
+        const startDate = dayjs(AppointmentDate)
+          .subtract(7, "day")
+          .format("YYYY-MM-DD");
+        const endDate = dayjs(AppointmentDate).format("YYYY-MM-DD");
+        try {
+          const data = await getAppointmentsAndBookings({
+            facility_id: facility_id || 1,
+            date: startDate,
+            end_date: endDate,
+            patient_id: selectPaientName.id,
+            appointment_status: "Completed",
+          });
+
+          const hasEligible = data.some(
+            (app) =>
+              String(app.doctor_id) === String(doctor_id) &&
+              (app.is_paid ||
+                app.paid ||
+                app.appointment_status === "Completed")
+          );
+          setIsReviewEnabled(hasEligible);
+          if (!hasEligible) setIsReviewChecked(false);
+        } catch (e) {
+          console.error(e);
+          setIsReviewEnabled(false);
+          setIsReviewChecked(false);
+        }
+      } else {
+        setIsReviewEnabled(false);
+        setIsReviewChecked(false);
+      }
+    };
+    checkReviewEligibility();
+  }, [AppointmentDate, doctor_id, selectPaientName, facility_id]);
 
   const queryGetAllDoctorsDetails = useQuery({
     queryKey: ["queryGetAllDoctorsDetails"],
@@ -87,6 +131,16 @@ const AddOrEditBooking = ({ open, setOpen }) => {
     id: obj?.id,
     label: `${obj.doctor_name} - ${obj.specialization}`,
   }));
+
+  useEffect(() => {
+    if (doctor_id && !doctorName && Array.isArray(doctorsData) && doctorsData.length > 0) {
+      const found = doctorsData.find((d) => String(d.id) === String(doctor_id));
+      if (found) {
+        const label = `${found.doctor_name} - ${found.specialization}`;
+        onChangeBooking("doctorName", label);
+      }
+    }
+  }, [doctor_id, doctorName, doctorsData, onChangeBooking]);
 
   const reqPayload = () => ({
     patient_info: {
@@ -110,6 +164,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
     // room_id,
     payment_status,
     payment_method,
+    is_review: isReviewChecked,
   });
   const queryClient = useQueryClient();
 
@@ -132,6 +187,35 @@ const AddOrEditBooking = ({ open, setOpen }) => {
     const thresholdMin = threshold.hour() * 60 + threshold.minute();
     return TIME_SLOTS_HOURS_OPTIONS.filter(({ value }) => parseSlotMinutes(value) >= thresholdMin);
   };
+
+  const mutationUpdateBooking = useMutation({
+    mutationFn: (payload) => putUpdateBooking(appointmentId, payload),
+    onSuccess: (data) => {
+      setShowAlert({
+        show: true,
+        message: `Appointment updated successfully`,
+        status: "success",
+      });
+      onReset();
+      queryClient.invalidateQueries({
+        queryKey: ["queryGetAppointmentsAndBookings"],
+        exact: false,
+        refetchActive: true,
+        refetchInactive: false,
+      });
+      setSelectPaientName({});
+      setOpen(false);
+      setPaientDetailsByNum([]);
+    },
+    onError: (error) => {
+      console.log(error?.response?.data?.detail);
+      setShowAlert({
+        show: true,
+        message: error?.response?.data?.detail,
+        status: "error",
+      });
+    },
+  });
 
   const mutationAddBooikng = useMutation({
     mutationFn: (payload) =>
@@ -171,7 +255,16 @@ const AddOrEditBooking = ({ open, setOpen }) => {
 
   const onSumbitBooking = () => {
     // bookingRequiredFileds
-    mutationAddBooikng.mutate(reqPayload());
+    if (isEdit) {
+      const payload = {
+        AppointmentDate: dayjs(AppointmentDate).format("YYYY-MM-DD"),
+        AppointmentTime: AppointmentTime,
+        AppointmentMode: AppointmentMode[0],
+      };
+      mutationUpdateBooking.mutate(payload);
+    } else {
+      mutationAddBooikng.mutate(reqPayload());
+    }
   };
 
   const mutationByMobileNum = useMutation({
@@ -235,7 +328,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         }}
         id="customized-dialog-title"
       >
-        New Booking
+        {title || "New Booking"}
       </DialogTitle>
       <IconButton
         aria-label="close"
@@ -263,8 +356,16 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           label="Mobile #"
           width="100%"
           placeholderText="Enter Mobile #"
+          disabled={isEdit}
           onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
-          onBlur={handleOnBlurMobileNumber}
+          onBlur={isEdit ? undefined : handleOnBlurMobileNumber}
+          InputSxProps={{
+            "& .MuiInputBase-input.Mui-disabled": {
+              WebkitTextFillColor: "#000000",
+              color: "#000000",
+              opacity: 1,
+            },
+          }}
           LabelSxProps={{ fontWeight: 600 }}
         />
         {paientDetailsByNum?.length > 0 && (
@@ -277,6 +378,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
             placeholderText="Select Patient Name"
             menuOptions={paientDetailsByNum}
             minWidth={210}
+            disabled={isEdit}
             onChangeHandler={(value) => {
               const fullObj = paientDetailsByNum.find(
                 (opt) => opt.name === value
@@ -284,6 +386,13 @@ const AddOrEditBooking = ({ open, setOpen }) => {
               setSelectPaientName({ ...fullObj });
 
               setBookingData(fullObj);
+            }}
+            SelectSxProps={{
+              "& .MuiSelect-select.Mui-disabled": {
+                WebkitTextFillColor: "#000000",
+                color: "#000000",
+                opacity: 1,
+              },
             }}
             // renderValue={(value) => onChangeBooking("gender", value)}
             LabelSxProps={{ fontWeight: 600 }}
@@ -298,6 +407,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           >
             <StyledButton
               variant="contained"
+              disabled={isEdit}
               onClick={() => {
                 setSelectPaientName({});
                 addPatient({ contact_number });
@@ -316,6 +426,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
                 label="First Name"
                 value={firstname}
                 placeholder="Enter First name"
+                disabled={isEdit}
                 onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
                 LabelSxProps={{ fontWeight: 600 }}
               />
@@ -325,6 +436,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
                 value={lastname}
                 label="Last Name"
                 placeholder="Enter Last name"
+                disabled={isEdit}
                 onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
                 LabelSxProps={{ fontWeight: 600 }}
               />
@@ -343,6 +455,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
                   label="Date of Birth"
                   // helperText={!AppointmentDate && "Date of Birth  is required"}
                   sxLabel={{ fontWeight: 600 }}
+                  disabled={isEdit}
                   onChange={(e) => {
                     onChangeBooking("age", calculateAge(e.target.value));
                     onChangeBooking([e.target.name], e.target.value);
@@ -355,7 +468,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
                 value={age?.toString()?.replace(/\D/g, "").slice(0, 2)}
                 label="Age #"
                 width="100%"
-                disabled={dob}
+                disabled={dob || isEdit}
                 placeholderText="Enter Age #"
                 onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
                 LabelSxProps={{ fontWeight: 600 }}
@@ -371,6 +484,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
               placeholderText="Select Gender"
               menuOptions={GENDER_DATA}
               minWidth={210}
+              disabled={isEdit}
               onChangeHandler={(value) => onChangeBooking("gender", value)}
               LabelSxProps={{ fontWeight: 600 }}
             />
@@ -380,6 +494,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
               value={ABDM_ABHA_id}
               label="ABDM ABHA ID #"
               placeholder="Enter ABDM ABHA ID #"
+              disabled={isEdit}
               onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
               LabelSxProps={{ fontWeight: 600 }}
             />
@@ -389,6 +504,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
               value={address}
               label="Address"
               placeholder="Enter Address"
+              disabled={isEdit}
               onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
               LabelSxProps={{ fontWeight: 600 }}
             />
@@ -416,6 +532,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           placeholderText="Select Doctor"
           searchable
           searchPlaceholder="Search doctor"
+          searchProps={{ disabled: isEdit }}
           onChangeHandler={(val) => {
             const doctor_id = doctorMenuOptions?.find(
               ({ label }) => label === val
@@ -438,6 +555,23 @@ const AddOrEditBooking = ({ open, setOpen }) => {
               helperText={!AppointmentDate && "Appointment Date is required"}
               sxLabel={{ fontWeight: 600 }}
               onChange={(e) => onChangeBooking([e.target.name], e.target.value)}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 3 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isReviewChecked}
+                  onChange={(e) => {
+                    setIsReviewChecked(e.target.checked);
+                    if (e.target.checked) {
+                      onChangeBooking("payment_method", "");
+                    }
+                  }}
+                  disabled={!isReviewEnabled}
+                />
+              }
+              label="Review"
             />
           </Box>
           <SelectWithLabel
@@ -495,22 +629,26 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           // renderValue={(value) => onChangeBooking("gender", value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
-        <SelectWithLabel
-          type="text"
-          fullWidth
-          name="payment_method"
-          value={payment_method}
-          label="Payment Method"
-          width="100%"
-          placeholderText="Select Payment Method"
-          menuOptions={PAYMENT_METHODS}
-          searchable
-          searchPlaceholder="Search payment method"
-          minWidth={210}
-          onChangeHandler={(value) => onChangeBooking("payment_method", value)}
-          // renderValue={(value) => onChangeBooking("gender", value)}
-          LabelSxProps={{ fontWeight: 600 }}
-        />
+        {!isReviewChecked && (
+          <SelectWithLabel
+            type="text"
+            fullWidth
+            name="payment_method"
+            value={payment_method}
+            label="Payment Method"
+            width="100%"
+            placeholderText="Select Payment Method"
+            menuOptions={PAYMENT_METHODS}
+            searchable
+            searchPlaceholder="Search payment method"
+            searchProps={{ disabled: isEdit }}
+            disabled={isEdit}
+            minWidth={210}
+            onChangeHandler={(value) => onChangeBooking("payment_method", value)}
+            // renderValue={(value) => onChangeBooking("gender", value)}
+            LabelSxProps={{ fontWeight: 600 }}
+          />
+        )}
 
         <TextAreaInputWithLabel
           type="text"
@@ -520,6 +658,7 @@ const AddOrEditBooking = ({ open, setOpen }) => {
           rows={2}
           label="Reason"
           placeholder="Enter Reason"
+          disabled={isEdit}
           onChange={(e) => onChangeBooking(e.target.name, e.target.value)}
           LabelSxProps={{ fontWeight: 600 }}
         />
@@ -544,7 +683,8 @@ const AddOrEditBooking = ({ open, setOpen }) => {
         show={
           mutationByMobileNum?.isPending ||
           isLoading ||
-          mutationAddBooikng?.isPending
+          mutationAddBooikng?.isPending ||
+          mutationUpdateBooking?.isPending
         }
       />
     </Dialog>

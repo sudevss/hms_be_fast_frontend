@@ -106,6 +106,11 @@ export const postNewAppoinmentBookingWithExistingPatient = (payload) =>
     .post(`/new_booking/book-existing`, payload)
     .then((response) => response.data);
 
+export const putUpdateBooking = (appointment_id, payload) =>
+  api
+    .put(`/new_booking/update/${appointment_id}`, payload)
+    .then((response) => response.data);
+
 export const getAppointmentsAndBookings = async ({
   facility_id,
   date,
@@ -241,8 +246,6 @@ export const postUpdateAppointmentStatus = ({appointment_id, facility_id}) =>
  api
     .post(`/appointments/${appointment_id}/complete?facility_id=${facility_id}`)
     .then((response) => response.data);
-
-  
 
 
 export const postLogin = (payload) =>

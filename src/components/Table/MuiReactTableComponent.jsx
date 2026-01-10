@@ -61,8 +61,12 @@ const MuiReactTableComponent = ({
       variant: "outlined",
     },
 
-    onGlobalFilterChange: setGlobalFilter,
-    state: { globalFilter },
+    state: {
+      globalFilter,
+      ...(tableProps?.initialState?.columnOrder && {
+        columnOrder: tableProps.initialState.columnOrder,
+      }),
+    },
 
     // ✅ Tooltip settings for all header cells
     muiTableHeadCellTooltipProps: {
