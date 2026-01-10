@@ -100,6 +100,21 @@ const PrescriptionSection = () => {
     }
   };
 
+  // ---------------------- DOSAGE AUTO-FORMAT ---------------------------
+
+  const formatDosage = (value) => {
+    // Remove any existing hyphens and spaces
+    let cleaned = value.replace(/[-\s]/g, "");
+
+    // Keep only digits
+    cleaned = cleaned.replace(/[^0-9]/g, "");
+
+    // Add hyphens between each digit
+    let formatted = cleaned.split("").join("-");
+
+    return formatted;
+  };
+
   // ---------------------- MEDICINE AUTOFILL ---------------------------
 
   const handleMedicineSelect = (rowIndex, selectedMedicine) => {
@@ -217,19 +232,10 @@ const PrescriptionSection = () => {
             fullWidth
             size="small"
             value={cell.getValue() ?? ""}
-            error={
-              cell.getValue() &&
-              !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
-            }
-            helperText={
-              cell.getValue() &&
-              !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
-                ? "Format must be like 1-0-1"
-                : ""
-            }
-            onChange={(e) =>
-              table.options.meta.updateData(row.index, "dosage", e.target.value)
-            }
+            onChange={(e) => {
+              const formattedValue = formatDosage(e.target.value);
+              table.options.meta.updateData(row.index, "dosage", formattedValue);
+            }}
             placeholder="e.g. 1-0-1"
           />
         ),
