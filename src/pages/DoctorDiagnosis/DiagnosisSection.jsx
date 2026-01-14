@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Box, IconButton, Tooltip, TextField, Autocomplete } from "@mui/material";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Box, IconButton, Tooltip, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 
 import StyledButton from "@components/StyledButton";
 import { MaterialReactTable } from "material-react-table";
@@ -11,10 +11,19 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import { postloadtemplate, getTemplatesList, getSymptomMasterList } from "@/serviceApis";
 import { useQuery } from "@tanstack/react-query";
 import { dayjs } from "@/utils/dateUtils";
+import { useDiagnosisStore } from "@/stores/diagnosisStore";
 
-const DiagnosisSection = () => {
+const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+  const diagnosisStore = useDiagnosisStore();
+  const { symptoms, setSymptoms } = diagnosisStore;
+  
+  // Convert store data to table format
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
+
+  const printRef = useRef();
 
   const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +40,25 @@ const DiagnosisSection = () => {
     queryFn: () => getSymptomMasterList(),
     enabled: true,
   });
+  
+  // Sync store with local data when symptoms change externally
+  useEffect(() => {
+    if (symptoms.length > 0 && data.length === 0 && symptomOptions.length > 0) {
+      // Only sync if data is empty (initial load)
+      const tableData = symptoms.map((symptom, index) => {
+        const symptomOption = symptomOptions.find(s => s.symptom_id === symptom.symptom_id);
+        return {
+          id: `symptom-${index}-${Date.now()}`,
+          diagnosis_date: dayjs().format("YYYY-MM-DD"),
+          symptom_id: symptom.symptom_id,
+          symptom_name: symptomOption?.symptom_name || "",
+          duration_days: symptom.duration_days || "",
+          remarks: symptom.remarks || "",
+        };
+      });
+      setData(tableData);
+    }
+  }, [symptoms, symptomOptions]);
 
   const handleTemplateSelect = async (selected) => {
     setLoadError("");
@@ -50,6 +78,7 @@ const DiagnosisSection = () => {
         .map((symptom, index) => ({
           id: `symptom-${selected.template_id}-${index}-${Date.now()}`,
           diagnosis_date: dayjs().format("YYYY-MM-DD"),
+          symptom_id: symptom.symptom_id,
           symptom_name: symptom.symptom_name || "",
           duration_days:
             symptom.default_duration_days ?? symptom.duration_days ?? "",
@@ -57,6 +86,16 @@ const DiagnosisSection = () => {
         }));
       if (!mapped.length) setLoadError("No symptoms or already loaded");
       setData((prev) => [...prev, ...mapped]);
+      
+      // Update store
+      const newSymptoms = mapped
+        .filter((m) => m.symptom_id)
+        .map((m) => ({
+          symptom_id: m.symptom_id,
+          duration_days: m.duration_days || 0,
+          remarks: m.remarks || "",
+        }));
+      setSymptoms([...diagnosisStore.symptoms, ...newSymptoms]);
       
     } catch (e) {
       setLoadError("Failed to load template");
@@ -194,20 +233,98 @@ const DiagnosisSection = () => {
   // ACTION BUTTONS
   // ---------------------------------------------------------------
   const handleAddRow = () => {
-    setData((prev) => [
-      {
-        id: Date.now(),
-        diagnosis_date: dayjs().format("YYYY-MM-DD"),
-        symptom_name: "",
-        duration_days: "",
-        remarks: "",
-      },
-      ...prev,
-    ]);
+    const newRow = {
+      id: Date.now(),
+      diagnosis_date: dayjs().format("YYYY-MM-DD"),
+      symptom_id: null,
+      symptom_name: "",
+      duration_days: "",
+      remarks: "",
+    };
+    setData((prev) => [newRow, ...prev]);
   };
 
-  const handleDeleteRow = ({ row }) => {
-    setData((prev) => prev.filter((r) => r.id !== row.original.id));
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=900,height=650");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Diagnosis Print</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .center-heading {
+              text-align: center;
+              color: #115E59;
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-bottom: 10px;
+            }
+            .patient-header {
+              background-color: transparent;
+              color: #000;
+              padding: 0;
+              margin-bottom: 20px;
+              font-size: 1.1rem;
+              line-height: 1.6;
+            }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            table th {
+              background-color: #115E59;
+              color: white;
+              padding: 8px;
+              border: 1px solid #ccc;
+              text-align: left;
+            }
+            table td { padding: 8px; border: 1px solid #ccc; }
+          </style>
+        </head>
+        <body>
+          <div class="center-heading">Apple Medical Center</div>
+          <div class="patient-header">
+            <strong>Patient ID:</strong> ${patientId || "-"} <br />
+            <strong>Token No:</strong> ${tokenNumber || "-"} <br />
+            <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
+            <strong>Name:</strong> ${patientName || "-"} <br />
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+          </div>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
+  };
+
+  const handleDeleteRow = ({ row } = {}) => {
+    const id = row?.original?.id ?? row?.id ?? null;
+    if (!id) return;
+
+    const filtered = data.filter((r) => r.id !== id);
+    setData(filtered);
+    // Update store
+    setSymptoms(
+      filtered
+        .filter((r) => r.symptom_id)
+        .map((r) => ({
+          symptom_id: r.symptom_id,
+          duration_days: r.duration_days,
+          remarks: r.remarks,
+        }))
+    );
+  };
+  
+  // Sync data to store when editing is saved
+  const syncToStore = () => {
+    setSymptoms(
+      data
+        .filter((r) => r.symptom_id)
+        .map((r) => ({
+          symptom_id: r.symptom_id,
+          duration_days: r.duration_days || 0,
+          remarks: r.remarks || "",
+        }))
+    );
   };
 
   return (
@@ -248,6 +365,9 @@ const DiagnosisSection = () => {
             )}
           />
 
+          <StyledButton variant="outlined" onClick={handlePrint}>
+            Print
+          </StyledButton>
 
           <StyledButton variant="contained" onClick={handleAddRow}>
             Add
@@ -261,6 +381,15 @@ const DiagnosisSection = () => {
         data={data}
         enableEditing
         editDisplayMode="row"
+        enableGlobalFilter={false}
+        enableColumnFilters={false}
+        enableColumnActions={false}
+        enableDensityToggle={false}
+        enableFullScreenToggle={false}
+        enableHiding={false}
+        enablePagination={false}
+        enableBottomToolbar={false}
+        enableTopToolbar={false}
         meta={{
           updateData: (rowIndex, columnId, value) =>
             setData((prev) =>
@@ -270,13 +399,7 @@ const DiagnosisSection = () => {
             ),
         }}
         onEditingRowSave={({ row }) => {
-          diagnosisStore.setSymptoms(
-            data.map((r) => ({
-              symptom_id: r.symptom_id,
-              duration_days: r.duration_days,
-              remarks: r.remarks,
-            }))
-          );
+          syncToStore();
           setEditingRowId(null);
         }}
         renderRowActions={({ row, table }) => {
@@ -290,11 +413,12 @@ const DiagnosisSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
                     >
-                      <SaveIcon sx={{ color: "#115E59" }} />
+                      <SaveIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
 
@@ -302,11 +426,12 @@ const DiagnosisSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
                     >
-                      <CancelIcon sx={{ color: "#dc2626" }} />
+                      <CancelIcon sx={{ color: "#dc2626", fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
                 </>
@@ -320,7 +445,7 @@ const DiagnosisSection = () => {
                         table.setEditingRow(row);
                       }}
                     >
-                      <EditOutlinedIcon sx={{ color: "#115E59" }} />
+                      <EditOutlinedIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
 
@@ -328,9 +453,9 @@ const DiagnosisSection = () => {
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleDeleteRow({ row })}
+                      onClick={() => { setRowToDelete(row.original); setDeleteConfirmOpen(true); }}
                     >
-                      <DeleteForeverIcon />
+                      <DeleteForeverIcon sx={{ fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
                 </>
@@ -339,6 +464,62 @@ const DiagnosisSection = () => {
           );
         }}
       />
+
+      {/* Hidden print table */}
+      <div ref={printRef} style={{ display: "none" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Diagnosis Date</th>
+              <th>Symptom</th>
+              <th>Duration (Days)</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center" }}>
+                  No diagnosis entries added
+                </td>
+              </tr>
+            ) : (
+              data.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.diagnosis_date}</td>
+                  <td>{row.symptom_name}</td>
+                  <td>{row.duration_days}</td>
+                  <td>{row.remarks}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* DELETE CONFIRMATION */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+
+        <DialogContent>
+          Are you sure you want to delete this diagnosis entry?
+        </DialogContent>
+
+        <DialogActions>
+          <StyledButton variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>Cancel</StyledButton>
+          <StyledButton
+            variant="contained"
+            color="error"
+            onClick={() => {
+              if (rowToDelete) handleDeleteRow({ row: rowToDelete });
+              setDeleteConfirmOpen(false);
+              setRowToDelete(null);
+            }}
+          >
+            Delete
+          </StyledButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

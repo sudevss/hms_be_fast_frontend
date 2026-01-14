@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Box, Tooltip, IconButton, TextField, Autocomplete } from "@mui/material";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { Box, Tooltip, IconButton, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import StyledButton from "@components/StyledButton";
 import { MaterialReactTable } from "material-react-table";
+import AlertSnackbar from "@components/AlertSnackbar";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SaveIcon from "@mui/icons-material/Save";
@@ -13,24 +14,104 @@ import {
   getLabMasterList,
 } from "@/serviceApis";
 import { useQuery } from "@tanstack/react-query";
+import { useLabTestStore } from "@/stores/labTestStore";
 
-const LabTestSection = () => {
+const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+  const labTestStore = useLabTestStore();
+  const { labTests, setLabTests } = labTestStore;
+  
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
-
-  const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState("");
-
+  const [labError, setLabError] = useState({ show: false, message: "", status: "error" });
+  const [originalRowData, setOriginalRowData] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
+  
+  const printRef = useRef();
+  
   const { data: labOptions = [] } = useQuery({
     queryKey: ["queryGetLabMaster"],
     queryFn: () => getLabMasterList(),
   });
 
+  // Sync store with local data when labTests change externally
+  useEffect(() => {
+    if (labTests.length > 0 && data.length === 0 && labOptions.length > 0) {
+      const tableData = labTests.map((labTest, index) => {
+        const labOption = labOptions.find(lt => lt.test_id === labTest.test_id);
+        return {
+          id: `labtest-${index}-${Date.now()}`,
+          test_id: labTest.test_id,
+          test_name: labOption?.test_name || "",
+          prerequisite_text: labTest.prerequisite_text || "",
+          description: labOption?.description || "",
+        };
+      });
+      setData(tableData);
+    }
+  }, [labTests, labOptions]);
+
+  const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
   const { data: templateOptions = [] } = useQuery({
     queryKey: ["queryGetTemplatesList"],
     queryFn: () => getTemplatesList(),
   });
+
+  // ---------------- PRINT HANDLER ----------------
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=900,height=650");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Lab Tests Print</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .center-heading {
+              text-align: center;
+              color: #115E59;
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-bottom: 10px;
+            }
+            .patient-header {
+              background-color: transparent;
+              color: #000;
+              padding: 0;
+              margin-bottom: 20px;
+              font-size: 1.1rem;
+              line-height: 1.6;
+            }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            table th {
+              background-color: #115E59;
+              color: white;
+              padding: 8px;
+              border: 1px solid #ccc;
+              text-align: left;
+            }
+            table td { padding: 8px; border: 1px solid #ccc; }
+          </style>
+        </head>
+        <body>
+          <div class="center-heading">Apple Medical Center</div>
+          <div class="patient-header">
+            <strong>Patient ID:</strong> ${patientId || "-"} <br />
+            <strong>Token No:</strong> ${tokenNumber || "-"} <br />
+            <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
+            <strong>Name:</strong> ${patientName || "-"} <br />
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+          </div>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
+  };
 
   // ---------------- TEMPLATE LOADING ----------------
   const handleTemplateSelect = async (selected) => {
@@ -67,7 +148,11 @@ const LabTestSection = () => {
 
       if (!mapped.length) setLoadError("No lab tests or already loaded");
 
-      setData((prev) => [...prev, ...mapped]);
+      const newData = [...data, ...mapped];
+      setData(newData);
+      
+      // Immediately sync new template data to store
+      syncToStore(newData);
     } catch (e) {
       setLoadError("Failed to load template");
     } finally {
@@ -87,7 +172,7 @@ const LabTestSection = () => {
             test_id: selectedLabTest.test_id,
             test_name: selectedLabTest.test_name,
             description: selectedLabTest.description || "",
-            prerequisite_text: selectedLabTest.prerequisite_text || "",
+            prerequisite_text: row.prerequisite_text || selectedLabTest.prerequisite_text || "",
           };
         }
         return row;
@@ -102,35 +187,30 @@ const LabTestSection = () => {
         accessorKey: "test_name",
         header: "Lab Test",
         Edit: ({ cell, row, table }) => {
-          const currentValue = (cell.getValue() ?? "")
-            .trim()
-            .toLowerCase();
-
-          const selectedOption =
-            labOptions.find(
-              (t) =>
-                t.test_name?.trim().toLowerCase() === currentValue
-            ) || null;
+          const selected = labOptions.find(
+            (t) => t.test_name === cell.getValue()
+          ) || null;
 
           return (
             <Autocomplete
               fullWidth
               size="small"
               options={labOptions}
-              value={selectedOption}
+              value={selected}
+              inputValue={cell.getValue() || ""}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.test_name
               }
               isOptionEqualToValue={(option, value) =>
-                option?.test_name?.trim().toLowerCase() ===
-                value?.test_name?.trim().toLowerCase()
+                option?.test_name === (value?.test_name || value)
               }
+              onInputChange={(event, value) => {
+                table.options.meta.updateData(row.index, "test_name", value);
+              }}
               onChange={(event, selectedLabTest) => {
-                if (!selectedLabTest) {
-                  table.options.meta.updateData(row.index, "test_name", "");
-                  return;
+                if (selectedLabTest) {
+                  handleLabTestSelect(row.index, selectedLabTest);
                 }
-                handleLabTestSelect(row.index, selectedLabTest);
               }}
               renderInput={(params) => (
                 <TextField {...params} placeholder="Search lab test..." />
@@ -163,18 +243,81 @@ const LabTestSection = () => {
 
   // --------------- ADD ROW ----------------
   const handleAddRow = () => {
-    setData((prev) => [
-      {
-        id: Date.now(),
-        test_name: "",
-        prerequisite_text: "",
-      },
-      ...prev,
-    ]);
+    const newRow = {
+      id: Date.now(),
+      test_id: null,
+      test_name: "",
+      prerequisite_text: "",
+      description: "",
+    };
+    setData((prev) => [newRow, ...prev]);
   };
 
-  const handleDeleteRow = ({ row }) => {
-    setData((prev) => prev.filter((r) => r.id !== row.original.id));
+  const handleDeleteRow = ({ row } = {}) => {
+    // Accept either a wrapped row ({ row }) or a raw row object
+    const id = row?.original?.id ?? row?.id ?? null;
+    if (!id) return;
+
+    const filtered = data.filter((r) => r.id !== id);
+    setData(filtered);
+    // Update store immediately
+    syncToStore(filtered);
+  };
+  
+  // Sync data to store
+  const syncToStore = (dataToSync = data) => {
+    setLabTests(
+      dataToSync
+        .filter((r) => r.test_id)
+        .map((r) => ({
+          test_id: r.test_id,
+          prerequisite_text: r.prerequisite_text || "",
+        }))
+    );
+  };
+
+  // Validate row before saving
+  const validateRow = (rowData) => {
+    if (!rowData.test_name || !rowData.test_name.trim()) {
+      setLabError({ 
+        show: true, 
+        message: "Please select a lab test", 
+        status: "error" 
+      });
+      return false;
+    }
+
+    if (!rowData.test_id) {
+      const typedName = rowData.test_name.trim().toLowerCase();
+      const match = labOptions.find(
+        (t) => (t.test_name || "").trim().toLowerCase() === typedName
+      );
+
+      if (!match) {
+        setLabError({ 
+          show: true, 
+          message: "Please select a valid lab test from the dropdown list", 
+          status: "error" 
+        });
+        return false;
+      }
+
+      // Auto-fix: Update the row with matched data
+      setData((prev) =>
+        prev.map((r) =>
+          r.id === rowData.id
+            ? {
+                ...r,
+                test_id: match.test_id,
+                test_name: match.test_name,
+                description: match.description || "",
+              }
+            : r
+        )
+      );
+    }
+
+    return true;
   };
 
   return (
@@ -218,7 +361,7 @@ const LabTestSection = () => {
             )}
           />
 
-          <StyledButton variant="outlined" onClick={() => window.print()}>
+          <StyledButton variant="outlined" onClick={handlePrint}>
             Print
           </StyledButton>
 
@@ -233,6 +376,15 @@ const LabTestSection = () => {
         data={data}
         enableEditing
         editDisplayMode="row"
+        enableGlobalFilter={false}
+        enableColumnFilters={false}
+        enableColumnActions={false}
+        enableDensityToggle={false}
+        enableFullScreenToggle={false}
+        enableHiding={false}
+        enablePagination={false}
+        enableBottomToolbar={false}
+        enableTopToolbar={false}
         meta={{
           updateData: (rowIndex, columnId, value) =>
             setData((prev) =>
@@ -240,6 +392,18 @@ const LabTestSection = () => {
                 index === rowIndex ? { ...row, [columnId]: value } : row
               )
             ),
+        }}
+        onEditingRowSave={({ row }) => {
+          const rowData = data.find((r) => r.id === row.original.id);
+          
+          if (rowData && validateRow(rowData)) {
+            // Small delay to ensure state updates complete
+            setTimeout(() => {
+              syncToStore();
+              setEditingRowId(null);
+              setLabError({ show: false, message: "", status: "error" });
+            }, 0);
+          }
         }}
         renderRowActions={({ row, table }) => {
           const isEditing = editingRowId === row.original.id;
@@ -252,8 +416,17 @@ const LabTestSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
-                        table.setEditingRow(null);
-                        setEditingRowId(null);
+                        const rowData = data.find((r) => r.id === row.original.id);
+                        
+                        if (rowData && validateRow(rowData)) {
+                          setTimeout(() => {
+                            syncToStore();
+                            table.setEditingRow(null);
+                            setEditingRowId(null);
+                            setOriginalRowData(null);
+                            setLabError({ show: false, message: "", status: "error" });
+                          }, 0);
+                        }
                       }}
                     >
                       <SaveIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
@@ -264,8 +437,16 @@ const LabTestSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        // Restore original data
+                        if (originalRowData) {
+                          setData((prev) =>
+                            prev.map((r) => (r.id === row.original.id ? originalRowData : r))
+                          );
+                        }
                         table.setEditingRow(null);
                         setEditingRowId(null);
+                        setOriginalRowData(null);
+                        setLabError({ show: false, message: "", status: "error" });
                       }}
                     >
                       <CancelIcon sx={{ color: "#dc2626" }} />
@@ -278,6 +459,8 @@ const LabTestSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        // Store original data before editing
+                        setOriginalRowData({ ...row.original });
                         setEditingRowId(row.original.id);
                         table.setEditingRow(row);
                       }}
@@ -290,7 +473,7 @@ const LabTestSection = () => {
                     <IconButton
                       color="error"
                       size="small"
-                      onClick={() => handleDeleteRow({ row })}
+                      onClick={() => { setRowToDelete(row.original); setDeleteConfirmOpen(true); }}
                     >
                       <DeleteForeverIcon />
                     </IconButton>
@@ -301,6 +484,68 @@ const LabTestSection = () => {
           );
         }}
       />
+
+      {/* Hidden print table */}
+      <div ref={printRef} style={{ display: "none" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Lab Test Name</th>
+              <th>Prerequisite</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={2} style={{ textAlign: "center" }}>
+                  No lab tests added
+                </td>
+              </tr>
+            ) : (
+              data.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.test_name}</td>
+                  <td>{row.prerequisite_text}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <AlertSnackbar
+        showAlert={labError.show}
+        message={labError.message}
+        severity={labError.status}
+        onClose={() => setLabError({ show: false, message: "", status: "error" })}
+      />
+
+      {/* DELETE CONFIRMATION */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+
+        <DialogContent>
+          Are you sure you want to delete this lab test entry?
+        </DialogContent>
+
+        <DialogActions>
+          <StyledButton variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>
+            Cancel
+          </StyledButton>
+
+          <StyledButton
+            variant="contained"
+            color="error"
+            onClick={() => {
+              if (rowToDelete) handleDeleteRow({ row: rowToDelete });
+              setDeleteConfirmOpen(false);
+              setRowToDelete(null);
+            }}
+          >
+            Delete
+          </StyledButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
