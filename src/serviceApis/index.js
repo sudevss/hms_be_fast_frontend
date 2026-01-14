@@ -208,6 +208,16 @@ export const getPatientDiagnosis = ({
     )
     .then((response) => response.data);
 
+export const getPatientDiagnosisById = async ({ diagnosis_id }) => {
+  try {
+    const response = await api.get(`/patient_diagnosis/${diagnosis_id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching diagnosis by ID:", error);
+    throw error;
+  }
+};
+
 export const getPatientReports = ({
   patient_id,
   appointment_id,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   Box,
   IconButton,
@@ -24,12 +24,18 @@ import {
   getDrugMasterList,
 } from "@/serviceApis";
 import { useQuery } from "@tanstack/react-query";
+import { usePrescriptionStore } from "@/stores/prescriptionStore";
 
-const PrescriptionSection = () => {
+const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+  const prescriptionStore = usePrescriptionStore();
+  const { prescriptions, setPrescriptions } = prescriptionStore;
+  
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
+
+  const printRef = useRef();
 
   const timingOptions = ["Before Food", "After Food"];
 
@@ -46,6 +52,35 @@ const PrescriptionSection = () => {
     queryKey: ["queryGetDrugMaster"],
     queryFn: () => getDrugMasterList(),
   });
+  
+  // Sync store with local data when prescriptions change externally
+  useEffect(() => {
+    if (prescriptions.length > 0 && data.length === 0 && drugOptions.length > 0) {
+      // Only sync if data is empty (initial load)
+      const tableData = prescriptions.map((prescription, index) => {
+        const morning = prescription.morning_dosage ?? "0";
+        const afternoon = prescription.afternoon_dosage ?? "0";
+        const night = prescription.night_dosage ?? "0";
+        // Look up medicine details from master list
+        const medicineOption = drugOptions.find(d => d.medicine_id === prescription.medicine_id);
+        return {
+          id: `prescription-${index}-${Date.now()}`,
+          medicine_id: prescription.medicine_id,
+          medicine_name: medicineOption?.medicine_name || "",
+          generic_name: medicineOption?.generic_name || "",
+          strength: medicineOption?.strength || "",
+          dosage: `${morning}-${afternoon}-${night}`,
+          morning_dosage: morning,
+          afternoon_dosage: afternoon,
+          night_dosage: night,
+          food_timing: prescription.food_timing || "",
+          duration_days: prescription.duration_days || "",
+          special_instructions: prescription.special_instructions || "",
+        }; 
+      });
+      setData(tableData);
+    }
+  }, [prescriptions, drugOptions]);
 
   // ---------------------- TEMPLATE LOAD ---------------------------
 
@@ -93,6 +128,18 @@ const PrescriptionSection = () => {
       }
 
       setData((prev) => [...prev, ...mapped]);
+      
+      // Update store
+      const newPrescriptions = mapped.map((m) => ({
+        medicine_id: m.medicine_id,
+        morning_dosage: m.morning_dosage || "0",
+        afternoon_dosage: m.afternoon_dosage || "0",
+        night_dosage: m.night_dosage || "0",
+        food_timing: m.food_timing || "",
+        duration_days: m.duration_days || 0,
+        special_instructions: m.special_instructions || "",
+      }));
+      setPrescriptions([...prescriptionStore.prescriptions, ...newPrescriptions]);
     } catch (error) {
       setLoadError("Failed to load template");
     } finally {
@@ -234,7 +281,12 @@ const PrescriptionSection = () => {
             value={cell.getValue() ?? ""}
             onChange={(e) => {
               const formattedValue = formatDosage(e.target.value);
+              // Parse dosage and update individual fields
+              const parts = formattedValue.split("-");
               table.options.meta.updateData(row.index, "dosage", formattedValue);
+              table.options.meta.updateData(row.index, "morning_dosage", parts[0] || "0");
+              table.options.meta.updateData(row.index, "afternoon_dosage", parts[1] || "0");
+              table.options.meta.updateData(row.index, "night_dosage", parts[2] || "0");
             }}
             placeholder="e.g. 1-0-1"
           />
@@ -305,25 +357,109 @@ const PrescriptionSection = () => {
   // ---------------------- ADD / DELETE ROW ---------------------------
 
   const handleAddRow = () => {
-    setData((prev) => [
-      {
-        id: Date.now(),
-        medicine_name: "",
-        generic_name: "",
-        strength: "",
-        dosage: "",
-        food_timing: "",
-        duration_days: "",
-        special_instructions: "",
-      },
-      ...prev,
-    ]);
+    const newRow = {
+      id: Date.now(),
+      medicine_id: null,
+      medicine_name: "",
+      generic_name: "",
+      strength: "",
+      dosage: "",
+      morning_dosage: "0",
+      afternoon_dosage: "0",
+      night_dosage: "0",
+      food_timing: "",
+      duration_days: "",
+      special_instructions: "",
+    };
+    setData((prev) => [newRow, ...prev]);
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=900,height=650");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Prescription Print</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .center-heading {
+              text-align: center;
+              color: #115E59;
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-bottom: 10px;
+            }
+            .patient-header {
+              background-color: transparent;
+              color: #000;
+              padding: 0;
+              margin-bottom: 20px;
+              font-size: 1.1rem;
+              line-height: 1.6;
+            }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            table th {
+              background-color: #115E59;
+              color: white;
+              padding: 8px;
+              border: 1px solid #ccc;
+              text-align: left;
+            }
+            table td { padding: 8px; border: 1px solid #ccc; }
+          </style>
+        </head>
+        <body>
+          <div class="center-heading">Apple Medical Center</div>
+          <div class="patient-header">
+            <strong>Patient ID:</strong> ${patientId || "-"} <br />
+            <strong>Token No:</strong> ${tokenNumber || "-"} <br />
+            <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
+            <strong>Name:</strong> ${patientName || "-"} <br />
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+          </div>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
+  };
 
   const handleDeleteRow = ({ row }) => {
-    setData((prev) => prev.filter((r) => r.id !== row.original.id));
+    const filtered = data.filter((r) => r.id !== row.original.id);
+    setData(filtered);
+    // Update store
+    setPrescriptions(
+      filtered
+        .filter((r) => r.medicine_id)
+        .map((r) => ({
+          medicine_id: r.medicine_id,
+          morning_dosage: r.morning_dosage || "0",
+          afternoon_dosage: r.afternoon_dosage || "0",
+          night_dosage: r.night_dosage || "0",
+          food_timing: r.food_timing || "",
+          duration_days: r.duration_days || 0,
+          special_instructions: r.special_instructions || "",
+        }))
+    );
+  };
+  
+  // Sync data to store when editing is saved
+  const syncToStore = () => {
+    setPrescriptions(
+      data
+        .filter((r) => r.medicine_id)
+        .map((r) => ({
+          medicine_id: r.medicine_id,
+          morning_dosage: r.morning_dosage || "0",
+          afternoon_dosage: r.afternoon_dosage || "0",
+          night_dosage: r.night_dosage || "0",
+          food_timing: r.food_timing || "",
+          duration_days: r.duration_days || 0,
+          special_instructions: r.special_instructions || "",
+        }))
+    );
   };
 
   // ---------------------- RENDER ---------------------------
@@ -382,6 +518,15 @@ const PrescriptionSection = () => {
         data={data}
         enableEditing
         editDisplayMode="row"
+        enableGlobalFilter={false}
+        enableColumnFilters={false}
+        enableColumnActions={false}
+        enableDensityToggle={false}
+        enableFullScreenToggle={false}
+        enableHiding={false}
+        enablePagination={false}
+        enableBottomToolbar={false}
+        enableTopToolbar={false}
         meta={{
           updateData: (rowIndex, columnId, value) =>
             setData((prev) =>
@@ -395,6 +540,7 @@ const PrescriptionSection = () => {
             r.id === row.original.id ? { ...row.original } : r
           );
           setData(updated);
+          syncToStore();
           setEditingRowId(null);
         }}
         renderRowActions={({ row, table }) => {
@@ -408,6 +554,7 @@ const PrescriptionSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
@@ -420,6 +567,7 @@ const PrescriptionSection = () => {
                     <IconButton
                       size="small"
                       onClick={() => {
+                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
@@ -462,6 +610,44 @@ const PrescriptionSection = () => {
           );
         }}
       />
+
+      {/* Hidden print table */}
+      <div ref={printRef} style={{ display: "none" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Medicine Name</th>
+              <th>Generic Name</th>
+              <th>Strength</th>
+              <th>Dosage</th>
+              <th>Food Timing</th>
+              <th>Duration (Days)</th>
+              <th>Special Instructions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: "center" }}>
+                  No prescription entries added
+                </td>
+              </tr>
+            ) : (
+              data.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.medicine_name}</td>
+                  <td>{row.generic_name}</td>
+                  <td>{row.strength}</td>
+                  <td>{row.dosage}</td>
+                  <td>{row.food_timing}</td>
+                  <td>{row.duration_days}</td>
+                  <td>{row.special_instructions}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* DELETE CONFIRMATION */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
