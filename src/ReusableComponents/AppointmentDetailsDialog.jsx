@@ -189,7 +189,9 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
 
   const ReportThumb = ({ report }) => {
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [dataUrl, setDataUrl] = useState(undefined);
+    const [previewUrl, setPreviewUrl] = useState(undefined);
+    const [previewType, setPreviewType] = useState(undefined);
+    const [previewName, setPreviewName] = useState(report?.filename || "File");
 
     const { data: blob } = useQuery({
       queryKey: [
@@ -207,32 +209,31 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
       enabled: open && Boolean(report?.upload_id),
     });
 
-    // Convert blob to data URL so the thumbnail/preview keeps working even after dialogs mount/unmount
     useEffect(() => {
+      // Build a blob URL with correct mime so PDFs render in iframe
       if (!blob) {
-        setDataUrl(undefined);
+        setPreviewUrl(undefined);
+        setPreviewType(undefined);
         return;
       }
-
-      let cancelled = false;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (!cancelled) setDataUrl(reader.result);
-      };
-      reader.onerror = () => {
-        if (!cancelled) setDataUrl(undefined);
-      };
-      reader.readAsDataURL(blob);
-
+      const ext = String(report?.filename || "").split(".").pop()?.toLowerCase();
+      let mime = "application/octet-stream";
+      if (ext === "pdf") mime = "application/pdf";
+      else if (ext === "jpg" || ext === "jpeg") mime = "image/jpeg";
+      else if (ext === "png") mime = "image/png";
+      const url = URL.createObjectURL(new Blob([blob], { type: mime }));
+      setPreviewUrl(url);
+      setPreviewType(mime);
+      setPreviewName(report?.filename || "File");
       return () => {
-        cancelled = true;
-        // reader.abort may not be available in all browsers but call if present
-        try { reader.abort && reader.abort(); } catch (e) {}
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {}
       };
-    }, [blob]);
+    }, [blob, report?.filename]);
 
     const handleView = () => {
-      if (!dataUrl) return;
+      if (!previewUrl) return;
       setPreviewOpen(true);
     };
 
@@ -254,14 +255,15 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
             alignItems: "center",
             justifyContent: "center",
           }}>
-            {dataUrl ? (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <img src={dataUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {previewType && previewType.startsWith("image/") && previewUrl ? (
+              <img src={previewUrl} alt={previewName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : previewType === "application/pdf" && previewUrl ? (
+              <iframe src={previewUrl} title={previewName} style={{ width: "100%", height: "100%", border: "none" }} />
             ) : (
               <Box sx={{ fontSize: 12, color: "#6b7280" }}>Preview</Box>
             )}
           </Box>
-          <IconButton size="small" onClick={handleView} disabled={!dataUrl}>
+          <IconButton size="small" onClick={handleView} disabled={!previewUrl}>
             <VisibilityIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -272,27 +274,27 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
           maxWidth="lg"
           fullWidth
         >
-          <DialogTitle sx={{ fontWeight: 700 }}>Report Preview</DialogTitle>
-          <DialogContent>
-            <Box sx={{ 
-              width: "100%", 
-              display: "flex", 
-              justifyContent: "center", 
-              alignItems: "center",
-              minHeight: "60vh"
-            }}>
-              {dataUrl && (
+          <DialogTitle sx={{ fontWeight: 700 }}>{previewName || "Report Preview"}</DialogTitle>
+          <DialogContent sx={{ p: 0, display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {previewUrl && previewType && (
+              previewType.startsWith("image/") ? (
                 <img
-                  src={dataUrl}
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "70vh",
-                    objectFit: "contain"
-                  }}
-                  alt="Report Preview"
+                  src={previewUrl}
+                  alt={previewName}
+                  style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain" }}
                 />
-              )}
-            </Box>
+              ) : previewType === "application/pdf" ? (
+                <iframe
+                  src={previewUrl}
+                  title={previewName}
+                  style={{ width: "100%", height: "75vh", border: "none" }}
+                />
+              ) : (
+                <Box sx={{ color: "#000000ff", p: 3 }}>
+                  Preview not available for this file type.
+                </Box>
+              )
+            )}
           </DialogContent>
           <DialogActions>
             <StyledButton onClick={handleClosePreview}>Close</StyledButton>
