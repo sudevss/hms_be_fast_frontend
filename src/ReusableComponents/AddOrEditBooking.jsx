@@ -34,6 +34,7 @@ import {
   postNewAppoinmentBooking,
   postNewAppoinmentBookingWithExistingPatient,
   putUpdateBooking,
+  getDoctorSheduleDetails,
 } from "@/serviceApis";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -132,6 +133,16 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     label: `${obj.doctor_name} - ${obj.specialization}`,
   }));
 
+  const queryGetDoctorSchedule = useQuery({
+    queryKey: ["queryGetDoctorSheduleDetails", doctor_id],
+    queryFn: () =>
+      getDoctorSheduleDetails({
+        facility_id: facility_id || 1,
+        doctor_id,
+      }),
+    enabled: Boolean(doctor_id),
+  });
+
   useEffect(() => {
     if (doctor_id && !doctorName && Array.isArray(doctorsData) && doctorsData.length > 0) {
       const found = doctorsData.find((d) => String(d.id) === String(doctor_id));
@@ -179,13 +190,43 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
   };
 
   const getFilteredTimeSlots = () => {
-    if (!AppointmentDate) return TIME_SLOTS_HOURS_OPTIONS;
+    if (!AppointmentDate || !doctor_id) return [];
+    const scheduleQuery = {
+      facility_id: facility_id || 1,
+      doctor_id,
+    };
+    const cached = queryClient.getQueryData(["queryGetDoctorSheduleDetails", doctor_id]);
+    const schedule = (cached?.payload || cached) || null;
+    const leavePeriods = Array.isArray(schedule?.leavePeriods) ? schedule.leavePeriods : [];
+    const selectedDay = dayjs(AppointmentDate).format("YYYY-MM-DD");
+    const isOnLeave = leavePeriods.some((lp) => {
+      const start = lp?.leaveStartDate ? dayjs(lp.leaveStartDate).format("YYYY-MM-DD") : null;
+      const end = lp?.leaveEndDate ? dayjs(lp.leaveEndDate).format("YYYY-MM-DD") : null;
+      if (!start || !end) return false;
+      return selectedDay >= start && selectedDay <= end;
+    });
+    if (isOnLeave) return [];
+    const weekdayName = dayjs(AppointmentDate).format("dddd");
+    const weekDaysList = Array.isArray(schedule?.weekDaysList) ? schedule.weekDaysList : [];
+    const dayObj = weekDaysList.find((d) => String(d?.weekDay || "").toLowerCase() === weekdayName.toLowerCase());
+    const windows = Array.isArray(dayObj?.slotWeeks) ? dayObj.slotWeeks.filter((s) => (s?.startTime && s?.endTime) || s?.windowNum || s?.window || s?.window_num) : [];
+    const allowedBySchedule = TIME_SLOTS_HOURS_OPTIONS.filter(({ value }) => {
+      const slotMin = parseSlotMinutes(value);
+      return windows.some((w) => {
+        const startStr = w.startTime || w.window || w.window_num || "";
+        const endStr = w.endTime || "";
+        const startMin = parseSlotMinutes(String(startStr).toLowerCase());
+        const endMin = parseSlotMinutes(String(endStr).toLowerCase());
+        if (!startMin || !endMin) return false;
+        return slotMin >= startMin && slotMin < endMin;
+      });
+    });
     const todayStr = dayjs().format("YYYY-MM-DD");
     const selectedStr = dayjs(AppointmentDate).format("YYYY-MM-DD");
-    if (todayStr !== selectedStr) return TIME_SLOTS_HOURS_OPTIONS;
+    if (todayStr !== selectedStr) return allowedBySchedule;
     const threshold = dayjs().subtract(15, "minute");
     const thresholdMin = threshold.hour() * 60 + threshold.minute();
-    return TIME_SLOTS_HOURS_OPTIONS.filter(({ value }) => parseSlotMinutes(value) >= thresholdMin);
+    return allowedBySchedule.filter(({ value }) => parseSlotMinutes(value) >= thresholdMin);
   };
 
   const mutationUpdateBooking = useMutation({
@@ -577,7 +618,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
           <SelectWithLabel
             type="text"
             fullWidth
-            disabled={!AppointmentDate}
+            disabled={!AppointmentDate || !doctor_id}
             name="AppointmentTime"
             value={AppointmentTime}
             minWidth={110}
