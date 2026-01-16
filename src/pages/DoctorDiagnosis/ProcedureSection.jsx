@@ -9,7 +9,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useProcedureStore } from "@/stores/procedureStore";
 
-const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
   const procedureStore = useProcedureStore();
   const { procedures, setProcedures } = procedureStore;
   
@@ -121,7 +121,8 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
             <strong>Token No:</strong> ${tokenNumber || "-"} <br />
             <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
             <strong>Name:</strong> ${patientName || "-"} <br />
-            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"} <br />
+            <strong>Prescribed Doctor:</strong> ${doctorName || "-"}
           </div>
           ${printContent}
         </body>

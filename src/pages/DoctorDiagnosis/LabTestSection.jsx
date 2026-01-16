@@ -16,7 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useLabTestStore } from "@/stores/labTestStore";
 
-const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
   const labTestStore = useLabTestStore();
   const { labTests, setLabTests } = labTestStore;
   
@@ -103,7 +103,8 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
             <strong>Token No:</strong> ${tokenNumber || "-"} <br />
             <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
             <strong>Name:</strong> ${patientName || "-"} <br />
-            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"} <br />
+            <strong>Prescribed Doctor:</strong> ${doctorName || "-"}
           </div>
           ${printContent}
         </body>
