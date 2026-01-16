@@ -179,6 +179,10 @@ const ViewScreen = ({ open, onClose, appointment }) => {
     appointment?.name ??
     appointment?.firstname ??
     "-";
+  const doctorName =
+    appointment?.doctor_name ??
+    appointment?.doctor ??
+    "-";
   const visitDateRaw =
     appointment?.date ?? appointment?.appointment_date;
   const visitDate = visitDateRaw ? dayjs(visitDateRaw).format("DD-MM-YYYY") : "-";
@@ -616,7 +620,8 @@ const ViewScreen = ({ open, onClose, appointment }) => {
             <strong>Token No:</strong> ${tokenNumber ?? '-'} <br/>
             <strong>Appointment No:</strong> ${_appt.appointment_id ?? appointmentId ?? '-'} <br/>
             <strong>Name:</strong> ${patientName || '-'} <br/>
-            <strong>Date of Visit:</strong> ${visitDate || '-'}
+            <strong>Date of Visit:</strong> ${visitDate || '-'} <br/>
+            <strong>Prescribed Doctor:</strong> ${doctorName || '-'}
           </div>
           ${fullContent}
         </body>
@@ -904,6 +909,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
             tokenNumber={tokenNumber}
             appointmentDate={visitDate}
             appointmentId={appointmentId}
+            doctorName={doctorName}
           />
 
           <PrescriptionSection
@@ -912,6 +918,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
             tokenNumber={tokenNumber}
             appointmentDate={visitDate}
             appointmentId={appointmentId}
+            doctorName={doctorName}
           />
 
           <LabTestSection
@@ -920,6 +927,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
             tokenNumber={tokenNumber}
             appointmentDate={visitDate}
             appointmentId={appointmentId}
+            doctorName={doctorName}
           />
           <ProcedureSection 
             patientId={appointment?.patient_id ?? appointment?.PatientID ?? appointment?.patientId}
@@ -927,6 +935,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
             tokenNumber={tokenNumber}
             appointmentDate={visitDate}
             appointmentId={appointmentId}
+            doctorName={doctorName}
           />
         </Box>
 

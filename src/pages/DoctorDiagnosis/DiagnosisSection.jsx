@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dayjs } from "@/utils/dateUtils";
 import { useDiagnosisStore } from "@/stores/diagnosisStore";
 
-const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId }) => {
+const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
   const diagnosisStore = useDiagnosisStore();
   const { symptoms, setSymptoms } = diagnosisStore;
   
@@ -286,7 +286,8 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
             <strong>Token No:</strong> ${tokenNumber || "-"} <br />
             <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
             <strong>Name:</strong> ${patientName || "-"} <br />
-            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"} <br />
+            <strong>Prescribed Doctor:</strong> ${doctorName || "-"}
           </div>
           ${printContent}
         </body>
