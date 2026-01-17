@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Box, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Typography, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientDetailsById, getAppointmentsAndBookings, getPatientDiagnosis, getPatientReports, getPatientReportFileDownload } from "@/serviceApis";
@@ -115,9 +115,9 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
               <Grid item xs={6} md={3}><Field label="diagnosis id" value={diag?.diagnosis_id} /></Grid>
               <Grid item xs={6} md={3}><Field label="diagnosis date" value={diag?.diagnosis_date} /></Grid>
               <Grid item xs={6} md={3}><Field label="chief complaint" value={diag?.chief_complaint} /></Grid>
-              <Grid item xs={6} md={3}><Field label="assessment notes" value={diag?.assessment_notes} /></Grid>
+              {/* <Grid item xs={6} md={3}><Field label="assessment notes" value={diag?.assessment_notes} /></Grid>
               <Grid item xs={6} md={3}><Field label="treatment plan" value={diag?.treatment_plan} /></Grid>
-              <Grid item xs={6} md={3}><Field label="recomm tests" value={diag?.recomm_tests} /></Grid>
+              <Grid item xs={6} md={3}><Field label="recomm tests" value={diag?.recomm_tests} /></Grid> */}
               <Grid item xs={6} md={3}><Field label="vital bp" value={diag?.vital_bp} /></Grid>
               <Grid item xs={6} md={3}><Field label="vital hr" value={diag?.vital_hr} /></Grid>
               <Grid item xs={6} md={3}><Field label="vital temp" value={diag?.vital_temp} /></Grid>
@@ -133,7 +133,9 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
 
   const ReportThumb = ({ report, appointmentId, patientId, facilityId }) => {
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [dataUrl, setDataUrl] = useState(undefined);
+    const [previewUrl, setPreviewUrl] = useState(undefined);
+    const [previewType, setPreviewType] = useState(undefined);
+    const [previewName, setPreviewName] = useState(report?.filename || "File");
 
     const { data: blob } = useQuery({
       queryKey: [
@@ -151,28 +153,30 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
       enabled: open && Boolean(report?.upload_id),
     });
 
-    useMemo(() => {
+    useEffect(() => {
       if (!blob) {
-        setDataUrl(undefined);
+        setPreviewUrl(undefined);
+        setPreviewType(undefined);
         return;
       }
-      let cancelled = false;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (!cancelled) setDataUrl(reader.result);
-      };
-      reader.onerror = () => {
-        if (!cancelled) setDataUrl(undefined);
-      };
-      reader.readAsDataURL(blob);
+      const ext = String(report?.filename || "").split(".").pop()?.toLowerCase();
+      let mime = "application/octet-stream";
+      if (ext === "pdf") mime = "application/pdf";
+      else if (ext === "jpg" || ext === "jpeg") mime = "image/jpeg";
+      else if (ext === "png") mime = "image/png";
+      const url = URL.createObjectURL(new Blob([blob], { type: mime }));
+      setPreviewUrl(url);
+      setPreviewType(mime);
+      setPreviewName(report?.filename || "File");
       return () => {
-        cancelled = true;
-        try { reader.abort && reader.abort(); } catch (e) {}
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {}
       };
-    }, [blob]);
+    }, [blob, report?.filename]);
 
     const handleView = () => {
-      if (!dataUrl) return;
+      if (!previewUrl) return;
       setPreviewOpen(true);
     };
 
@@ -194,25 +198,41 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
             alignItems: "center",
             justifyContent: "center",
           }}>
-            {dataUrl ? (
-              <img src={dataUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            {previewType && previewType.startsWith("image/") && previewUrl ? (
+              <img src={previewUrl} alt={previewName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : previewType === "application/pdf" && previewUrl ? (
+              <iframe src={previewUrl} title={previewName} style={{ width: "100%", height: "100%", border: "none" }} />
             ) : (
               <Box sx={{ fontSize: 12, color: "#6b7280" }}>Preview</Box>
             )}
           </Box>
-          <IconButton size="small" onClick={handleView} disabled={!dataUrl}>
+          <IconButton size="small" onClick={handleView} disabled={!previewUrl}>
             <VisibilityIcon fontSize="small" />
           </IconButton>
         </Box>
 
         <Dialog open={previewOpen} maxWidth="lg" fullWidth>
-          <DialogTitle sx={{ fontWeight: 700 }}>Report Preview</DialogTitle>
-          <DialogContent>
-            <Box sx={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
-              {dataUrl && (
-                <img src={dataUrl} style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }} alt="Report Preview" />
-              )}
-            </Box>
+          <DialogTitle sx={{ fontWeight: 700 }}>{previewName || "Report Preview"}</DialogTitle>
+          <DialogContent sx={{ p: 0, display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {previewUrl && previewType && (
+              previewType.startsWith("image/") ? (
+                <img
+                  src={previewUrl}
+                  alt={previewName}
+                  style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain" }}
+                />
+              ) : previewType === "application/pdf" ? (
+                <iframe
+                  src={previewUrl}
+                  title={previewName}
+                  style={{ width: "100%", height: "75vh", border: "none" }}
+                />
+              ) : (
+                <Box sx={{ color: "#000000ff", p: 3 }}>
+                  Preview not available for this file type.
+                </Box>
+              )
+            )}
           </DialogContent>
           <DialogActions>
             <StyledButton onClick={handleClosePreview}>Close</StyledButton>
@@ -320,6 +340,17 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
                         : "-";
                       const doctor = a.doctor || a.doctor_name || "-";
                       const time = a.time_slot || "-";
+                      const rawReview =
+                        a?.is_review ??
+                        a?.isReview ??
+                        a?.IsReview ??
+                        a?.review ??
+                        a?.Review;
+                      const isReview =
+                        rawReview === true ||
+                        rawReview === 1 ||
+                        rawReview === "1" ||
+                        String(rawReview).toLowerCase() === "true";
                       return (
                         <Accordion key={id} sx={{ borderRadius: 1, border: "1px solid #e5e7eb", boxShadow: "none" }}>
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}> 
@@ -343,9 +374,9 @@ const PatientDetailsDialog = ({ open, onClose, patientId }) => {
                                 <Grid item xs={6} md={3}><Field label="Date" value={date} /></Grid>
                                 <Grid item xs={6} md={3}><Field label="Time Slot" value={time} /></Grid>
                                 <Grid item xs={6} md={3}><Field label="Doctor" value={doctor} /></Grid>
-                                <Grid item xs={6} md={3}><Field label="Payment Method" value={a.payment_method} /></Grid>
-                                <Grid item xs={6} md={3}><Field label="Paid" value={a.is_paid || a.paid ? "Yes" : "No"} /></Grid>
-                                <Grid item xs={6} md={3}><Field label="Consultation Fee" value={a.consultation_fee} /></Grid>
+                                {!isReview && <Grid item xs={6} md={3}><Field label="Payment Method" value={a.payment_method} /></Grid>}
+                                <Grid item xs={6} md={3}><Field label="Payment Status" value={isReview ? "Not Required" : (a.is_paid || a.paid ? "Paid" : "Unpaid")} /></Grid>
+                                {!isReview && <Grid item xs={6} md={3}><Field label="Consultation Fee" value={a.consultation_fee} /></Grid>}
                                 <Grid item xs={6} md={3}><Field label="Diagnosis ID" value={a.diagnosis_id} /></Grid>
                               </Grid>
                             </Box>

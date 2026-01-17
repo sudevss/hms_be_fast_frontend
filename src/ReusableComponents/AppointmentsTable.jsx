@@ -124,22 +124,91 @@ const AppointmentsTable = ({
     enabled: true,
   });
 
-const handleMoveToCompleted = async (row) => {
-  if (row.is_paid || row.paid) {
-    // User is paid, show confirmation with payment details
-    updateAppointmentStatus(row);
-  } else {
-    // User not paid, show payment dialog
-    // If consultation_fee is not available, fetch appointment details first
-    if (!row.consultation_fee && !row.doctor_consultation_fee && !row.fee) {
-      try {
-        const data = await getAppointmentDetailsById({
+  // 🔹 Helper function to check if appointment is a review
+  const isReview = (data) => {
+    const raw =
+      data?.is_review ??
+      data?.isReview ??
+      data?.IsReview ??
+      data?.review ??
+      data?.Review;
+    const val = String(raw).toLowerCase();
+    return raw === true || raw === 1 || raw === "1" || val === "true";
+  };
+  
+  const PaymentUpdateAction = ({ row }) => {
+    const { data } = useQuery({
+      queryKey: ["apptDetailsForPayment", row?.appointment_id, row?.facility_id],
+      queryFn: () =>
+        getAppointmentDetailsById({
           appointment_id: row.appointment_id,
           facility_id: row.facility_id,
-        });
-        
-        const normalized = Array.isArray(data) ? data?.[0] : data;
-        
+        }),
+      enabled: Boolean(row?.appointment_id && row?.facility_id),
+      staleTime: 30000,
+    });
+    const normalized = Array.isArray(data) ? data?.[0] : data;
+    const review = isReview(normalized || row);
+    if (review) return null;
+    return (
+      <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
+        <IconButton
+          color="#115E59"
+          disabled={row.is_paid || row.paid}
+          onClick={() => {
+            updatePaymentStatus(row);
+          }}
+        >
+          <CurrencyRupeeIcon color="#115E59" />
+        </IconButton>
+      </Tooltip>
+    );
+  };
+  
+  const RupeeOffIcon = ({ size = 24 }) => (
+    <Box sx={{ position: "relative", width: size, height: size }}>
+      <CurrencyRupeeIcon sx={{ color: "#9CA3AF", fontSize: size }} />
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: size * 0.9,
+          height: 2,
+          bgcolor: "#EF4444",
+          transform: "translate(-50%, -50%) rotate(-45deg)",
+          borderRadius: 1,
+        }}
+      />
+    </Box>
+  );
+
+  const handleMoveToCompleted = async (row) => {
+    // 🔹 Check if it's a review appointment - skip payment entirely
+    if (isReview(row)) {
+      updateAppointmentStatus(row);
+      return;
+    }
+
+    // 🔹 Fetch fresh details to confirm review status (especially for Dashboard data)
+    try {
+      const data = await getAppointmentDetailsById({
+        appointment_id: row.appointment_id,
+        facility_id: row.facility_id,
+      });
+      const normalized = Array.isArray(data) ? data?.[0] : data;
+
+      // Check again with fresh data
+      if (isReview(normalized)) {
+        updateAppointmentStatus(row);
+        return;
+      }
+
+      if (normalized.is_paid || normalized.paid || row.is_paid || row.paid) {
+        // User is paid, show confirmation with payment details
+        updateAppointmentStatus(row);
+      } else {
+        // User not paid, show payment dialog
         setPendingStatusUpdate(row);
         setPaymentObj({ 
           ...paymentObj, 
@@ -149,51 +218,68 @@ const handleMoveToCompleted = async (row) => {
           payment_comments: row.payment_comments || "",
           open: true 
         });
-        return;
-      } catch (error) {
-        setShowAlert({
-          show: true,
-          message: "Failed to fetch appointment details",
-          status: "error",
-        });
-        return;
       }
+    } catch (error) {
+      console.error(error);
+      setShowAlert({
+        show: true,
+        message: "Failed to fetch appointment details",
+        status: "error",
+      });
+    }
+  };
+
+  const updatePaymentStatus = async (row) => {
+    // 🔹 Prevent payment updates for review appointments
+    if (isReview(row)) {
+      setShowAlert({
+        show: true,
+        message: "Payment is not required for review appointments",
+        status: "info",
+      });
+      return;
     }
     
-    const fee = row.consultation_fee || row.doctor_consultation_fee || row.fee || 0;
-    
-    setPendingStatusUpdate(row);
-    setPaymentObj({ 
-      ...paymentObj, 
-      appointment_id: row.appointment_id,
-      facility_id: row.facility_id,
-      consultation_fee: fee,
-      payment_comments: row.payment_comments || "",
-      open: true 
-    });
-  }
-};
-
-const updatePaymentStatus = async (row) => {
-  // If consultation_fee is not available, fetch appointment details first
-  if (!row.consultation_fee && !row.doctor_consultation_fee && !row.fee) {
+    // 🔹 Fetch fresh details to confirm review status before opening payment dialog
     try {
       const data = await getAppointmentDetailsById({
         appointment_id: row.appointment_id,
         facility_id: row.facility_id,
       });
-      
       const normalized = Array.isArray(data) ? data?.[0] : data;
+      
+      // If backend indicates review, do not open payment
+      if (isReview(normalized)) {
+        setShowAlert({
+          show: true,
+          message: "Payment is not required for review appointments",
+          status: "info",
+        });
+        return;
+      }
+      
+      const fee =
+        normalized.consultation_fee ||
+        normalized.doctor_consultation_fee ||
+        row.consultation_fee ||
+        row.doctor_consultation_fee ||
+        row.fee ||
+        0;
       
       setPaymentObj({
         ...paymentObj,
-        appointment_id: normalized.appointment_id,
-        facility_id: normalized.facility_id,
-        payment_status: normalized.is_paid || normalized.paid || false,
-        payment_method: normalized.payment_method || normalized.payment_type || "",
-        consultation_fee: normalized.consultation_fee || normalized.doctor_consultation_fee || 0,
-        payment_comments: normalized.payment_comments || "",
-        open: true
+        appointment_id: normalized.appointment_id || row.appointment_id,
+        facility_id: normalized.facility_id || row.facility_id,
+        payment_status: normalized.is_paid || normalized.paid || row.is_paid || row.paid || false,
+        payment_method:
+          normalized.payment_method ||
+          normalized.payment_type ||
+          row.payment_method ||
+          row.payment_type ||
+          "",
+        consultation_fee: fee,
+        payment_comments: normalized.payment_comments || row.payment_comments || "",
+        open: true,
       });
     } catch (error) {
       setShowAlert({
@@ -202,22 +288,7 @@ const updatePaymentStatus = async (row) => {
         status: "error",
       });
     }
-    return;
-  }
-  
-  const fee = row.consultation_fee || row.doctor_consultation_fee || row.fee || 0;
-  
-  setPaymentObj({ 
-    ...paymentObj, 
-    appointment_id: row.appointment_id,
-    facility_id: row.facility_id,
-    payment_status: row.is_paid || row.paid || false,
-    payment_method: row.payment_method || row.payment_type || "",
-    consultation_fee: fee,
-    payment_comments: row.payment_comments || "",
-    open: true 
-  });
-};
+  };
 
   const mutationPaymentStatusUpdate = useMutation({
     mutationFn: (payload) => postUpdatePaymentStatus(payload),
@@ -313,20 +384,20 @@ const updatePaymentStatus = async (row) => {
   });
 
   const mutationGetAppointmentDetails = useMutation({
-  mutationFn: (payload) => getAppointmentDetailsById(payload),
-  onSuccess: (data) => {
-    const normalized = Array.isArray(data) ? data?.[0] : data;
-    setSelectedAppointment(normalized);
-    setOpenViewDetails(true);
-  },
-  onError: () => {
-    setShowAlert({
-      show: true,
-      message: "Failed to fetch appointment details",
-      status: "error",
-    });
-  },
-});
+    mutationFn: (payload) => getAppointmentDetailsById(payload),
+    onSuccess: (data) => {
+      const normalized = Array.isArray(data) ? data?.[0] : data;
+      setSelectedAppointment(normalized);
+      setOpenViewDetails(true);
+    },
+    onError: () => {
+      setShowAlert({
+        show: true,
+        message: "Failed to fetch appointment details",
+        status: "error",
+      });
+    },
+  });
 
   // 🔹 Table Action Helpers
   const handleDelete = (row) => mutationDelete.mutate(row);
@@ -425,11 +496,6 @@ const updatePaymentStatus = async (row) => {
 
   // 🔹 Columns (memoized)
   const columns = useMemo(() => {
-    const isReview = (data) => {
-      const val = data?.is_review;
-      return val === true || val === 1 || val === "1" || val === "true";
-    };
-
     const paymentCell = ({ row }) => (
       <Box sx={{ display: "flex", justifyContent: "center" }}>
         <Tooltip
@@ -443,9 +509,9 @@ const updatePaymentStatus = async (row) => {
           arrow
         >
           <IconButton>
-            {isReview(row.original) ||
-            row.original.is_paid ||
-            row.original.paid ? (
+            {isReview(row.original) ? (
+              <RupeeOffIcon />
+            ) : row.original.is_paid || row.original.paid ? (
               <FaCheck color="#115E59" />
             ) : (
               <FcCancel />
@@ -472,19 +538,7 @@ const updatePaymentStatus = async (row) => {
             </IconButton>
           </Tooltip>
         )}
-        {!isReview(row.original) && (
-          <Tooltip placement="top" title="Payment Update" arrow enterDelay={100}>
-            <IconButton
-              color="#115E59"
-              disabled={row.original.is_paid || row.original.paid}
-              onClick={() => {
-                updatePaymentStatus(row.original);
-              }}
-            >
-              <CurrencyRupeeIcon color="#115E59" />
-            </IconButton>
-          </Tooltip>
-        )}
+        <PaymentUpdateAction row={row.original} />
         <Tooltip placement="top" title="Add Diagnosis" arrow enterDelay={100}>
           <IconButton
             backgroundColor="#115E59"
@@ -629,6 +683,7 @@ const updatePaymentStatus = async (row) => {
         )}
       </Box>
     );
+    
     const tokenColumn = [
       { accessorKey: "token", header: "Token" },
       { accessorKey: "patient_name", header: "Patient Name" },
