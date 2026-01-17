@@ -116,6 +116,22 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     checkReviewEligibility();
   }, [AppointmentDate, doctor_id, selectPaientName, facility_id]);
 
+  // useEffect(() => {
+  //   const pid = selectPaientName?.id;
+  //   const did = doctor_id;
+  //   if (pid && did) {
+  //     try {
+  //       const key = `review:${pid}:${did}`;
+  //       const saved = localStorage.getItem(key);
+  //       if (saved === "true" || saved === "1") setIsReviewChecked(true);
+  //       else if (saved === "false" || saved === "0") setIsReviewChecked(false);
+  //     } catch {}
+  //   } else {
+  //     setIsReviewChecked(false);
+  //   }
+  //   setIsReviewEnabled(Boolean(pid && did));
+  // }, [selectPaientName?.id, doctor_id]);
+
   const queryGetAllDoctorsDetails = useQuery({
     queryKey: ["queryGetAllDoctorsDetails"],
     queryFn: () =>
@@ -301,6 +317,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
         AppointmentDate: dayjs(AppointmentDate).format("YYYY-MM-DD"),
         AppointmentTime: AppointmentTime,
         AppointmentMode: AppointmentMode[0],
+        is_review: isReviewChecked,
       };
       mutationUpdateBooking.mutate(payload);
     } else {
@@ -604,8 +621,9 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
                 <Checkbox
                   checked={isReviewChecked}
                   onChange={(e) => {
-                    setIsReviewChecked(e.target.checked);
-                    if (e.target.checked) {
+                    const checked = e.target.checked;
+                    setIsReviewChecked(checked);
+                    if (checked) {
                       onChangeBooking("payment_method", "");
                     }
                   }}
