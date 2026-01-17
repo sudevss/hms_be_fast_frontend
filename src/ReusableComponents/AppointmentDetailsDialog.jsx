@@ -20,7 +20,7 @@ import StyledButton from "@/components/StyledButton";
 import { dayjs } from "@/utils/dateUtils";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientDiagnosis } from "@/serviceApis";
-import { getPatientDetailsById } from "@/serviceApis";
+import { getPatientDetailsById, getAppointmentDetailsById } from "@/serviceApis";
 import { getPatientReports } from "@/serviceApis";
 import { getPatientReportFileDownload } from "@/serviceApis";
 import IconButton from "@mui/material/IconButton";
@@ -58,9 +58,31 @@ const Field = ({ label, value }) => (
 
 const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = true }) => {
 
+  const { data: fetchedAppointment } = useQuery({
+    queryKey: ["appointmentDetailsDialog", appointment?.appointment_id, appointment?.facility_id],
+    queryFn: () =>
+      getAppointmentDetailsById({
+        appointment_id: appointment?.appointment_id,
+        facility_id: appointment?.facility_id,
+      }),
+    enabled: open && Boolean(appointment?.appointment_id && appointment?.facility_id),
+  });
+
   const normalized = useMemo(() => {
     if (!appointment) return null;
-    const a = appointment;
+    const fetched = Array.isArray(fetchedAppointment) ? fetchedAppointment[0] : fetchedAppointment;
+    const a = fetched || appointment;
+    const rawReview =
+      a?.is_review ??
+      a?.isReview ??
+      a?.IsReview ??
+      a?.review ??
+      a?.Review;
+    const review =
+      rawReview === true ||
+      rawReview === 1 ||
+      rawReview === "1" ||
+      String(rawReview).toLowerCase() === "true";
     return {
       appointment_id: a.appointment_id,
       patient_name: get(a, ["patient_name", "name", "firstname"]),
@@ -75,8 +97,9 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
       patient_id: get(a, ["patient_id", "PatientID"]),
       doctor_id: a.doctor_id,
       facility_id: a.facility_id,
+      is_review: review,
     };
-  }, [appointment]);
+  }, [appointment, fetchedAppointment]);
 
   const { data: diagnosis, isLoading: isDiagLoading } = useQuery({
     queryKey: [
@@ -355,18 +378,30 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                     <Typography variant="caption" sx={labelSx}>Payment Status</Typography>
                     <Box sx={{ height: 4 }} />
                     <Chip
-                      label={normalized.is_paid ? "Paid" : "Unpaid"}
+                      label={
+                        normalized.is_review
+                          ? "Not Required"
+                          : normalized.is_paid
+                          ? "Paid"
+                          : "Unpaid"
+                      }
                       size="small"
                       sx={{
-                        backgroundColor: normalized.is_paid ? "#16a34a" : "#ef4444",
+                        backgroundColor: normalized.is_review
+                          ? "#3b82f6"
+                          : normalized.is_paid
+                          ? "#16a34a"
+                          : "#ef4444",
                         color: "#fff",
                         fontWeight: 700,
-                        width: 70,
+                        width: 110,
                       }}
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={6} md={3}><Field label="Payment Method" value={normalized.payment_method} /></Grid>
+                {!normalized.is_review && (
+  <Grid item xs={6} md={3}><Field label="Payment Method" value={normalized.payment_method} /></Grid>
+)}
                 <Grid item xs={6} md={3}><Field label="Diagnosis ID" value={normalized.diagnosis_id} /></Grid>
               </Grid>
               </AccordionDetails>
