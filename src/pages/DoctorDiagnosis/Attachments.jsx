@@ -1,7 +1,5 @@
-import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody, Paper, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody, Paper, Link } from "@mui/material";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
 import { dayjs } from "@/utils/dateUtils";
 import { getPatientReports, getPatientReportFileDownload } from "@/serviceApis";
 
@@ -25,11 +23,6 @@ const deriveCategory = (report) => {
 };
 
 const Attachments = ({ patientId }) => {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [previewType, setPreviewType] = useState(null);
-  const [previewName, setPreviewName] = useState("");
-
   const { data = [], isLoading } = useQuery({
     queryKey: ["queryGetPatientReports", patientId],
     queryFn: () => getPatientReports({ patient_id: patientId, facility_id: "1" }),
@@ -41,43 +34,28 @@ const Attachments = ({ patientId }) => {
     onSuccess: (res, variables) => {
       const extension = (variables.filename || "").split('.').pop().toLowerCase();
       let mimeType = 'application/octet-stream';
-      
       if (extension === 'pdf') {
         mimeType = 'application/pdf';
       } else if (extension === 'jpg' || extension === 'jpeg') {
         mimeType = 'image/jpeg';
       } else if (extension === 'png') {
         mimeType = 'image/png';
-      }
+      } // Add more if needed
 
       const url = URL.createObjectURL(new Blob([res], { type: mimeType }));
-      setPreviewUrl(url);
-      setPreviewType(mimeType);
-      setPreviewName(variables.filename || "File");
-      setPreviewOpen(true);
+      window.open(url, '_blank');
     },
     onError: (error) => {
       console.error("View error:", error);
+      // Optionally show an alert or handle error
     },
   });
 
-  const handleRowClick = (report) => {
-    const { filename, ...payload } = report;
-    mutationFileView.mutate({ ...payload, filename });
-  };
-
-  const handleClosePreview = () => {
-    setPreviewOpen(false);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-    setPreviewType(null);
-    setPreviewName("");
-  };
-
   return (
     <Box sx={{ width: "100%", mt: 3 }}>
+      <Typography sx={{ fontWeight: 700, fontSize: "1.0rem", mb: 1 }}>
+        Attachments
+      </Typography>
       <Paper variant="outlined" sx={{ width: "100%" }}>
         <Table size="small">
           <TableHead>
@@ -99,21 +77,21 @@ const Attachments = ({ patientId }) => {
                 const dateStr = pick(rep, ["date", "report_date"]) ? dayjs(pick(rep, ["date", "report_date"])).format("DD-MM-YYYY") : "-";
                 const category = deriveCategory(rep);
                 const name = rep?.filename || rep?.name || "-";
-                
+                const { filename, ...payload } = rep;
                 return (
-                  <TableRow 
-                    key={rep.upload_id || `${name}-${dateStr}`}
-                    onClick={() => handleRowClick(rep)}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': { 
-                        backgroundColor: 'rgba(35, 35, 35, 0.08)'
-                      }
-                    }}
-                  >
+                  <TableRow key={rep.upload_id || `${name}-${dateStr}`}>
                     <TableCell>{dateStr}</TableCell>
                     <TableCell>{category}</TableCell>
-                    <TableCell>{name}</TableCell>
+                    <TableCell>
+                      <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => mutationFileView.mutate({ ...payload, filename })}
+                        sx={{ textDecoration: 'underline', cursor: 'pointer' }}
+                      >
+                        {name}
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -127,65 +105,6 @@ const Attachments = ({ patientId }) => {
           </TableBody>
         </Table>
       </Paper>
-
-      {/* Preview Dialog */}
-      <Dialog 
-        open={previewOpen} 
-        onClose={handleClosePreview}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: '#f8f6f6ff',
-            minHeight: '80vh'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          color: '#000000ff', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <Typography variant="h6">{previewName}</Typography>
-          <IconButton 
-            onClick={handleClosePreview} 
-            sx={{ color: '#14b8a6' }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          {previewUrl && previewType && (
-            previewType.startsWith('image/') ? (
-              <img 
-                src={previewUrl} 
-                alt={previewName}
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '75vh',
-                  objectFit: 'contain'
-                }}
-              />
-            ) : previewType === 'application/pdf' ? (
-              <iframe
-                src={previewUrl}
-                title={previewName}
-                style={{
-                  width: '100%',
-                  height: '75vh',
-                  border: 'none'
-                }}
-              />
-            ) : (
-              <Typography sx={{ color: '#000000ff', p: 3 }}>
-                Preview not available for this file type.
-              </Typography>
-            )
-          )}
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 };

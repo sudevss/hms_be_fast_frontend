@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   Box,
   IconButton,
@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Autocomplete,
 } from "@mui/material";
 
 import StyledButton from "@components/StyledButton";
@@ -24,27 +23,21 @@ import {
   getDrugMasterList,
 } from "@/serviceApis";
 import { useQuery } from "@tanstack/react-query";
-import { usePrescriptionStore } from "@/stores/prescriptionStore";
 
 const PrescriptionSection = ({
   patientId,
   patientName,
   tokenNumber,
   appointmentDate,
-  appointmentId,
-  doctorName,
 }) => {
-  const prescriptionStore = usePrescriptionStore();
-  const { prescriptions, setPrescriptions } = prescriptionStore;
-
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
+
+  // For delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
 
   const printRef = useRef();
-
-  const timingOptions = ["Before Food", "After Food"];
 
   const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -59,42 +52,6 @@ const PrescriptionSection = ({
     queryKey: ["queryGetDrugMaster"],
     queryFn: () => getDrugMasterList(),
   });
-
-  // Sync store with local data when prescriptions change externally
-  useEffect(() => {
-    if (
-      prescriptions.length > 0 &&
-      data.length === 0 &&
-      drugOptions.length > 0
-    ) {
-      // Only sync if data is empty (initial load)
-      const tableData = prescriptions.map((prescription, index) => {
-        const morning = prescription.morning_dosage ?? "0";
-        const afternoon = prescription.afternoon_dosage ?? "0";
-        const night = prescription.night_dosage ?? "0";
-        // Look up medicine details from master list
-        const medicineOption = drugOptions.find(
-          (d) => d.medicine_id === prescription.medicine_id
-        );
-        return {
-          id: `prescription-${index}-${Date.now()}`,
-          medicine_id: prescription.medicine_id,
-          medicine_name: medicineOption?.medicine_name || "",
-          generic_name: medicineOption?.generic_name || "",
-          strength: medicineOption?.strength || "",
-          dosage: `${morning}-${afternoon}-${night}`,
-          morning_dosage: morning,
-          afternoon_dosage: afternoon,
-          night_dosage: night,
-          food_timing: prescription.food_timing || "",
-          duration_days: prescription.duration_days || "",
-          special_instructions: prescription.special_instructions || "",
-        };
-      });
-      setData(tableData);
-    }
-  }, [prescriptions, drugOptions]);
-
   // ---------------------- TEMPLATE LOAD ---------------------------
 
   const handleTemplateSelect = async (selected) => {
@@ -145,41 +102,11 @@ const PrescriptionSection = ({
       }
 
       setData((prev) => [...prev, ...mapped]);
-
-      // Update store
-      const newPrescriptions = mapped.map((m) => ({
-        medicine_id: m.medicine_id,
-        morning_dosage: m.morning_dosage || "0",
-        afternoon_dosage: m.afternoon_dosage || "0",
-        night_dosage: m.night_dosage || "0",
-        food_timing: m.food_timing || "",
-        duration_days: m.duration_days || 0,
-        special_instructions: m.special_instructions || "",
-      }));
-      setPrescriptions([
-        ...prescriptionStore.prescriptions,
-        ...newPrescriptions,
-      ]);
     } catch (error) {
       setLoadError("Failed to load template");
     } finally {
       setLoading(false);
     }
-  };
-
-  // ---------------------- DOSAGE AUTO-FORMAT ---------------------------
-
-  const formatDosage = (value) => {
-    // Remove any existing hyphens and spaces
-    let cleaned = value.replace(/[-\s]/g, "");
-
-    // Keep only digits
-    cleaned = cleaned.replace(/[^0-9]/g, "");
-
-    // Add hyphens between each digit
-    let formatted = cleaned.split("").join("-");
-
-    return formatted;
   };
 
   // ---------------------- MEDICINE AUTOFILL ---------------------------
@@ -215,22 +142,6 @@ const PrescriptionSection = ({
   };
 
   // ---------------------- TABLE COLUMNS ---------------------------
-
-  // For delete confirmation
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [rowToDelete, setRowToDelete] = useState(null);
-
-  const frequencyOptions = [
-    "0-0-1",
-    "0-1-0",
-    "1-0-0",
-    "1-1-0",
-    "1-0-1",
-    "0-1-1",
-    "1-1-1",
-  ];
-
-  const timingOptions = ["Before Food", "After Food"];
 
   const columns = useMemo(
     () => [
@@ -322,31 +233,17 @@ const PrescriptionSection = ({
             fullWidth
             size="small"
             value={cell.getValue() ?? ""}
-            onChange={(e) => {
-              const formattedValue = formatDosage(e.target.value);
-              // Parse dosage and update individual fields
-              const parts = formattedValue.split("-");
-              table.options.meta.updateData(
-                row.index,
-                "dosage",
-                formattedValue
-              );
-              table.options.meta.updateData(
-                row.index,
-                "morning_dosage",
-                parts[0] || "0"
-              );
-              table.options.meta.updateData(
-                row.index,
-                "afternoon_dosage",
-                parts[1] || "0"
-              );
-              table.options.meta.updateData(
-                row.index,
-                "night_dosage",
-                parts[2] || "0"
-              );
-            }}
+            error={
+              cell.getValue() && !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
+            }
+            helperText={
+              cell.getValue() && !/^[0-9]-[0-9]-[0-9]$/.test(cell.getValue())
+                ? "Format must be like 1-0-1"
+                : ""
+            }
+            onChange={(e) =>
+              table.options.meta.updateData(row.index, "dosage", e.target.value)
+            }
             placeholder="e.g. 1-0-1"
           />
         ),
@@ -422,23 +319,20 @@ const PrescriptionSection = ({
   );
 
   // ---------------------- ADD / DELETE ROW ---------------------------
-
   const handleAddRow = () => {
-    const newRow = {
-      id: Date.now(),
-      medicine_id: null,
-      medicine_name: "",
-      generic_name: "",
-      strength: "",
-      dosage: "",
-      morning_dosage: "0",
-      afternoon_dosage: "0",
-      night_dosage: "0",
-      food_timing: "",
-      duration_days: "",
-      special_instructions: "",
-    };
-    setData((prev) => [newRow, ...prev]);
+    setData((prev) => [
+      {
+        id: Date.now(),
+        medicine_name: "",
+        generic_name: "",
+        strength: "",
+        dosage: "",
+        food_timing: "",
+        duration_days: "",
+        special_instructions: "",
+      },
+      ...prev,
+    ]);
   };
 
   const handlePrint = () => {
@@ -479,12 +373,10 @@ const PrescriptionSection = ({
         <body>
           <div class="center-heading">Apple Medical Center</div>
           <div class="patient-header">
-            <strong>Patient ID:</strong> ${patientId || "-"} <br />
-            <strong>Token No:</strong> ${tokenNumber || "-"} <br />
-            <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
+            <strong>P_id:</strong> ${patientId || "-"} <br />
             <strong>Name:</strong> ${patientName || "-"} <br />
-            <strong>Appointment Date:</strong> ${appointmentDate || "-"} <br />
-            <strong>Prescribed Doctor:</strong> ${doctorName || "-"}
+            <strong>Token Number:</strong> ${tokenNumber || "-"} <br />
+            <strong>Appointment Date:</strong> ${appointmentDate || "-"}
           </div>
           ${printContent}
         </body>
@@ -495,42 +387,8 @@ const PrescriptionSection = ({
   };
 
   const handleDeleteRow = ({ row }) => {
-    const filtered = data.filter((r) => r.id !== row.original.id);
-    setData(filtered);
-    // Update store
-    setPrescriptions(
-      filtered
-        .filter((r) => r.medicine_id)
-        .map((r) => ({
-          medicine_id: r.medicine_id,
-          morning_dosage: r.morning_dosage || "0",
-          afternoon_dosage: r.afternoon_dosage || "0",
-          night_dosage: r.night_dosage || "0",
-          food_timing: r.food_timing || "",
-          duration_days: r.duration_days || 0,
-          special_instructions: r.special_instructions || "",
-        }))
-    );
+    setData((prev) => prev.filter((r) => r.id !== row.original.id));
   };
-
-  // Sync data to store when editing is saved
-  const syncToStore = () => {
-    setPrescriptions(
-      data
-        .filter((r) => r.medicine_id)
-        .map((r) => ({
-          medicine_id: r.medicine_id,
-          morning_dosage: r.morning_dosage || "0",
-          afternoon_dosage: r.afternoon_dosage || "0",
-          night_dosage: r.night_dosage || "0",
-          food_timing: r.food_timing || "",
-          duration_days: r.duration_days || 0,
-          special_instructions: r.special_instructions || "",
-        }))
-    );
-  };
-
-  // ---------------------- RENDER ---------------------------
 
   return (
     <Box sx={{ borderRadius: 2, border: "1px solid #e5e7eb", p: 2, mt: 3 }}>
@@ -542,41 +400,11 @@ const PrescriptionSection = ({
           mb: 1,
         }}
       >
-        <Box sx={{ fontWeight: 700, fontSize: "1.0rem" }}>Prescription</Box>
-
+        <Box sx={{ fontWeight: 700, fontSize: "1rem" }}>Prescription</Box>
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Autocomplete
-            options={templateOptions}
-            value={selectedTemplateOption}
-            onChange={(e, val) => handleTemplateSelect(val)}
-            isOptionEqualToValue={(opt, val) =>
-              opt?.template_id === val?.template_id
-            }
-            getOptionLabel={(opt) => opt?.template_name || ""}
-            filterOptions={(options, state) =>
-              options.filter((o) =>
-                (o?.template_name || "")
-                  .toLowerCase()
-                  .includes(state.inputValue.toLowerCase())
-              )
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                size="small"
-                label="Template"
-                sx={{ minWidth: 280 }}
-                disabled={loading}
-                error={Boolean(loadError)}
-                helperText={loadError || ""}
-              />
-            )}
-          />
-
           <StyledButton variant="outlined" onClick={handlePrint}>
             Print
           </StyledButton>
-
           <StyledButton variant="contained" onClick={handleAddRow}>
             Add
           </StyledButton>
@@ -588,15 +416,6 @@ const PrescriptionSection = ({
         data={data}
         enableEditing
         editDisplayMode="row"
-        enableGlobalFilter={false}
-        enableColumnFilters={false}
-        enableColumnActions={false}
-        enableDensityToggle={false}
-        enableFullScreenToggle={false}
-        enableHiding={false}
-        enablePagination={false}
-        enableBottomToolbar={false}
-        enableTopToolbar={false}
         meta={{
           updateData: (rowIndex, columnId, value) =>
             setData((prev) =>
@@ -605,17 +424,9 @@ const PrescriptionSection = ({
               )
             ),
         }}
-        onEditingRowSave={({ row }) => {
-          const updated = data.map((r) =>
-            r.id === row.original.id ? { ...row.original } : r
-          );
-          setData(updated);
-          syncToStore();
-          setEditingRowId(null);
-        }}
+        onEditingRowSave={({ row }) => setEditingRowId(null)}
         renderRowActions={({ row, table }) => {
           const isEditing = editingRowId === row.original.id;
-
           return (
             <Box sx={{ display: "flex", gap: 1 }}>
               {isEditing ? (
@@ -624,7 +435,6 @@ const PrescriptionSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
-                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
@@ -639,7 +449,6 @@ const PrescriptionSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
-                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
@@ -685,55 +494,15 @@ const PrescriptionSection = ({
         }}
       />
 
-      {/* Hidden print table */}
-      <div ref={printRef} style={{ display: "none" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Medicine Name</th>
-              <th>Generic Name</th>
-              <th>Strength</th>
-              <th>Dosage</th>
-              <th>Food Timing</th>
-              <th>Duration (Days)</th>
-              <th>Special Instructions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ textAlign: "center" }}>
-                  No prescription entries added
-                </td>
-              </tr>
-            ) : (
-              data.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.medicine_name}</td>
-                  <td>{row.generic_name}</td>
-                  <td>{row.strength}</td>
-                  <td>{row.dosage}</td>
-                  <td>{row.food_timing}</td>
-                  <td>{row.duration_days}</td>
-                  <td>{row.special_instructions}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* DELETE CONFIRMATION */}
+      {/* Delete confirmation dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
       >
         <DialogTitle>Confirm Delete</DialogTitle>
-
         <DialogContent>
           Are you sure you want to delete this prescription entry?
         </DialogContent>
-
         <DialogActions>
           <StyledButton
             variant="outlined"
@@ -741,7 +510,6 @@ const PrescriptionSection = ({
           >
             Cancel
           </StyledButton>
-
           <StyledButton
             variant="contained"
             color="error"

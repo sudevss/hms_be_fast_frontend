@@ -22,7 +22,7 @@ const DiagnosisRightSidebar = ({ isOpen, onToggle, patientId }) => {
     <Box
       sx={{
         width: isOpen
-          ? { xs: "90vw", sm: "80vw", md: "50vw", lg: "45vw", xl: "40vw" }
+          ? { xs: "85vw", sm: "75vw", md: "40vw", lg: "35vw", xl: "28vw" }
           : COLLAPSED_WIDTH,
         backgroundColor: "#000",
         transition: "width 0.3s ease",
@@ -30,7 +30,7 @@ const DiagnosisRightSidebar = ({ isOpen, onToggle, patientId }) => {
         borderLeft: "1px solid rgba(255,255,255,0.1)",
         position: "sticky",
         top: "64px",
-        maxHeight: "calc(100vh - 64px)",
+        maxHeight: "calc(100vh - 80px)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",

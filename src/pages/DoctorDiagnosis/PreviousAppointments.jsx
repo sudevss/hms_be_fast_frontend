@@ -19,7 +19,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { dayjs } from "@/utils/dateUtils";
-import { getAppointmentsAndBookings, getPatientDiagnosisById, getPatientDiagnosis, getAppointmentDetailsById } from "@/serviceApis";
+import { getAppointmentsAndBookings, getPatientDiagnosis } from "@/serviceApis";
 
 const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
   const startDate = dayjs().subtract(12, "month").format("YYYY-MM-DD");
@@ -51,28 +51,6 @@ const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
     }
     return undefined;
   };
-  const extractChief = (src) =>
-    getField(src, [
-      "chief_complaint",
-      "chiefComplaint",
-      "diagnosis_chief_complaint",
-      "chief_complaints",
-      "chiefComplaints",
-      "reason",
-      "complaint",
-    ]);
-  const extractSymptomsText = (diag) => {
-    try {
-      const arr = diag?.symptoms || diag?.diagnosis_symptoms || [];
-      if (!Array.isArray(arr) || arr.length === 0) return "";
-      const names = arr
-        .map((s) => s?.symptom_name || s?.name || "")
-        .filter(Boolean);
-      return names.length ? names.join(", ") : "";
-    } catch {
-      return "";
-    }
-  };
 
   const [enrichedRows, setEnrichedRows] = useState([]);
   const [enriching, setEnriching] = useState(false);
@@ -97,49 +75,31 @@ const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
       try {
         const full = await Promise.all(
           rows.map(async (row) => {
-            let chief = (extractChief(row) || "").trim();
+            let chief = getField(row, [
+              "chief_complaint",
+              "chiefComplaint",
+              "diagnosis_chief_complaint",
+            ]);
 
-            if (!chief && row?.diagnosis_id) {
-              try {
-                const result = await getPatientDiagnosisById({
-                  diagnosis_id: row?.diagnosis_id,
-                });
-                const diag = Array.isArray(result) ? result[0] : result;
-                chief = (extractChief(diag) || extractSymptomsText(diag) || chief || "").trim();
-              } catch (e) {
-                // ignore
-              }
-            }
-
-            if (!chief && row?.diagnosis_id && (row?.patient_id || patientId) && row?.doctor_id) {
+            if (!chief && row?.diagnosis_id && row?.doctor_id) {
               try {
                 const resp = await getPatientDiagnosis({
-                  patient_id: row?.patient_id || patientId,
+                  patient_id: patientId,
                   doctor_id: row?.doctor_id,
                   diagnosis_id: row?.diagnosis_id,
                   facility_id: row?.facility_id || 1,
                 });
-                const diag2 = Array.isArray(resp) ? resp[0] : resp;
-                chief = (extractChief(diag2) || extractSymptomsText(diag2) || chief || "").trim();
+                const diag = Array.isArray(resp) ? resp[0] : undefined;
+                chief =
+                  diag?.chief_complaint ||
+                  diag?.chiefComplaint ||
+                  chief;
               } catch (e) {
                 // ignore
               }
             }
 
-            if (!chief && row?.appointment_id && row?.facility_id) {
-              try {
-                const appt = await getAppointmentDetailsById({
-                  appointment_id: row.appointment_id,
-                  facility_id: row.facility_id,
-                });
-                const a = Array.isArray(appt) ? appt[0] : appt;
-                chief = (extractChief(a) || chief || "").trim();
-              } catch (e) {
-                // ignore
-              }
-            }
-
-            return { ...row, _chief: chief || "-" };
+            return { ...row, _chief: chief ?? "-" };
           })
         );
 
@@ -188,6 +148,7 @@ const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
           color: "#374151",
         }}
       >
+        Previous Appointments
       </Typography>
 
       {/* ---------------- TABLE ---------------- */}
@@ -502,13 +463,8 @@ const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
                           "status",
                           "token_id",
                           "name",
-                          "time_slot",
-                          "dcid",
                           "doctor_id",
                           "diagnosis_id",
-                          "facility_id",
-                          "payment_comments",
-                          "is_review"
                         ].includes(key)
                     )
                     .map(([key, value]) => (
@@ -520,25 +476,12 @@ const PreviousAppointments = ({ patientId, currentAppointmentDate }) => {
                             width: "30%",
                           }}
                         >
-                          {key === "paid"
-                            ? "Payment"
-                            : key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-                          }
-
+                          {key
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
                         </TableCell>
 
-                        <TableCell>
-                          {key === "checkin_time" && value
-                            ? `${dayjs.utc(value).tz("Asia/Kolkata").format("DD-MM-YYYY")}   ${dayjs
-                                .utc(value)
-                                .tz("Asia/Kolkata")
-                                .format("hh:mm A")}`
-                            : key === "paid"
-                            ? value === true
-                              ? "Paid"
-                              : "Unpaid"
-                            : String(value)}
-                        </TableCell>
+                        <TableCell>{String(value)}</TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
