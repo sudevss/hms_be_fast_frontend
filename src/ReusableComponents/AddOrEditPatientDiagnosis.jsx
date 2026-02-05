@@ -94,6 +94,10 @@ const AddOrEditPatientDiagnosis = ({ open, setOpen }) => {
         refetchActive: true,
         refetchInactive: false,
       });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard"],
+        exact: false,
+      });
       queryClient.invalidateQueries({ 
         queryKey: ["queryGetDiagnosisForDetails"], 
         exact: false 

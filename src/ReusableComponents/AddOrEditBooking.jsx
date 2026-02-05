@@ -70,6 +70,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     onReset,
     Reason,
     addPatient,
+    is_review,
   } = useBooking();
   const bookingState = useBooking();
   const [paientDetailsByNum, setPaientDetailsByNum] = useState([]);
@@ -80,6 +81,12 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
 
   useEffect(() => {
     const checkReviewEligibility = async () => {
+      if (isEdit && is_review) {
+        setIsReviewChecked(true);
+        setIsReviewEnabled(true);
+        return;
+      }
+
       if (AppointmentDate && doctor_id && selectPaientName?.id) {
         const startDate = dayjs(AppointmentDate)
           .subtract(7, "day")
@@ -114,7 +121,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
       }
     };
     checkReviewEligibility();
-  }, [AppointmentDate, doctor_id, selectPaientName, facility_id]);
+  }, [AppointmentDate, doctor_id, selectPaientName, facility_id, isEdit, is_review]);
 
   // useEffect(() => {
   //   const pid = selectPaientName?.id;
@@ -627,7 +634,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
                       onChangeBooking("payment_method", "");
                     }
                   }}
-                  disabled={!isReviewEnabled}
+                  disabled={isEdit || !isReviewEnabled}
                 />
               }
               label="Review"

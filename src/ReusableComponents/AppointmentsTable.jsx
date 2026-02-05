@@ -442,6 +442,7 @@ const AppointmentsTable = ({
         payment_status: normalized?.is_paid || normalized?.paid ? 1 : 0,
         payment_method: normalized?.payment_method || normalized?.payment_type || "",
         Reason: normalized?.reason || "",
+        is_review: isReview(normalized),
       });
       // Patient details
       if (normalized?.patient_id) {
@@ -477,6 +478,7 @@ const AppointmentsTable = ({
             payment_method:
               normalized?.payment_method || normalized?.payment_type || "",
             Reason: normalized?.reason || "",
+            is_review: isReview(normalized),
           });
         } catch {}
       }
@@ -543,23 +545,37 @@ const AppointmentsTable = ({
           <IconButton
             backgroundColor="#115E59"
             onClick={() => {
-              if (row.original?.diagnosis_id) {
-                mutationGetDiagnosis.mutate(row.original);
-              }
+              // if (row.original?.diagnosis_id) {
+              //   mutationGetDiagnosis.mutate(row.original);
+              // }
 
-              setPatientDiagnosis({
-                appointment_id: row.original?.appointment_id,
-                patient_id: row.original?.PatientID,
-                facility_id: row.original?.facility_id,
-                doctor_id: row.original?.doctor_id,
-                ...row.original,
-              });
-              setOpenDiagnosis(true);
+              // setPatientDiagnosis({
+              //   appointment_id: row.original?.appointment_id,
+              //   patient_id: row.original?.PatientID,
+              //   facility_id: row.original?.facility_id,
+              //   doctor_id: row.original?.doctor_id,
+              //   ...row.original,
+              // });
+              // setOpenDiagnosis(true);
+              handleDiagnosis(row.original);
             }}
           >
             <FaDiagnoses color="#115E59" />
           </IconButton>
         </Tooltip>
+        {row.original.checkin_time && (
+          <Tooltip placement="top" title="Doctor Diagnosis" arrow enterDelay={100}>
+            <IconButton
+              backgroundColor="#115E59"
+              onClick={() => {
+                setSelectedAppointment(row.original);
+                setOpenDoctorDiagnosisPrompt(true);
+              }}
+            >
+              <MedicalInformationIcon sx={{ color: "#115E59" }} />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip placement="top" title="Reports" arrow enterDelay={100}>
           <IconButton
             backgroundColor="#115E59"
@@ -699,7 +715,12 @@ const AppointmentsTable = ({
         ),
       },
       { accessorKey: "doctor_name", header: "Doctor" },
-      { accessorKey: "payment_type", header: "Payment Type" },
+      {
+        accessorKey: "payment_type",
+        header: "Payment Type",
+        Cell: ({ row }) =>
+          isReview(row.original) ? "Review" : row.original.payment_type,
+      },
       { accessorKey: "is_paid", header: "Payment", Cell: paymentCell },
       { accessorKey: "actions", header: "Actions", Cell: dashboardActionsCell },
     ];
@@ -727,7 +748,13 @@ const AppointmentsTable = ({
       { accessorKey: "phone", header: "Mobile", size: 120 },
       { accessorKey: "doctor", header: "Doctor", size: 150 },
       { accessorKey: "time_slot", header: "Time Slot", size: 130 },
-      { accessorKey: "payment_method", header: "Payment Type", size: 110 },
+      {
+        accessorKey: "payment_method",
+        header: "Payment Type",
+        size: 110,
+        Cell: ({ row }) =>
+          isReview(row.original) ? "Review" : row.original.payment_method,
+      },
       { accessorKey: "paid", header: "Payment", Cell: paymentCell },
       { accessorKey: "consultation_fee", header: "Fee", size: 80 },
       { accessorKey: "actions", header: "Actions", Cell: actionsCell },
