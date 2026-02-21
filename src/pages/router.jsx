@@ -19,6 +19,7 @@ import DashboardPage from "./Dashboard";
 import DoctorsPage from "./Doctors";
 import PatientsPage from "./Patients";
 import AppointmentsPage from "./Appointments";
+import BillingPage from "./Billing";
 
 // Optional wrapper for lazy loading fallback
 function SuspenseWrapper({ children }) {
@@ -67,6 +68,14 @@ const router = createBrowserRouter(
             element={
               <SuspenseWrapper>
                 <PatientsPage />
+              </SuspenseWrapper>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <SuspenseWrapper>
+                <BillingPage />
               </SuspenseWrapper>
             }
           />

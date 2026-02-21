@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Receipt,
 } from "lucide-react";
 import {
   Box,
@@ -55,6 +56,7 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
     { icon: <Calendar size={18} />, label: "Appointments", path: "/appointments" },
     { icon: <Users size={18} />, label: "Patients", path: "/patients" },
     { icon: <Stethoscope size={18} />, label: "Doctors", path: "/doctors" },
+    { icon: <Receipt size={18} />, label: "Billing", path: "/billing" },
   ];
 
   const bottomItems = [
