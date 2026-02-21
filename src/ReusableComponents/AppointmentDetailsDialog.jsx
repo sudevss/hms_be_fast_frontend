@@ -20,7 +20,11 @@ import StyledButton from "@/components/StyledButton";
 import { dayjs } from "@/utils/dateUtils";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientDiagnosis } from "@/serviceApis";
-import { getPatientDetailsById, getAppointmentDetailsById } from "@/serviceApis";
+import {
+  getPatientDetailsById,
+  getAppointmentDetailsById,
+  getPaymentSummary,
+} from "@/serviceApis";
 import { getPatientReports } from "@/serviceApis";
 import { getPatientReportFileDownload } from "@/serviceApis";
 import IconButton from "@mui/material/IconButton";
@@ -46,6 +50,27 @@ const handleIconClick = (e, fn) => {
   fn();
 };
 
+const getTokenIdentifiersFromAppointment = (source = {}) => {
+  const token_number =
+    source.token ||
+    source.token_number ||
+    source.token_id ||
+    source.TokenID ||
+    source.tokenNo ||
+    source.TokenNo ||
+    source.TokenNumber ||
+    null;
+
+  const token_date =
+    source.token_date ||
+    source.date ||
+    source.appointment_date ||
+    source.appointmentDate ||
+    null;
+
+  return { token_number, token_date };
+};
+
 const Field = ({ label, value }) => (
   <Box>
     <Typography variant="caption" sx={labelSx}>{label}</Typography>
@@ -68,10 +93,15 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
     enabled: open && Boolean(appointment?.appointment_id && appointment?.facility_id),
   });
 
-  const normalized = useMemo(() => {
+  const baseAppointment = useMemo(() => {
     if (!appointment) return null;
     const fetched = Array.isArray(fetchedAppointment) ? fetchedAppointment[0] : fetchedAppointment;
-    const a = fetched || appointment;
+    return fetched || appointment;
+  }, [appointment, fetchedAppointment]);
+
+  const normalized = useMemo(() => {
+    if (!baseAppointment) return null;
+    const a = baseAppointment;
     const rawReview =
       a?.is_review ??
       a?.isReview ??
@@ -99,7 +129,50 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
       facility_id: a.facility_id,
       is_review: review,
     };
-  }, [appointment, fetchedAppointment]);
+  }, [baseAppointment]);
+
+  const { token_number, token_date } = useMemo(
+    () => getTokenIdentifiersFromAppointment(baseAppointment || {}),
+    [baseAppointment]
+  );
+
+  const {
+    data: paymentSummary,
+    isLoading: isPaymentSummaryLoading,
+  } = useQuery({
+    queryKey: ["paymentSummaryStatus", token_number, token_date],
+    queryFn: () => getPaymentSummary({ token_number, token_date }),
+    enabled:
+      open &&
+      Boolean(token_number && token_date) &&
+      !normalized?.is_review,
+    staleTime: Infinity,
+    cacheTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+
+  const paymentStatus = useMemo(() => {
+    if (!normalized) return null;
+    if (normalized.is_review) return "not_required";
+
+    if (paymentSummary) {
+      let status = "unpaid";
+      const totalPending =
+        parseFloat(paymentSummary.total_pending || 0) || 0;
+      const totalPaid =
+        parseFloat(paymentSummary.total_paid || 0) || 0;
+
+      if (totalPending === 0) status = "paid";
+      else if (totalPaid === 0) status = "unpaid";
+      else status = "partial";
+
+      return status;
+    }
+
+    return normalized.is_paid ? "paid" : "unpaid";
+  }, [normalized, paymentSummary]);
 
   const { data: diagnosis, isLoading: isDiagLoading } = useQuery({
     queryKey: [
@@ -327,6 +400,17 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
     );
   };
 
+  const shouldWaitForPaymentSummary =
+    open &&
+    normalized &&
+    !normalized.is_review &&
+    Boolean(token_number && token_date) &&
+    isPaymentSummaryLoading;
+
+  if (!open) return null;
+  if (!normalized) return null;
+  if (shouldWaitForPaymentSummary) return null;
+
 
   return (
     <>
@@ -381,7 +465,9 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                       label={
                         normalized.is_review
                           ? "Not Required"
-                          : normalized.is_paid
+                          : paymentStatus === "partial"
+                          ? "Partial"
+                          : paymentStatus === "paid"
                           ? "Paid"
                           : "Unpaid"
                       }
@@ -389,7 +475,9 @@ const AppointmentDetailsDialog = ({ open, onClose, appointment, showDiagnosis = 
                       sx={{
                         backgroundColor: normalized.is_review
                           ? "#3b82f6"
-                          : normalized.is_paid
+                          : paymentStatus === "partial"
+                          ? "#facc15"
+                          : paymentStatus === "paid"
                           ? "#16a34a"
                           : "#ef4444",
                         color: "#fff",
