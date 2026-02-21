@@ -8,6 +8,9 @@ import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useProcedureStore } from "@/stores/procedureStore";
+import { useQuery } from "@tanstack/react-query";
+import { getFacilityLogo, getFacilityDetail } from "@/serviceApis";
+import { userLoginDetails } from "@/stores/LoginStore";
 
 const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
   const procedureStore = useProcedureStore();
@@ -20,6 +23,31 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
   const [rowToDelete, setRowToDelete] = useState(null);
   
   const printRef = useRef();
+  const { facility_id, FacilityName } = userLoginDetails();
+  const logoFacilityId = facility_id || 1;
+  const { data: logoBlob } = useQuery({
+    queryKey: ["facilityLogo", logoFacilityId],
+    queryFn: () => getFacilityLogo(logoFacilityId),
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const [logoBase64, setLogoBase64] = useState(null);
+  useEffect(() => {
+    if (logoBlob && logoBlob.size > 0) {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogoBase64(reader.result);
+      reader.readAsDataURL(logoBlob);
+    }
+  }, [logoBlob]);
+  
+  const { data: facilityDetail } = useQuery({
+    queryKey: ["facilityDetail", logoFacilityId],
+    queryFn: () => getFacilityDetail(logoFacilityId),
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   
   // Sync store with local data when procedures change externally
   useEffect(() => {
@@ -81,55 +109,161 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
 
   const handlePrint = () => {
     const printContent = printRef.current.innerHTML;
+    const logoSrc = logoBase64 || (logoBlob ? URL.createObjectURL(logoBlob) : null);
     const win = window.open("", "_blank", "width=900,height=650");
     win.document.write(`
       <html>
         <head>
           <title>Procedures Print</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              background-color: #f3f4f6;
+              padding: 32px;
+              color: #111827;
+            }
+            .page {
+              max-width: 900px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+              padding: 28px 32px 32px;
+            }
+            .header-container {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 12px;
+              gap: 4px;
+              text-align: center;
+            }
+            .logo {
+              max-height: 160px;
+              max-width: 320px;
+              object-fit: contain;
+            }
             .center-heading {
               text-align: center;
-              color: #115E59;
-              font-size: 1.5rem;
+              color: #0f766e;
+              font-size: 1.6rem;
               font-weight: 700;
-              margin-bottom: 10px;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
             }
             .patient-header {
-              background-color: transparent;
-              color: #000;
-              padding: 0;
-              margin-bottom: 20px;
-              font-size: 1.1rem;
-              line-height: 1.6;
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 8px 24px;
+              padding: 16px 20px;
+              margin: 8px 0 20px;
+              border-radius: 10px;
+              background: linear-gradient(to right, #ecfdf5, #f9fafb);
+              border: 1px solid #d1fae5;
+              font-size: 0.95rem;
+              line-height: 1.5;
             }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .patient-header strong {
+              display: inline-block;
+              min-width: 135px;
+              color: #047857;
+              font-weight: 600;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+              page-break-inside: auto;
+              font-size: 0.9rem;
+              background-color: #ffffff;
+            }
+            table thead {
+              background-color: #f9fafb;
+            }
             table th {
-              background-color: #115E59;
-              color: white;
-              padding: 8px;
-              border: 1px solid #ccc;
+              padding: 8px 10px;
+              border: 1px solid #e5e7eb;
               text-align: left;
+              font-weight: 600;
+              color: #000000;
             }
-            table td { padding: 8px; border: 1px solid #ccc; }
+            table td {
+              padding: 8px 10px;
+              border: 1px solid #e5e7eb;
+              color: #000000;
+            }
+            table tbody tr:nth-child(even) {
+              background-color: #f9fafb;
+            }
+            .section-title {
+              font-weight: 700;
+              font-size: 1.05rem;
+              margin-top: 20px;
+              margin-bottom: 8px;
+              color: #0f766e;
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+              page-break-after: avoid;
+            }
+            .section-block {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              padding: 6px 0 10px;
+            }
+            thead {
+              display: table-header-group;
+            }
+            @media print {
+              body {
+                background-color: #ffffff;
+                padding: 0;
+              }
+              .page {
+                box-shadow: none;
+                margin: 0;
+                border-radius: 0;
+                padding: 16px 18px 24px;
+              }
+              .center-heading {
+                font-size: 1.4rem;
+              }
+            }
           </style>
         </head>
         <body>
-          <div class="center-heading">Apple Medical Center</div>
-          <div class="patient-header">
-            <strong>Patient ID:</strong> ${patientId || "-"} <br />
-            <strong>Token No:</strong> ${tokenNumber || "-"} <br />
-            <strong>Appointment No:</strong> ${appointmentId || "-"} <br />
-            <strong>Name:</strong> ${patientName || "-"} <br />
-            <strong>Appointment Date:</strong> ${appointmentDate || "-"} <br />
-            <strong>Prescribed Doctor:</strong> ${doctorName || "-"}
+          <div class="page">
+            <div class="header-container">
+              ${logoSrc 
+                ? `<img src="${logoSrc}" class="logo" alt="Logo" />` 
+                : (FacilityName ? `<div class="center-heading">${FacilityName}</div>` : "")}
+              ${
+                facilityDetail
+                  ? `<div style="font-size: 13px; color: #111827; margin-top: 6px; text-align: center;">
+                      ${facilityDetail.FacilityAddress || ""} | Ph: ${facilityDetail.phone_number || "-"} | Email: ${facilityDetail.email || "-"}
+                    </div>`
+                  : ""
+              }
+            </div>
+            <div class="patient-header">
+              <div><strong>Patient ID:</strong> ${patientId || "-"}</div>
+              <div><strong>Token No:</strong> ${tokenNumber || "-"}</div>
+              <div><strong>Appointment No:</strong> ${appointmentId || "-"}</div>
+              <div><strong>Name:</strong> ${patientName || "-"}</div>
+              <div><strong>Appointment Date:</strong> ${appointmentDate || "-"}</div>
+              <div><strong>Prescribed Doctor:</strong> ${doctorName || "-"}</div>
+            </div>
+            ${printContent}
           </div>
-          ${printContent}
         </body>
       </html>
     `);
     win.document.close();
-    win.print();
+    win.onload = () => {
+      setTimeout(() => {
+        try { win.print(); } catch (e) {}
+      }, 300);
+    };
   };
 
   const handleDeleteRow = ({ row } = {}) => {
