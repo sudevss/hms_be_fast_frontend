@@ -106,6 +106,29 @@ export const postNewAppoinmentBookingWithExistingPatient = (payload) =>
     .post(`/new_booking/book-existing`, payload)
     .then((response) => response.data);
 
+// 🔹 Facility Logo APIs
+export const getFacilityLogo = async (facility_id = 1) => {
+  return api.get(`/facility/logo?facility_id=${facility_id}`, {
+    responseType: "blob"
+  }).then(res => res.data);
+}
+
+export const getFacilityDetail = async (facility_id = 1) => {
+  return api
+    .get(`/facility/detail?facility_id=${facility_id}`)
+    .then((res) => res.data);
+};
+
+export const postFacilityLogo = async (formData, facility_id = 1) => {
+    return api.post(`/facility/logo?facility_id=${facility_id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    }).then(res => res.data);
+}
+
+export const deleteFacilityLogo = async (facility_id = 1) => {
+    return api.delete(`/facility/logo?facility_id=${facility_id}`).then(res => res.data);
+}
+
 export const putUpdateBooking = (appointment_id, payload) =>
   api
     .put(`/new_booking/update/${appointment_id}`, payload)
@@ -340,3 +363,52 @@ export const getSymptomMasterList = async () =>
     .get(`/templates/symptom-master`)
     .then((response) => response.data);
 
+export const postCreateBills = (payload) =>
+  api
+    .post(`/billing/create-bills`, payload)
+    .then((response) => response.data);
+
+export const postRecordPayment = (payload) =>
+  api
+    .post(`/billing/record-payment`, payload)
+    .then((response) => response.data);
+
+export const getPaymentSummary = ({ token_number, token_date }) =>
+  api
+    .get(`/billing/payment-summary`, {
+      params: {
+        token_number,
+        token_date,
+      },
+    })
+    .then((response) => response.data);
+
+export const getLabBillPrint = ({ token_number, token_date }) =>
+  api
+    .get(`/billing/lab-print`, {
+      params: {
+        token_number,
+        token_date,
+      },
+    })
+    .then((response) => response.data);
+
+export const getPharmacyBillPrint = ({ token_number, token_date }) =>
+  api
+    .get(`/billing/pharmacy-print`, {
+      params: {
+        token_number,
+        token_date,
+      },
+    })
+    .then((response) => response.data);
+
+export const getProcedureBillPrint = ({ token_number, token_date }) =>
+  api
+    .get(`/billing/procedure-print`, {
+      params: {
+        token_number,
+        token_date,
+      },
+    })
+    .then((response) => response.data);

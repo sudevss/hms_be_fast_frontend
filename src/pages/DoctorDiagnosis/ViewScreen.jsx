@@ -17,7 +17,7 @@ import { usePrescriptionStore } from "@/stores/prescriptionStore";
 import { useProcedureStore } from "@/stores/procedureStore";
 import { useLabTestStore } from "@/stores/labTestStore";
 import { dayjs } from "@/utils/dateUtils";
-import { getPatientDiagnosis, getPatientDiagnosisById, putAddPatientDiagnosis } from "@/serviceApis";
+import { getPatientDiagnosis, getPatientDiagnosisById, putAddPatientDiagnosis, getFacilityLogo, getFacilityDetail, getAppointmentDetailsById } from "@/serviceApis";
 import DiagnosisSection from "./DiagnosisSection";
 import PrescriptionSection from "./PrescriptionSection";
 import LabTestSection from "./LabTestSection";
@@ -27,6 +27,7 @@ import DiagnosisRightSidebar from "./DiagnosisRightSidebar";
 import templates from "@/data/templates.json";
 import { usePatientDiagnosis } from "@/stores/patientStore";
 import { useDoctorDiagnosisStore } from "@/stores/doctorDiagnosisStore";
+import { userLoginDetails } from "@/stores/LoginStore";
 import PageLoader from "@pages/PageLoader";
 import AlertSnackbar from "@components/AlertSnackbar";
 
@@ -51,8 +52,43 @@ const Field = ({ label, value }) => (
 );
 
 const ViewScreen = ({ open, onClose, appointment }) => {
+  const { facility_id, FacilityName } = userLoginDetails();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAlert, setShowAlert] = useState({ show: false, message: "", status: "success" });
+
+  const logoFacilityId =
+    facility_id ||
+    appointment?.facility_id ||
+    appointment?.facilityId ||
+    1;
+
+  const { data: logoBlob } = useQuery({
+    queryKey: ["facilityLogo", logoFacilityId],
+    queryFn: () => getFacilityLogo(logoFacilityId),
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const [logoBase64, setLogoBase64] = useState(null);
+
+  useEffect(() => {
+    if (logoBlob && logoBlob.size > 0) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result);
+      };
+      reader.readAsDataURL(logoBlob);
+    }
+  }, [logoBlob]);
+
+  const { data: facilityDetail } = useQuery({
+    queryKey: ["facilityDetail", logoFacilityId],
+    queryFn: () => getFacilityDetail(logoFacilityId),
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   // template UI state
   const [pendingTemplateId, setPendingTemplateId] = useState("");
@@ -183,8 +219,53 @@ const ViewScreen = ({ open, onClose, appointment }) => {
     appointment?.doctor_name ??
     appointment?.doctor ??
     "-";
+
+  const normalizedAppointmentId =
+    appointment?.appointment_id ??
+    appointment?.appointmentId ??
+    appointment?.id ??
+    appointment?.token_id ??
+    appointment?.tokenId ??
+    null;
+
+  const normalizedFacilityId =
+    appointment?.facility_id ??
+    appointment?.facilityId ??
+    facility_id ??
+    1;
+
+  const { data: appointmentDetails } = useQuery({
+    queryKey: [
+      "appointmentDetailsForDiagnosisView",
+      normalizedAppointmentId,
+      normalizedFacilityId,
+    ],
+    queryFn: () =>
+      getAppointmentDetailsById({
+        appointment_id: normalizedAppointmentId,
+        facility_id: normalizedFacilityId,
+      }),
+    enabled: open && Boolean(normalizedAppointmentId && normalizedFacilityId),
+  });
+
+  const normalizedAppointmentSource = (() => {
+    if (Array.isArray(appointmentDetails)) {
+      return appointmentDetails[0] || appointment || {};
+    }
+    if (appointmentDetails) return appointmentDetails;
+    return appointment || {};
+  })();
+
   const visitDateRaw =
-    appointment?.date ?? appointment?.appointment_date;
+    normalizedAppointmentSource.date ??
+    normalizedAppointmentSource.appointment_date ??
+    normalizedAppointmentSource.appointmentDate ??
+    normalizedAppointmentSource.token_date ??
+    normalizedAppointmentSource.tokenDate ??
+    normalizedAppointmentSource.booking_date ??
+    normalizedAppointmentSource.BookingDate ??
+    null;
+
   const visitDate = visitDateRaw ? dayjs(visitDateRaw).format("DD-MM-YYYY") : "-";
 
   // Initialize appointment fields in store immediately
@@ -487,22 +568,27 @@ const ViewScreen = ({ open, onClose, appointment }) => {
   const handlePrint = () => {
     // Build HTML for each section that mirrors the section-wise print tables
     const escape = (s) => (s === null || s === undefined || s === "") ? "-" : String(s);
+    const logoSrc = logoBase64 || (logoBlob ? URL.createObjectURL(logoBlob) : null);
 
     const vitalsHtml = `
       <div class="section-title">Vitals</div>
-      <div class="vitals-grid">
-        <div><div class="field-label">Blood Pressure</div><div class="field-value">${escape(vital_bp)}</div></div>
-        <div><div class="field-label">Heart Rate</div><div class="field-value">${escape(vital_hr)}</div></div>
-        <div><div class="field-label">Temperature</div><div class="field-value">${escape(vital_temp)}</div></div>
-        <div><div class="field-label">Height</div><div class="field-value">${escape(height)}</div></div>
-        <div><div class="field-label">Weight</div><div class="field-value">${escape(weight)}</div></div>
-        <div><div class="field-label">SPO2</div><div class="field-value">${escape(vital_spo2)}</div></div>
+      <div class="boxed-section">
+        <div class="vitals-grid">
+          <div><div class="field-label">Blood Pressure</div><div class="field-value">${escape(vital_bp)}</div></div>
+          <div><div class="field-label">Heart Rate</div><div class="field-value">${escape(vital_hr)}</div></div>
+          <div><div class="field-label">Temperature</div><div class="field-value">${escape(vital_temp)}</div></div>
+          <div><div class="field-label">Height</div><div class="field-value">${escape(height)}</div></div>
+          <div><div class="field-label">Weight</div><div class="field-value">${escape(weight)}</div></div>
+          <div><div class="field-label">SPO2</div><div class="field-value">${escape(vital_spo2)}</div></div>
+        </div>
       </div>
     `;
 
     const complaintsHtml = `
       <div class="section-title">Chief Complaints</div>
-      <div class="field-value">${escape(chief_complaint)}</div>
+      <div class="boxed-section">
+        <div class="field-value">${escape(chief_complaint)}</div>
+      </div>
     `;
 
     const diagRows = diagnosisData.length === 0 ? `
@@ -592,7 +678,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
       </table>
     `;
 
-    const fullContent = `${vitalsHtml}${complaintsHtml}<div class="section-title">Diagnosis</div>${diagHtml}<div class="section-title">Prescriptions</div>${presHtml}<div class="section-title">Lab Tests</div>${labHtml}<div class="section-title">Procedures</div>${procHtml}`;
+    const fullContent = `${vitalsHtml}${complaintsHtml}<div class="section-block"><div class="section-title">Diagnosis</div>${diagHtml}</div><div class="section-block"><div class="section-title">Prescriptions</div>${presHtml}</div><div class="section-block"><div class="section-title">Lab Tests</div>${labHtml}</div><div class="section-block"><div class="section-title">Procedures</div>${procHtml}</div>`;
 
     const win = window.open('', '_blank', 'width=900,height=650');
     win.document.write(`
@@ -600,35 +686,180 @@ const ViewScreen = ({ open, onClose, appointment }) => {
         <head>
           <title>Diagnosis Print</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #111827; }
-            .center-heading { text-align:center; color: #115E59; font-size:1.5rem; font-weight:700; margin-bottom:10px; }
-            .patient-header { font-size:1.1rem; margin-bottom:20px; line-height:1.6; }
-            table { width:100%; border-collapse: collapse; margin-top:10px; }
-            table th { background-color:#115E59; color:white; padding:8px; border:1px solid #ccc; text-align:left; }
-            table td { padding:8px; border:1px solid #ccc; }
-            .section-title { font-weight:700; font-size:1.1rem; margin-top:20px; margin-bottom:10px; color:#115E59; }
-            .field-label { color:#6b7280; font-weight:600; text-transform:uppercase; font-size:0.875rem; }
-            .field-value { color:#111827; font-weight:600; font-size:1rem; margin-bottom:15px; }
-            .vitals-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px; }
-            @media print { body{ padding:10px; } .center-heading{ font-size:1.3rem; } }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              background-color: #f3f4f6;
+              padding: 32px;
+              color: #000000;
+            }
+            .page {
+              max-width: 900px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+              padding: 28px 32px 32px;
+            }
+            .header-container {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 12px;
+              gap: 4px;
+              text-align: center;
+            }
+            .logo {
+              max-height: 160px;
+              max-width: 320px;
+              object-fit: contain;
+            }
+            .center-heading {
+              text-align: center;
+              color: #0f766e;
+              font-size: 1.6rem;
+              font-weight: 700;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
+            }
+            .patient-header {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 8px 24px;
+              padding: 16px 20px;
+              margin: 8px 0 20px;
+              border-radius: 10px;
+              background: linear-gradient(to right, #ecfdf5, #f9fafb);
+              border: 1px solid #d1fae5;
+              font-size: 0.95rem;
+              line-height: 1.5;
+            }
+            .patient-header strong {
+              display: inline-block;
+              min-width: 135px;
+              color: #047857;
+              font-weight: 600;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+              page-break-inside: auto;
+              font-size: 0.9rem;
+              background-color: #ffffff;
+            }
+            table thead {
+              background-color: #f9fafb;
+            }
+            table th {
+              padding: 8px 10px;
+              border: 1px solid #e5e7eb;
+              text-align: left;
+              font-weight: 600;
+              color: #000000;
+            }
+            table td {
+              padding: 8px 10px;
+              border: 1px solid #e5e7eb;
+              color: #000000;
+            }
+            table tbody tr:nth-child(even) {
+              background-color: #f9fafb;
+            }
+            .section-title {
+              font-weight: 700;
+              font-size: 1.05rem;
+              margin-top: 20px;
+              margin-bottom: 8px;
+              color: #0f766e;
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+              page-break-after: avoid;
+            }
+            .section-block {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              padding: 6px 0 10px;
+            }
+            thead {
+              display: table-header-group;
+            }
+            .field-label {
+              color: #6b7280;
+              font-weight: 600;
+              text-transform: uppercase;
+              font-size: 0.8rem;
+              margin-bottom: 2px;
+            }
+            .field-value {
+              color: #111827;
+              font-weight: 600;
+              font-size: 0.95rem;
+              margin-bottom: 10px;
+            }
+            .vitals-grid {
+              display: grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              gap: 16px 24px;
+              margin-bottom: 8px;
+            }
+            .boxed-section {
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 8px 12px 9px;
+              margin-bottom: 10px;
+              background-color: #f9fafb;
+            }
+            @media print {
+              body {
+                background-color: #ffffff;
+                padding: 0;
+              }
+              .page {
+                box-shadow: none;
+                margin: 0;
+                border-radius: 0;
+                padding: 16px 18px 24px;
+              }
+              .center-heading {
+                font-size: 1.4rem;
+              }
+            }
           </style>
         </head>
         <body>
-          <div class="center-heading">Apple Medical Center</div>
-          <div class="patient-header">
-            <strong>Patient ID:</strong> ${_appt.patient_id ?? appointment?.patient_id ?? '-'} <br/>
-            <strong>Token No:</strong> ${tokenNumber ?? '-'} <br/>
-            <strong>Appointment No:</strong> ${_appt.appointment_id ?? appointmentId ?? '-'} <br/>
-            <strong>Name:</strong> ${patientName || '-'} <br/>
-            <strong>Date of Visit:</strong> ${visitDate || '-'} <br/>
-            <strong>Prescribed Doctor:</strong> ${doctorName || '-'}
+          <div class="page">
+            <div class="header-container">
+              ${logoSrc 
+                ? `<img src="${logoSrc}" class="logo" alt="Logo" />` 
+                : (FacilityName ? `<div class="center-heading">${FacilityName}</div>` : "")}
+              ${
+                facilityDetail
+                  ? `<div style="font-size: 13px; color: #111827; margin-top: 6px; text-align: center;">
+                      ${facilityDetail.FacilityAddress || ""} | Ph: ${facilityDetail.phone_number || "-"} | Email: ${facilityDetail.email || "-"}
+                    </div>`
+                  : ""
+              }
+            </div>
+            <div class="patient-header">
+              <div><strong>Patient ID:</strong> ${_appt.patient_id ?? appointment?.patient_id ?? '-'}</div>
+              <div><strong>Token No:</strong> ${tokenNumber ?? '-'}</div>
+              <div><strong>Appointment No:</strong> ${_appt.appointment_id ?? appointmentId ?? '-'}</div>
+              <div><strong>Name:</strong> ${patientName || '-'}</div>
+              <div><strong>Date of Visit:</strong> ${visitDate || '-'}</div>
+              <div><strong>Prescribed Doctor:</strong> ${doctorName || '-'}</div>
+            </div>
+            ${fullContent}
           </div>
-          ${fullContent}
         </body>
       </html>
     `);
     win.document.close();
-    win.print();
+    win.onload = () => {
+      setTimeout(() => {
+        try { win.print(); } catch (e) {}
+      }, 300);
+    };
   };
 
   const fetchingCount = useIsFetching({
