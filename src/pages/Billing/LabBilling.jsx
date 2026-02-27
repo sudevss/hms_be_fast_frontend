@@ -31,8 +31,9 @@ import AlertSnackbar from "@components/AlertSnackbar";
 import PageLoader from "../../pages/PageLoader";
 import { colors } from "../../theme/palette";
 import DatePickerComponent from "@components/DatePicker";
-import { getLabMasterList, postCreateBills, getLabBillPrint, getPharmacyBillPrint, getProcedureBillPrint, getFacilityLogo, getFacilityDetail } from "@/serviceApis";
+import { getLabMasterList, postCreateBills, getLabBillPrint, getPharmacyBillPrint, getProcedureBillPrint, getFacilityLogo, getFacilityDetail, getLoadDiagnosis } from "@/serviceApis";
 import { useQuery } from "@tanstack/react-query";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import { userLoginDetails } from "@/stores/LoginStore";
 
 const LabBilling = () => {
@@ -156,6 +157,55 @@ const LabBilling = () => {
     setDiagnosisId("");
     setTokenDate(new Date().toISOString().split("T")[0]);
     setOverallDiscount(0);
+  };
+
+  const handleLoadDiagnosis = async () => {
+    if (!diagnosisId || !tokenDate) {
+      setSnackbarMessage("Please enter Token Number and Date to load diagnosis");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const data = await getLoadDiagnosis({
+        token_number: diagnosisId,
+        token_date: tokenDate,
+      });
+
+      if (data && data.lab_items && data.lab_items.length > 0) {
+        const newRows = data.lab_items.map((item) => {
+          // Find matching option from master list if possible
+          const matchedOption = labOptions.find(opt => opt.test_id === item.test_id || opt.id === item.test_id);
+          
+          return {
+            id: Date.now() + Math.random(),
+            test: item.test_name || "",
+            test_id: item.test_id,
+            selectedOption: matchedOption || { test_id: item.test_id, test_name: item.test_name },
+            remarks: item.remarks || "",
+            price: item.price || 0,
+            discount: item.discount_percent || 0,
+          };
+        });
+        setRows(newRows);
+        setOverallDiscount(data.lab_discount_percent || 0);
+        setSnackbarMessage("Diagnosis loaded successfully!");
+        setSnackbarSeverity("success");
+      } else {
+        setSnackbarMessage("No lab diagnosis found for this token.");
+        setSnackbarSeverity("info");
+      }
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error("Error loading diagnosis:", error);
+      setSnackbarMessage("Failed to load diagnosis.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -483,32 +533,52 @@ const LabBilling = () => {
             >
               Token Date
             </Typography>
-            <DatePickerComponent
-              label=""
-              name="tokenDate"
-              value={tokenDate}
-              onChange={(e) => setTokenDate(e.target.value)}
-              showInputLabel={false}
-              sxInput={{
-                padding: 0,
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#F9FAFB",
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <Box sx={{ flexGrow: 1 }}>
+                <DatePickerComponent
+                  label=""
+                  name="tokenDate"
+                  value={tokenDate}
+                  onChange={(e) => setTokenDate(e.target.value)}
+                  showInputLabel={false}
+                  sxInput={{
+                    padding: 0,
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "#F9FAFB",
+                      height: "40px",
+                    },
+                  }}
+                  format="YYYY-MM-DD"
+                  currentYear={undefined}
+                  calendarSx={{
+                    "& .MuiDayCalendar-root": { margin: 0, padding: 0 },
+                    "& .MuiPickersDay-root": {
+                      margin: 0,
+                      width: 32,
+                      height: 32,
+                      fontSize: "0.75rem",
+                    },
+                    "& .MuiPickersCalendarHeader-root": { mb: 0 },
+                  }}
+                />
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<CloudDownloadIcon />}
+                onClick={handleLoadDiagnosis}
+                disabled={isSubmitting}
+                sx={{
+                  textTransform: "none",
+                  bgcolor: colors.primary.main,
                   height: "40px",
-                },
-              }}
-              format="YYYY-MM-DD"
-              currentYear={undefined}
-              calendarSx={{
-                "& .MuiDayCalendar-root": { margin: 0, padding: 0 },
-                "& .MuiPickersDay-root": {
-                  margin: 0,
-                  width: 32,
-                  height: 32,
-                  fontSize: "0.75rem",
-                },
-                "& .MuiPickersCalendarHeader-root": { mb: 0 },
-              }}
-            />
+                  whiteSpace: "nowrap",
+                  px: 3,
+                  "&:hover": { bgcolor: colors.primary.dark }
+                }}
+              >
+                Load Diagnosis
+              </Button>
+            </Box>
           </Grid>
         </Grid>
 

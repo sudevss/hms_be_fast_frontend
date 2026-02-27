@@ -412,3 +412,13 @@ export const getProcedureBillPrint = ({ token_number, token_date }) =>
       },
     })
     .then((response) => response.data);
+
+export const getLoadDiagnosis = ({ token_number, token_date }) =>
+  api
+    .get(`/billing/load-diagnosis`, {
+      params: {
+        token_number,
+        token_date,
+      },
+    })
+    .then((response) => response.data);
