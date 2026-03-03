@@ -119,6 +119,10 @@ export const printPaymentSummaryBill = async ({ paymentObj, setShowAlert }) => {
         <div class="bill-info">
           <div class="info-group">
             <div class="info-row">
+              <span class="label">Patient Name:</span>
+              <span class="value">${paymentObj.patient_name || "-"}</span>
+            </div>
+            <div class="info-row">
               <span class="label">Token Number:</span>
               <span class="value">${paymentObj.token_number}</span>
             </div>
@@ -129,7 +133,7 @@ export const printPaymentSummaryBill = async ({ paymentObj, setShowAlert }) => {
           </div>
           <div class="info-group" style="text-align: right;">
             <div class="info-row">
-              <span class="label">Token Date:</span>
+              <span class="label">Date:</span>
               <span class="value">${formattedTokenDate}</span>
             </div>
             <div class="info-row">

@@ -99,8 +99,10 @@ const SheduleDoctors = ({ open, setOpen }) => {
   useEffect(() => {
     const next = (weekDaysList || []).map((day) => {
       const first = (day.slotWeeks || [])[0];
-      const m = Number(first?.slotDurationMinutes);
-      return Number.isFinite(m) && m > 0 ? m : 15;
+      const m = first?.slotDurationMinutes;
+      if (m === "" || m === 0) return m; // Allow empty string or 0
+      const numM = Number(m);
+      return Number.isFinite(numM) && numM > 0 ? numM : 15;
     });
     setSlotDurations(next);
   }, [weekDaysList]);
@@ -359,13 +361,16 @@ const SheduleDoctors = ({ open, setOpen }) => {
   };
 
   const updateSlotDuration = (weekIndex, inputVal) => {
-    const minutes = parseInt(String(inputVal).replace(/\D/g, ""), 10);
-    const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? minutes : 15;
+    const rawVal = String(inputVal).replace(/\D/g, "");
+    const minutes = rawVal === "" ? "" : parseInt(rawVal, 10);
+    const safeMinutes = (Number.isFinite(minutes) && minutes > 0) ? minutes : 15;
+
     setSlotDurations((prev) => {
       const next = [...prev];
-      next[weekIndex] = safeMinutes;
+      next[weekIndex] = minutes;
       return next;
     });
+
     const updated = weekDaysList.map((day, i) => {
       if (i !== weekIndex) return day;
       const recomputedSlots = (day.slotWeeks || []).map((slot) => {
@@ -373,7 +378,7 @@ const SheduleDoctors = ({ open, setOpen }) => {
           slot.startTime && slot.endTime
             ? getSlotCount(slot.startTime, slot.endTime, safeMinutes).toString()
             : slot.totalSlots;
-        return { ...slot, totalSlots, slotDurationMinutes: safeMinutes };
+        return { ...slot, totalSlots, slotDurationMinutes: minutes };
       });
       return { ...day, slotWeeks: recomputedSlots };
     });
@@ -528,7 +533,7 @@ const SheduleDoctors = ({ open, setOpen }) => {
             <TextInputWithLabel
               type="number"
               name={`slotDuration-${weekIndex}`}
-              value={(slotDurations[weekIndex] || 15).toString()}
+              value={slotDurations[weekIndex]?.toString() ?? ""}
               label="Slot Duration (mins)"
               placeholder="e.g. 15"
               disabled={!isChecked}

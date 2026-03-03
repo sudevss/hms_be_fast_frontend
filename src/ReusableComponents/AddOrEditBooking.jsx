@@ -650,6 +650,8 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
             label="Time Slot"
             width="100%"
             placeholderText="Time Slot"
+            noDataText="no slots available"
+            showMenuOptionsLoadingStatus={queryGetDoctorSchedule.isLoading}
             //menuOptions={TIME_SLOTS_HOURS_OPTIONS}
             menuOptions={getFilteredTimeSlots()}
             onChangeHandler={

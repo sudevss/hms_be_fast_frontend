@@ -29,6 +29,7 @@ function SelectWithLabelWithSpanElement({
   disableMenuOptionConditionValidator,
   helperText,
   placeholderText,
+  noDataText,
   showMenuOptionsLoadingStatus,
   showOptionsNotAvailableStatus,
   width = "100%",
@@ -57,7 +58,7 @@ function SelectWithLabelWithSpanElement({
     )
       return [
         <MenuItem key="no-data" disabled>
-          <em>No data available</em>
+          <em>{noDataText || "No data available"}</em>
         </MenuItem>,
       ];
 
@@ -212,6 +213,7 @@ SelectWithLabelWithSpanElement.propTypes = {
   disableMenuOptionConditionValidator: PropTypes.func,
   helperText: PropTypes.string,
   placeholderText: PropTypes.string,
+  noDataText: PropTypes.string,
   showMenuOptionsLoadingStatus: PropTypes.bool,
   showOptionsNotAvailableStatus: PropTypes.bool,
   width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -227,6 +229,7 @@ SelectWithLabelWithSpanElement.defaultProps = {
   disableMenuOptionConditionValidator: () => false,
   helperText: "",
   placeholderText: "",
+  noDataText: "",
   showMenuOptionsLoadingStatus: true,
   showOptionsNotAvailableStatus: true,
   width: "100%",
