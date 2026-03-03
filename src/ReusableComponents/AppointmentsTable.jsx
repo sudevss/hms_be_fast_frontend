@@ -272,7 +272,6 @@ const AppointmentsTable = ({
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
   const [openingPaymentDialog, setOpeningPaymentDialog] = useState(false);
-  const [openDoctorDiagnosisPrompt, setOpenDoctorDiagnosisPrompt] = useState(false);
   const [openDoctorDiagnosis, setOpenDoctorDiagnosis] = useState(false);
   const [openEditBooking, setOpenEditBooking] = useState(false);
   const [editBookingTitle, setEditBookingTitle] = useState("");
@@ -612,6 +611,7 @@ const AppointmentsTable = ({
         facility_id: normalized.facility_id || row.facility_id,
         token_number,
         token_date,
+        patient_name: normalized.patient_name || row.patient_name || normalized.name || row.name || "",
         
         consultation_fee: summary.consultation_fee,
         consultation_paid_amount: summary.consultation_paid,
@@ -1066,7 +1066,7 @@ const AppointmentsTable = ({
               backgroundColor="#115E59"
               onClick={() => {
                 setSelectedAppointment(row.original);
-                setOpenDoctorDiagnosisPrompt(true);
+                setOpenDoctorDiagnosis(true);
               }}
             >
               <MedicalInformationIcon sx={{ color: "#115E59" }} />
@@ -1165,9 +1165,9 @@ const AppointmentsTable = ({
           <IconButton
             backgroundColor="#115E59"
             onClick={() => {
-              setSelectedAppointment(row.original);
-              setOpenDoctorDiagnosisPrompt(true);
-            }}
+            setSelectedAppointment(row.original);
+            setOpenDoctorDiagnosis(true);
+          }}
           >
             <MedicalInformationIcon sx={{ color: "#115E59" }} />
           </IconButton>
@@ -1609,40 +1609,6 @@ const AppointmentsTable = ({
         setPatientReportObj={setPatientReportObj}
         patientReportsObj={patientReportsObj}
       />
-
-      <Dialog
-        open={openDoctorDiagnosisPrompt}
-        onClose={() => setOpenDoctorDiagnosisPrompt(false)}
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>
-          Doctor Diagnosis
-        </DialogTitle>
-
-      <DialogContent>
-        <Typography>
-          Doctor Diagnosis screen will be opened. Click on continue to proceed.
-        </Typography>
-      </DialogContent>
-
-      <DialogActions>
-        <StyledButton
-          variant="outlined"
-          onClick={() => setOpenDoctorDiagnosisPrompt(false)}
-        >
-          Cancel
-        </StyledButton>
-
-        <StyledButton
-          variant="contained"
-          onClick={() => {
-          setOpenDoctorDiagnosisPrompt(false);
-          setOpenDoctorDiagnosis(true);
-          }}
-        >
-          Continue
-        </StyledButton>
-      </DialogActions>
-    </Dialog>
 
     {/* 🔹 NEW — Fullscreen Doctor Diagnosis Dialog */}
     <ViewScreen
