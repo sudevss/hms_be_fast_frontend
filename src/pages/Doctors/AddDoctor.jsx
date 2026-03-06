@@ -248,9 +248,9 @@ const AddDoctor = ({ open, setOpen }) => {
             name="ABDM_NHPR_id"
             label="ABDM NHPR ID"
             value={ABDM_NHPR_id}
-            required
-            error={!ABDM_NHPR_id}
-            helperText={!ABDM_NHPR_id && "ABDM NHPR ID required"}
+            // required
+            // error={!ABDM_NHPR_id}
+            // helperText={!ABDM_NHPR_id && "ABDM NHPR ID required"}
             placeholder="Enter ABDM NHPR ID"
             onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
           />
