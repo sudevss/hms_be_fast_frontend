@@ -9,6 +9,7 @@ import {
 import ErrorFallback from "@components/ErrorFallback";
 import ErrorAccess from "@components/ErrorAccessFallback/ErrorAccess";
 import LoginPage from "@pages/Login";
+import LandingPage from "@pages/LandingPage";
 import PageLoader from "@pages/PageLoader";
 import NotFound from "@pages/NotFound";
 
@@ -20,6 +21,7 @@ import DoctorsPage from "./Doctors";
 import PatientsPage from "./Patients";
 import AppointmentsPage from "./Appointments";
 import BillingPage from "./Billing";
+import SettingsPage from "./Settings";
 
 // Optional wrapper for lazy loading fallback
 function SuspenseWrapper({ children }) {
@@ -29,13 +31,16 @@ function SuspenseWrapper({ children }) {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route errorElement={<ErrorFallback />}>
+      {/* Landing Page Route */}
+      <Route index element={<LandingPage />} />
+
       {/* Login Route */}
       <Route path="/login" element={<LoginPage />} />
 
       {/* Protected Layout */}
       <Route element={<Layout />}>
-        {/* Redirect root path to /login */}
-        <Route index element={<Navigate to="/login" replace />} />
+        {/* Redirect root path to /dashboard if logged in */}
+        {/* <Route index element={<Navigate to="/login" replace />} /> */}
 
         {/* Protected Routes */}
         <Route element={<PrivateRoute />}>
@@ -76,6 +81,14 @@ const router = createBrowserRouter(
             element={
               <SuspenseWrapper>
                 <BillingPage />
+              </SuspenseWrapper>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <SuspenseWrapper>
+                <SettingsPage />
               </SuspenseWrapper>
             }
           />
