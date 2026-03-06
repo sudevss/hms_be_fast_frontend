@@ -115,12 +115,21 @@ export const useDoctorDiagnosisStore = create((set, get) => ({
           procedure_text: p.procedure_text || "",
         })),
       symptoms: diagnosisStore.symptoms
-        .filter((s) => s.symptom_id) // Only include valid symptom_ids
-        .map((s) => ({
-          duration_days: s.duration_days || 0,
-          remarks: s.remarks || "",
-          symptom_id: s.symptom_id || 0,
-        })),
+        .filter((s) => s.symptom_id || s.symptom_name) // Include both predefined and custom symptoms
+        .map((s) => {
+          const symptom = {
+            duration_days: Number(s.duration_days) || 0,
+            remarks: s.remarks || "",
+          };
+          
+          if (s.symptom_id) {
+            symptom.symptom_id = s.symptom_id;
+          } else if (s.symptom_name) {
+            symptom.free_text_symptom = s.symptom_name;
+          }
+          
+          return symptom;
+        }),
       template_id: state.template_id || 0,
       vital_bp: state.vital_bp || "",
       vital_hr: state.vital_hr || "",

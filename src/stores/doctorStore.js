@@ -73,7 +73,7 @@ export const doctorRequiredFileds = [
   "specialization",
   "phone_number",
   "consultation_fee",
-  "ABDM_NHPR_id",
+  //"ABDM_NHPR_id",
   "facility_id",
   "gender",
   "age",

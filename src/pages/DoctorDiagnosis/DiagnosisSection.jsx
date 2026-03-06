@@ -80,7 +80,7 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
           id: `symptom-${index}-${Date.now()}`,
           diagnosis_date: dayjs().format("YYYY-MM-DD"),
           symptom_id: symptom.symptom_id,
-          symptom_name: symptomOption?.symptom_name || "",
+          symptom_name: symptom.symptom_name || symptom.free_text_symptom || symptomOption?.symptom_name || "",
           duration_days: symptom.duration_days || "",
           remarks: symptom.remarks || "",
         };
@@ -118,9 +118,10 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
       
       // Update store
       const newSymptoms = mapped
-        .filter((m) => m.symptom_id)
+        .filter((m) => m.symptom_id || m.symptom_name)
         .map((m) => ({
           symptom_id: m.symptom_id,
+          symptom_name: m.symptom_name,
           duration_days: m.duration_days || 0,
           remarks: m.remarks || "",
         }));
@@ -137,7 +138,14 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
     setData((prev) =>
       prev.map((row, idx) => {
         if (idx === rowIndex) {
-          if (selectedSymptom) {
+          if (typeof selectedSymptom === "string") {
+            // User typed a custom symptom (freeSolo)
+            return {
+              ...row,
+              symptom_id: null,
+              symptom_name: selectedSymptom,
+            };
+          } else if (selectedSymptom) {
             return {
               ...row,
               symptom_id: selectedSymptom.symptom_id,
@@ -154,7 +162,6 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
         return row;
       })
     );
-    
   };
 
 
@@ -192,17 +199,22 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
             <Autocomplete
               fullWidth
               size="small"
+              freeSolo
               options={symptomOptions}
-              filterOptions={(options, state) =>
-                options.filter((opt) =>
+              filterOptions={(options, state) => {
+                const filtered = options.filter((opt) =>
                   opt.symptom_name?.toLowerCase().includes(state.inputValue.toLowerCase())
-                )
-              }
+                );
+                return filtered;
+              }}
               getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.symptom_name
+                typeof option === "string" ? option : (option.symptom_name || "")
               }
-              isOptionEqualToValue={(option, value) => option.symptom_name === (value?.symptom_name || value) }
-              value={selected}
+              isOptionEqualToValue={(option, value) => {
+                const valName = typeof value === "string" ? value : value?.symptom_name;
+                return option.symptom_name === valName;
+              }}
+              value={selected || cell.getValue() || ""}
               inputValue={cell.getValue() || ""}
               onInputChange={(event, value) => {
                 table.options.meta.updateData(row.index, "symptom_name", value);
@@ -441,9 +453,10 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
     // Update store
     setSymptoms(
       filtered
-        .filter((r) => r.symptom_id)
+        .filter((r) => r.symptom_id || r.symptom_name)
         .map((r) => ({
           symptom_id: r.symptom_id,
+          symptom_name: r.symptom_name,
           duration_days: r.duration_days,
           remarks: r.remarks,
         }))
@@ -454,9 +467,10 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
   const syncToStore = () => {
     setSymptoms(
       data
-        .filter((r) => r.symptom_id)
+        .filter((r) => r.symptom_id || r.symptom_name)
         .map((r) => ({
           symptom_id: r.symptom_id,
+          symptom_name: r.symptom_name,
           duration_days: r.duration_days || 0,
           remarks: r.remarks || "",
         }))
