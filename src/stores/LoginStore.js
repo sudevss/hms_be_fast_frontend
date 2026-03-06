@@ -29,32 +29,37 @@ export const userLoginDetails = create()(
   persist(
     (set) => ({
       ...initialState,
-      clearSession: () => set({ user: null, token: null }),
-      onReset: () => set(() => initialState),
-      login: (obj) => set((state) => ({ ...initialState, ...obj })),
-      setUserDetails: (obj) => set((state) => {
-        return { ...state, ...obj };
-      }),
-      onReset: () => set({ user: null, token: null }),
+      onReset: () => set(() => ({ ...initialState })),
+      login: (obj) => set(() => ({ ...initialState, ...obj })),
+      setUserDetails: (obj) => set((state) => ({ ...state, ...obj })),
     }),
     {
       name: "auth",
-      getStorage: () => sessionStorage,
+      storage: {
+        getItem: (name) => {
+          const str = sessionStorage.getItem(name);
+          if (!str) return null;
+          return JSON.parse(str);
+        },
+        setItem: (name, value) => {
+          sessionStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          sessionStorage.removeItem(name);
+        },
+      },
     }
   )
 );
 
-
 export function logOut() {
-  const { clearSession } = userLoginDetails.getState();
+  // 1️⃣ Reset Zustand state
+  userLoginDetails.getState().onReset();
 
-
-  // 1️⃣ Clear Zustand state
-  clearSession();
-
-  // 2️⃣ Clear persisted sessionStorage
+  // 2️⃣ Clear persisted storage
   userLoginDetails.persist.clearStorage();
 
-  // 3️⃣ Clear all React Query cached data
-
+  // 3️⃣ Clear all session/local storage for good measure
+  sessionStorage.clear();
+  localStorage.clear();
 }
