@@ -61,6 +61,7 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
     queryKey: ["queryGetLabMaster"],
     queryFn: () => getLabMasterList(),
   });
+  const activeLabOptions = (labOptions || []).filter((t) => t?.is_active !== false);
 
   // Sync store with local data when labTests change externally
   useEffect(() => {
@@ -87,6 +88,7 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
     queryKey: ["queryGetTemplatesList"],
     queryFn: () => getTemplatesList(),
   });
+  const activeTemplateOptions = (templateOptions || []).filter((t) => t?.is_active === true);
 
   // ---------------- PRINT HANDLER ----------------
   const handlePrint = () => {
@@ -330,7 +332,7 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
             <Autocomplete
               fullWidth
               size="small"
-              options={labOptions}
+              options={activeLabOptions}
               value={selected}
               inputValue={cell.getValue() || ""}
               getOptionLabel={(option) =>
@@ -424,7 +426,7 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
 
     if (!rowData.test_id) {
       const typedName = rowData.test_name.trim().toLowerCase();
-      const match = labOptions.find(
+        const match = activeLabOptions.find(
         (t) => (t.test_name || "").trim().toLowerCase() === typedName
       );
 
@@ -469,7 +471,7 @@ const LabTestSection = ({ patientId, patientName, tokenNumber, appointmentDate, 
 
         <Box sx={{ display: "flex", gap: 1 }}>
           <Autocomplete
-            options={templateOptions}
+            options={activeTemplateOptions}
             value={selectedTemplateOption}
             onChange={(e, val) => handleTemplateSelect(val)}
             isOptionEqualToValue={(opt, val) =>

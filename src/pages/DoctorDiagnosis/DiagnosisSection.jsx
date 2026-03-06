@@ -63,6 +63,7 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
     queryFn: () => getTemplatesList(),
     enabled: true,
   });
+  const activeTemplateOptions = (templateOptions || []).filter((t) => t?.is_active === true);
 
   const { data: symptomOptions = [] } = useQuery({
     queryKey: ["queryGetSymptomMaster"],
@@ -492,7 +493,7 @@ const DiagnosisSection = ({ patientId, patientName, tokenNumber, appointmentDate
 
         <Box sx={{ display: "flex", gap: 1 }}>
           <Autocomplete
-            options={templateOptions}
+            options={activeTemplateOptions}
             value={selectedTemplateOption}
             onChange={(e, val) => handleTemplateSelect(val)}
             isOptionEqualToValue={(opt, val) => opt?.template_id === val?.template_id}

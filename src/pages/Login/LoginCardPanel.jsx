@@ -119,7 +119,7 @@ function LoginCardPanel() {
               },
             }}
           >
-            Welcome to HMS
+            Welcome to HFlow
           </Typography>
 
           {/* Login Form */}

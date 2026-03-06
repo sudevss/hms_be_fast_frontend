@@ -348,6 +348,15 @@ export const getTemplatesList = async () =>
     .get(`/templates/all/list`)
     .then((response) => response.data);
 
+export const postCreateTemplate = async (payload) =>
+  api.post(`/templates`, payload).then((response) => response.data);
+
+export const putUpdateTemplate = async ({ template_id, ...payload }) =>
+  api.put(`/templates/${template_id}`, payload).then((response) => response.data);
+
+export const deleteTemplate = async ({ template_id }) =>
+  api.delete(`/templates/${template_id}`).then((response) => response.data);
+
 export const getDrugMasterList = async () =>
   api
     .get(`/templates/drug-master`)

@@ -60,7 +60,7 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
   ];
 
   const bottomItems = [
-    // { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
+    { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
     { icon: <LogOut size={18} />, label: "Logout", action: handleLogout },
   ];
 
@@ -84,7 +84,7 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
       {/* Logo + Title */}
       <Box className="flex items-center gap-2">
       <Heart className="text-teal-400" size={20} />
-      {!collapsed && <span className="text-lg font-bold tracking-wide">HMS</span>}
+      {!collapsed && <span className="text-lg font-bold tracking-wide">HFlow</span>}
       </Box>
 
       {/* Right Side Buttons */}

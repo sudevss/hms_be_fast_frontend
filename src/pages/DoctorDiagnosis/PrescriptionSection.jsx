@@ -82,23 +82,32 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
     queryFn: () => getDrugMasterList(),
   });
   
+  const activeTemplateOptions = (templateOptions || []).filter((t) => t?.is_active === true);
+  const activeDrugOptions = (drugOptions || []).filter((d) => d?.is_active !== false);
+  
   // Sync store with local data when prescriptions change externally
   useEffect(() => {
     if (prescriptions.length > 0 && data.length === 0 && drugOptions.length > 0) {
       // Only sync if data is empty (initial load)
       const tableData = prescriptions.map((prescription, index) => {
-        const morning = prescription.morning_dosage ?? "0";
-        const afternoon = prescription.afternoon_dosage ?? "0";
-        const night = prescription.night_dosage ?? "0";
+        const morning = prescription.morning_dosage ?? "";
+        const afternoon = prescription.afternoon_dosage ?? "";
+        const night = prescription.night_dosage ?? "";
         // Look up medicine details from master list
         const medicineOption = drugOptions.find(d => d.medicine_id === prescription.medicine_id);
+        
+        let displayDosage = "";
+        if (morning || afternoon || night) {
+          displayDosage = `${morning || "0"}-${afternoon || "0"}-${night || "0"}`;
+        }
+
         return {
           id: `prescription-${index}-${Date.now()}`,
           medicine_id: prescription.medicine_id,
           medicine_name: medicineOption?.medicine_name || "",
           generic_name: medicineOption?.generic_name || "",
           strength: medicineOption?.strength || "",
-          dosage: `${morning}-${afternoon}-${night}`,
+          dosage: displayDosage,
           morning_dosage: morning,
           afternoon_dosage: afternoon,
           night_dosage: night,
@@ -134,9 +143,14 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       const mapped = prescriptions
         .filter((rx) => !existing.has((rx.medicine_name || "").trim().toLowerCase()))
         .map((rx, index) => {
-          const morning = rx.morning_dosage ?? "0";
-          const afternoon = rx.afternoon_dosage ?? "0";
-          const night = rx.night_dosage ?? "0";
+          const morning = rx.morning_dosage ?? "";
+          const afternoon = rx.afternoon_dosage ?? "";
+          const night = rx.night_dosage ?? "";
+
+          let displayDosage = "";
+          if (morning || afternoon || night) {
+            displayDosage = `${morning || "0"}-${afternoon || "0"}-${night || "0"}`;
+          }
 
           return {
             id: `tmpl-${selected.template_id}-${index}-${Date.now()}`,
@@ -144,7 +158,10 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             medicine_name: rx.medicine_name || "",
             generic_name: rx.generic_name || "",
             strength: rx.strength || "",
-            dosage: `${morning}-${afternoon}-${night}`,
+            dosage: displayDosage,
+            morning_dosage: morning,
+            afternoon_dosage: afternoon,
+            night_dosage: night,
             food_timing: rx.food_timing || "",
             duration_days: rx.default_duration_days ?? rx.duration_days ?? "",
             special_instructions:
@@ -199,9 +216,14 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
     setData((prev) =>
       prev.map((row, idx) => {
         if (idx === rowIndex) {
-          const morning = selectedMedicine.morning_dosage ?? "0";
-          const afternoon = selectedMedicine.afternoon_dosage ?? "0";
-          const night = selectedMedicine.night_dosage ?? "0";
+          const morning = selectedMedicine.morning_dosage ?? "";
+          const afternoon = selectedMedicine.afternoon_dosage ?? "";
+          const night = selectedMedicine.night_dosage ?? "";
+
+          let displayDosage = "";
+          if (morning || afternoon || night) {
+            displayDosage = `${morning || "0"}-${afternoon || "0"}-${night || "0"}`;
+          }
 
           return {
             ...row,
@@ -209,7 +231,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             medicine_name: selectedMedicine.medicine_name,
             generic_name: selectedMedicine.generic_name || "",
             strength: selectedMedicine.strength || "",
-            dosage: `${morning}-${afternoon}-${night}`,
+            dosage: displayDosage,
             food_timing: selectedMedicine.food_timing || "",
             duration_days: selectedMedicine.duration_days || "",
             special_instructions: selectedMedicine.special_instructions || "",
@@ -235,7 +257,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
           const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
 
           const selectedValue =
-            drugOptions.find(
+            activeDrugOptions.find(
               (m) =>
                 m.medicine_name?.trim().toLowerCase() === currentValue
             ) || null;
@@ -244,7 +266,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             <Autocomplete
               fullWidth
               size="small"
-              options={drugOptions}
+              options={activeDrugOptions}
               value={selectedValue}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.medicine_name
@@ -302,12 +324,18 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       {
         accessorKey: "dosage",
         header: "Dosage",
-        Cell: ({ row }) => row.original.dosage,
+        Cell: ({ row }) => {
+          const m = row.original.morning_dosage;
+          const a = row.original.afternoon_dosage;
+          const n = row.original.night_dosage;
+          if (!m && !a && !n) return "";
+          return `${m || "0"}-${a || "0"}-${n || "0"}`;
+        },
         Edit: ({ cell, row, table }) => (
           <TextField
             fullWidth
             size="small"
-            value={cell.getValue() ?? ""}
+            value={row.original.dosage ?? ""}
             onChange={(e) => {
               const formattedValue = formatDosage(e.target.value);
               // Parse dosage and update individual fields
@@ -393,9 +421,9 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       generic_name: "",
       strength: "",
       dosage: "",
-      morning_dosage: "0",
-      afternoon_dosage: "0",
-      night_dosage: "0",
+      morning_dosage: "",
+      afternoon_dosage: "",
+      night_dosage: "",
       food_timing: "",
       duration_days: "",
       special_instructions: "",
@@ -614,7 +642,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
 
         <Box sx={{ display: "flex", gap: 1 }}>
           <Autocomplete
-            options={templateOptions}
+            options={activeTemplateOptions}
             value={selectedTemplateOption}
             onChange={(e, val) => handleTemplateSelect(val)}
             isOptionEqualToValue={(opt, val) => opt?.template_id === val?.template_id}
