@@ -2,7 +2,7 @@ import axios from "axios";
 import api from "./apiConfig";
 import dayjs from "dayjs";
 
-const API_BASE_URL = `https://hms-be-fast-six.vercel.app`;
+const API_BASE_URL = `http://150.241.245.172:8000`;
 
 export const getDashBoardDetails = ({ date, facility_id, doctor_id }) => {
   let url = `${`/dashboard/getDoctorDetails?facility_id=${facility_id}&date=${date}`}`;
