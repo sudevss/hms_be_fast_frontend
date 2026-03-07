@@ -1,11 +1,11 @@
 import { userLoginDetails } from "@/stores/LoginStore";
 import axios from "axios";
 // import { userLoginDetails } from "@/stores/LoginStore";
-const API_BASE_URL = `https://hms-be-fast-six.vercel.app`;
+const API_BASE_URL = `http://150.241.245.172:8000`;
 
 // Create Axios instance
 const api = axios.create({
-  baseURL: `https://hms-be-fast-six.vercel.app`, // your API base URL
+  baseURL: `http://150.241.245.172:8000`, // your API base URL
 });
 
 // Request interceptor to attach token
