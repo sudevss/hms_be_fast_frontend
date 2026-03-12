@@ -34,7 +34,7 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
   const location = useLocation();
 
   // Collapse state
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const toggleCollapse = () => {
     const newState = !collapsed;
     setCollapsed(newState);
