@@ -34,11 +34,11 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Collapse state
-  const [collapsed, setCollapsed] = useState(true);
+  // Collapse state — synced with store so Dashboard can trigger collapse
+  const { isNavCollapsed: collapsed, setIsNavCollapsed } = useDashboardStore();
   const toggleCollapse = () => {
     const newState = !collapsed;
-    setCollapsed(newState);
+    setIsNavCollapsed(newState);
     onCollapse?.(newState);
     if (!newState) {
       useDashboardStore.getState().setIsSidebarOpen(false);

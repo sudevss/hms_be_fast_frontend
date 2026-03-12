@@ -43,7 +43,7 @@ function DashboardPage() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
-  const { date, setDate, doctor_id, doctorSearch, isSidebarOpen, setIsSidebarOpen } = useDashboardStore();
+  const { date, setDate, doctor_id, doctorSearch, isSidebarOpen, setIsSidebarOpen, setIsNavCollapsed } = useDashboardStore();
 
   const queryGetDashboard = useQuery({
     queryKey: ["dashboard", doctor_id, date],
@@ -203,7 +203,11 @@ function DashboardPage() {
       {/* Sidebar Toggle Button */}
       <Tooltip title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}>
         <IconButton
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onClick={() => {
+            const next = !isSidebarOpen;
+            setIsSidebarOpen(next);
+            if (next) setIsNavCollapsed(true);
+          }}
           sx={{
             position: "absolute",
             top: 80,

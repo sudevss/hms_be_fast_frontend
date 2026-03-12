@@ -12,4 +12,6 @@ export const useDashboardStore = create((set) => ({
   setUserRole: (role) => set({ userRole: role }),
   isSidebarOpen: false,
   setIsSidebarOpen: (val) => set({ isSidebarOpen: val }),
+  isNavCollapsed: true,
+  setIsNavCollapsed: (val) => set({ isNavCollapsed: val }),
 }));
