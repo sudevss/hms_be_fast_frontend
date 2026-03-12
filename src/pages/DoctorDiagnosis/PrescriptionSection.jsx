@@ -33,25 +33,34 @@ import { userLoginDetails } from "@/stores/LoginStore";
 // which would destroy useState and break the search filter.
 const MedicineEditCell = ({ cell, row, table }) => {
   const { activeDrugOptions, handleMedicineSelect } = table.options.meta;
+  const [search, setSearch] = useState("");
+
+  // Deduplicate options by medicine_name
+  const uniqueOptions = activeDrugOptions.filter(
+    (opt, idx, arr) =>
+      arr.findIndex(
+        (o) => o.medicine_name?.trim().toLowerCase() === opt.medicine_name?.trim().toLowerCase()
+      ) === idx
+  );
 
   const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
   const selectedValue =
-    activeDrugOptions.find(
+    uniqueOptions.find(
       (m) => m.medicine_name?.trim().toLowerCase() === currentValue
     ) || null;
+
+  const filteredOptions = !search.trim()
+    ? uniqueOptions
+    : uniqueOptions.filter((o) =>
+        o.medicine_name?.toLowerCase().startsWith(search.toLowerCase())
+      );
 
   return (
     <Autocomplete
       fullWidth
       size="small"
-      options={activeDrugOptions}
-      filterOptions={(options, state) => {
-        const input = state.inputValue.trim().toLowerCase();
-        if (!input) return options;
-        return options.filter((o) =>
-          o.medicine_name?.toLowerCase().startsWith(input)
-        );
-      }}
+      options={filteredOptions}
+      filterOptions={(x) => x}
       value={selectedValue}
       getOptionLabel={(option) =>
         typeof option === "string" ? option : option.medicine_name
@@ -60,7 +69,12 @@ const MedicineEditCell = ({ cell, row, table }) => {
         option?.medicine_name?.trim().toLowerCase() ===
         value?.medicine_name?.trim().toLowerCase()
       }
+      onInputChange={(_, newVal, reason) => {
+        if (reason === "input") setSearch(newVal);
+        if (reason === "clear" || reason === "reset") setSearch("");
+      }}
       onChange={(_, selectedMedicine) => {
+        setSearch("");
         if (!selectedMedicine) {
           table.options.meta.updateData(row.index, "medicine_name", "");
           return;
