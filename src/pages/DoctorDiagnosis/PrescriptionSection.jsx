@@ -252,14 +252,17 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
         accessorKey: "medicine_name",
         header: "Medicine Name",
         Edit: ({ cell, row, table }) => {
-          // normalize lookup
           const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
-
           const selectedValue =
             activeDrugOptions.find(
-              (m) =>
-                m.medicine_name?.trim().toLowerCase() === currentValue
+              (m) => m.medicine_name?.trim().toLowerCase() === currentValue
             ) || null;
+
+          const [inputValue, setInputValue] = useState(cell.getValue() ?? "");
+
+          useEffect(() => {
+            setInputValue(cell.getValue() ?? "");
+          }, [cell.getValue()]);
 
           return (
             <Autocomplete
@@ -267,13 +270,17 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
               size="small"
               options={activeDrugOptions}
               value={selectedValue}
+              inputValue={inputValue}
+              onInputChange={(e, newVal) => setInputValue(newVal)}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.medicine_name
               }
               filterOptions={(options, state) =>
-                options.filter((o) =>
-                  o.medicine_name?.toLowerCase().includes(state.inputValue.toLowerCase())
-                )
+                state.inputValue.trim() === ""
+                  ? options
+                  : options.filter((o) =>
+                      o.medicine_name?.toLowerCase().includes(state.inputValue.toLowerCase())
+                    )
               }
               isOptionEqualToValue={(option, value) =>
                 option?.medicine_name?.trim().toLowerCase() ===
