@@ -10,4 +10,6 @@ export const useDashboardStore = create((set) => ({
   setdoctor_id: (id) => set({ doctor_id: id }),
   userRole: "admin", // Default role
   setUserRole: (role) => set({ userRole: role }),
+  isSidebarOpen: false,
+  setIsSidebarOpen: (val) => set({ isSidebarOpen: val }),
 }));

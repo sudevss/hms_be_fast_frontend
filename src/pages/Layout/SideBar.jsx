@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { logOut, userLoginDetails } from "@/stores/LoginStore";
+import { useDashboardStore } from "@/stores/dashboardStore";
 import { useQueryClient } from "@tanstack/react-query";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -39,6 +40,9 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
     const newState = !collapsed;
     setCollapsed(newState);
     onCollapse?.(newState);
+    if (!newState) {
+      useDashboardStore.getState().setIsSidebarOpen(false);
+    }
   };
 
   const handleLogout = () => {
