@@ -38,14 +38,7 @@ function DoctorsSection({ filteredDoctors = [] }) {
   return (
     <Box
       sx={{
-        width: {
-          //  xs: "100%", // Mobile phones (0px - 599px)
-          sm: "100vw", // Small tablets (600px - 899px)
-          md: "65%", // Tablets / small laptops (900px - 1199px)
-          lg: "65%", // Desktops (1200px - 1535px)
-          xl: "65%",
-        },
-        // width: expanded ? { xs: "100%", md: "25vw" } : "25vw",
+        width: "100%",
         transition: "width 0.35s ease-in-out",
         backgroundColor: "#fff",
         // borderLeft: "1px solid #e5e7eb",
@@ -160,7 +153,6 @@ function DoctorsSection({ filteredDoctors = [] }) {
                   key={index}
                   direction="row"
                   alignItems="flex-start"
-                  justifyContent="space-between"
                   sx={{
                     pr: 1.2,
                     mb: 1,
@@ -176,23 +168,41 @@ function DoctorsSection({ filteredDoctors = [] }) {
                   onClick={() => setdoctor_id(doctor_id)}
                 >
                   {/* Doctor Info */}
-                  <Stack direction="row" alignItems="flex-start" spacing={1}>
+                  <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ flex: 1, minWidth: 0 }}>
                     <Radio
                       checked={doctorId === doctor_id}
                       onChange={() => setdoctor_id(doctor_id)}
                       size={isMobile ? "small" : "medium"}
                       sx={{ mt: 0.5 }}
                     />
-                    <Stack spacing={0.3}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.85rem", sm: "0.9rem" },
-                        }}
-                      >
-                        {name}
-                      </Typography>
+                    <Stack spacing={0.3} sx={{ flex: 1, minWidth: 0 }}>
+                      {/* Name + Status on same row */}
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                          }}
+                        >
+                          {name}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            flexShrink: 0,
+                            color:
+                              status === "On Duty"
+                                ? theme.palette.success.main
+                                : theme.palette.error.main,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {status}
+                        </Typography>
+                      </Stack>
                       <Typography
                         variant="body2"
                         color="text.secondary"
@@ -216,22 +226,6 @@ function DoctorsSection({ filteredDoctors = [] }) {
                       </Typography>
                     </Stack>
                   </Stack>
-
-                  {/* Status */}
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color:
-                        status === "On Duty"
-                          ? theme.palette.success.main
-                          : theme.palette.error.main,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {status}
-                  </Typography>
                 </Stack>
               )
             )

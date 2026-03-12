@@ -239,23 +239,16 @@ function DashboardPage() {
       >
         {isSidebarOpen && (
           <>
-            <DatePicker
-              selected={date}
-              onChange={(d) => setDate(d)}
-              inline
-              minDate={minDate}
-              maxDate={maxDate}
-              sx={{
-                width: {
-                  //  xs: "100%", // Mobile phones (0px - 599px)
-                  sm: "100vw", // Small tablets (600px - 899px)
-                  md: "65%", // Tablets / small laptops (900px - 1199px)
-                  lg: "65%", // Desktops (1200px - 1535px)
-                  xl: "65%",
-                },
-              }}
-              calendarClassName="custom-calendar"
-            />
+            <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
+              <DatePicker
+                selected={date}
+                onChange={(d) => setDate(d)}
+                inline
+                minDate={minDate}
+                maxDate={maxDate}
+                calendarClassName="custom-calendar"
+              />
+            </Box>
             <Box
               sx={{
                 flex: 1,
