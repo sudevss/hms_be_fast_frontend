@@ -21,4 +21,5 @@ jobs:
             npm install
             npm run build
             cp -r /home/hmsfrontend/server/client/* /var/www/html/
+            cp /home/hmsfrontend/nginx.conf /etc/nginx/sites-available/default
             systemctl restart nginx
