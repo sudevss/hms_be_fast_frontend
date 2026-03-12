@@ -28,7 +28,7 @@ import { useDashboardStore } from "@/stores/dashboardStore";
 import { useQueryClient } from "@tanstack/react-query";
 import CloseIcon from "@mui/icons-material/Close";
 
-const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
+const Sidebar = ({ mobileOpen, onClose }) => {
   const queryClient = useQueryClient();
   const userObj = userLoginDetails();
   const navigate = useNavigate();
@@ -39,7 +39,6 @@ const Sidebar = ({ mobileOpen, onClose, onCollapse }) => {
   const toggleCollapse = () => {
     const newState = !collapsed;
     setIsNavCollapsed(newState);
-    onCollapse?.(newState);
     if (!newState) {
       useDashboardStore.getState().setIsSidebarOpen(false);
     }

@@ -5,12 +5,13 @@ import Footer from "./Footer";
 import Sidebar from "./SideBar";
 import { Outlet } from "react-router-dom";
 import { userLoginDetails } from "@/stores/LoginStore";
+import { useDashboardStore } from "@/stores/dashboardStore";
 
 const Layout = () => {
   const userObj = userLoginDetails.getState();
   const { access_token } = userObj || {};
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const { isNavCollapsed: isCollapsed } = useDashboardStore();
 
   const EXPANDED_WIDTH = "220px";
   const COLLAPSED_WIDTH = "60px";
@@ -34,7 +35,6 @@ const Layout = () => {
           <Sidebar
             mobileOpen={mobileOpen}
             onClose={handleDrawerToggle}
-            onCollapse={setIsCollapsed}
           />
         )}
 
