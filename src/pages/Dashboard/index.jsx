@@ -43,7 +43,7 @@ function DashboardPage() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { date, setDate, doctor_id, doctorSearch } = useDashboardStore();
 
@@ -123,10 +123,10 @@ function DashboardPage() {
       <Box
         sx={{
           flex: 1,
+          minWidth: 0,
           p: { xs: 2, sm: 3 },
           overflowY: "auto",
           transition: "all 0.3s ease",
-           width: isSidebarOpen ? { md: "75%", lg: "70%" } : "100%",
         }}
       >
         {/* Top Actions */}
@@ -209,7 +209,7 @@ function DashboardPage() {
           sx={{
             position: "absolute",
             top: 80,
-            right: isSidebarOpen ? { md: "30%", lg: "32%", xl: "30%" } : 0,
+            right: isSidebarOpen ? { md: "35%", lg: "32%", xl: "28%" } : 0,
             zIndex: 10,
             backgroundColor: "#fff",
             boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
@@ -224,14 +224,15 @@ function DashboardPage() {
       {/* Right Sidebar */}
       <Box
         sx={{
-          width: {
-            xs: "100%",
-            sm: "90vw",
-            md: isSidebarOpen ? "40vw" : "0px",
-            lg: isSidebarOpen ? "38vw" : "0px",
-            xl: isSidebarOpen ? "28vw" : "0px",
+          flex: {
+            xs: "0 0 100%",
+            sm: "0 0 100%",
+            md: isSidebarOpen ? "0 0 35%" : "0 0 0%",
+            lg: isSidebarOpen ? "0 0 32%" : "0 0 0%",
+            xl: isSidebarOpen ? "0 0 28%" : "0 0 0%",
           },
-          transition: "width 0.3s ease",
+          minWidth: 0,
+          transition: "flex 0.3s ease",
           backgroundColor: "#fff",
           overflow: "hidden",
           p: isSidebarOpen ? { xs: 2, sm: 3 } : 0,
