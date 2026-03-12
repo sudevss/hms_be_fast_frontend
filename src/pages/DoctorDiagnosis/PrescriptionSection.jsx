@@ -35,6 +35,11 @@ const MedicineEditCell = ({ cell, row, table }) => {
   const { activeDrugOptions, handleMedicineSelect } = table.options.meta;
   const [search, setSearch] = useState("");
 
+  // Reset search when a different row is being edited
+  useEffect(() => {
+    setSearch("");
+  }, [row.index]);
+
   const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
   const selectedValue =
     activeDrugOptions.find(
