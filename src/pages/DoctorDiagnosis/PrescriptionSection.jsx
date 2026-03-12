@@ -258,11 +258,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
               (m) => m.medicine_name?.trim().toLowerCase() === currentValue
             ) || null;
 
-          const [inputValue, setInputValue] = useState(cell.getValue() ?? "");
-
-          useEffect(() => {
-            setInputValue(cell.getValue() ?? "");
-          }, [cell.getValue()]);
+          const [inputValue, setInputValue] = useState("");
 
           const filteredOptions = inputValue.trim() === ""
             ? activeDrugOptions
@@ -278,7 +274,10 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
               filterOptions={(x) => x}
               value={selectedValue}
               inputValue={inputValue}
-              onInputChange={(e, newVal) => setInputValue(newVal)}
+              onInputChange={(e, newVal, reason) => {
+                if (reason === "input") setInputValue(newVal);
+                if (reason === "clear") setInputValue("");
+              }}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.medicine_name
               }
