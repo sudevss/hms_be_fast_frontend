@@ -50,7 +50,7 @@ const MedicineEditCell = ({ cell, row, table }) => {
     search.trim() === ""
       ? activeDrugOptions
       : activeDrugOptions.filter((o) =>
-          o.medicine_name?.toLowerCase().includes(search.toLowerCase())
+          o.medicine_name?.toLowerCase().startsWith(search.toLowerCase())
         );
 
   return (
