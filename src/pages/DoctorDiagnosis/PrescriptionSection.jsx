@@ -270,6 +270,11 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.medicine_name
               }
+              filterOptions={(options, state) =>
+                options.filter((o) =>
+                  o.medicine_name?.toLowerCase().includes(state.inputValue.toLowerCase())
+                )
+              }
               isOptionEqualToValue={(option, value) =>
                 option?.medicine_name?.trim().toLowerCase() ===
                 value?.medicine_name?.trim().toLowerCase()
