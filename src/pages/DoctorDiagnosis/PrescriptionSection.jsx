@@ -77,6 +77,12 @@ const MedicineEditCell = ({ cell, row, table }) => {
       renderInput={(params) => (
         <TextField {...params} placeholder="Search medicine..." />
       )}
+      slotProps={{
+        popper: {
+          placement: "bottom-start",
+          modifiers: [{ name: "flip", enabled: false }],
+        },
+      }}
     />
   );
 };
