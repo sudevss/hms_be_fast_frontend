@@ -96,7 +96,7 @@ function DoctorsSection({ filteredDoctors = [] }) {
               placeholder="Search doctors..."
               value={doctorSearch}
               onChange={(val) => setDoctorSearch(val)}
-              sx={{ flex: 1 }}
+              sx={{ width: "78%" }}
             />
           <Tooltip title="Reset Filter">
             <IconButton
