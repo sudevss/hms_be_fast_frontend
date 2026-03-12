@@ -364,18 +364,6 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
                   </MenuItem>
                 ))}
               </TextField>
-              {isOther && (
-                <TextField
-                  fullWidth
-                  size="small"
-                  sx={{ mt: 0.5 }}
-                  placeholder="Enter custom dosage"
-                  value={currentDosage}
-                  onChange={(e) =>
-                    table.options.meta.updateData(row.index, "dosage", e.target.value)
-                  }
-                />
-              )}
             </Box>
           );
         },
