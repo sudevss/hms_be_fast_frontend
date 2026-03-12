@@ -264,23 +264,23 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
             setInputValue(cell.getValue() ?? "");
           }, [cell.getValue()]);
 
+          const filteredOptions = inputValue.trim() === ""
+            ? activeDrugOptions
+            : activeDrugOptions.filter((o) =>
+                o.medicine_name?.toLowerCase().includes(inputValue.toLowerCase())
+              );
+
           return (
             <Autocomplete
               fullWidth
               size="small"
-              options={activeDrugOptions}
+              options={filteredOptions}
+              filterOptions={(x) => x}
               value={selectedValue}
               inputValue={inputValue}
               onInputChange={(e, newVal) => setInputValue(newVal)}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.medicine_name
-              }
-              filterOptions={(options, state) =>
-                state.inputValue.trim() === ""
-                  ? options
-                  : options.filter((o) =>
-                      o.medicine_name?.toLowerCase().includes(state.inputValue.toLowerCase())
-                    )
               }
               isOptionEqualToValue={(option, value) =>
                 option?.medicine_name?.trim().toLowerCase() ===
