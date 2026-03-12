@@ -54,7 +54,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
     { label: "Monthly",         value: "Monthly",   m: "",  a: "",  n: ""  },
     { label: "Other",           value: "Other",     m: "",  a: "",  n: ""  },
   ];
-  const STANDARD_VALUES = new Set(DOSAGE_OPTIONS.map((o) => o.value));
+  const STANDARD_VALUES = new Set(DOSAGE_OPTIONS.filter((o) => o.value !== "Other").map((o) => o.value));
 
   const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -346,6 +346,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
                   const opt = DOSAGE_OPTIONS.find((o) => o.value === e.target.value);
                   if (!opt) return;
                   if (opt.value === "Other") {
+                    table.options.meta.updateData(row.index, "dosage", "Other");
                     table.options.meta.updateData(row.index, "morning_dosage", "");
                     table.options.meta.updateData(row.index, "afternoon_dosage", "");
                     table.options.meta.updateData(row.index, "night_dosage", "");
