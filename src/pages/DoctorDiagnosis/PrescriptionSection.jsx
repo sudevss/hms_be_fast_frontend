@@ -42,6 +42,20 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
 
   const timingOptions = ["Before Food", "After Food"];
 
+  const DOSAGE_OPTIONS = [
+    { label: "BD (1-0-1)",      value: "1-0-1",     m: "1", a: "0", n: "1" },
+    { label: "TDS (1-1-1)",     value: "TDS",       m: "1", a: "1", n: "1" },
+    { label: "TID (1-1-1)",     value: "TID",       m: "1", a: "1", n: "1" },
+    { label: "OD (1-0-0)",      value: "1-0-0",     m: "1", a: "0", n: "0" },
+    { label: "QID (1-1-1-1)",   value: "QID",       m: "1", a: "1", n: "1" },
+    { label: "SOS (if needed)", value: "if needed", m: "",  a: "",  n: ""  },
+    { label: "Hourly",          value: "Hourly",    m: "",  a: "",  n: ""  },
+    { label: "Weekly",          value: "Weekly",    m: "",  a: "",  n: ""  },
+    { label: "Monthly",         value: "Monthly",   m: "",  a: "",  n: ""  },
+    { label: "Other",           value: "Other",     m: "",  a: "",  n: ""  },
+  ];
+  const STANDARD_VALUES = new Set(DOSAGE_OPTIONS.map((o) => o.value));
+
   const [selectedTemplateOption, setSelectedTemplateOption] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -193,21 +207,6 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
     }
   };
 
-  // ---------------------- DOSAGE AUTO-FORMAT ---------------------------
-
-  const formatDosage = (value) => {
-    // Remove any existing hyphens and spaces
-    let cleaned = value.replace(/[-\s]/g, "");
-
-    // Keep only digits
-    cleaned = cleaned.replace(/[^0-9]/g, "");
-
-    // Add hyphens between each digit
-    let formatted = cleaned.split("").join("-");
-
-    return formatted;
-  };
-
   // ---------------------- MEDICINE AUTOFILL ---------------------------
 
   const handleMedicineSelect = (rowIndex, selectedMedicine) => {
@@ -325,29 +324,60 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
         accessorKey: "dosage",
         header: "Dosage",
         Cell: ({ row }) => {
+          if (row.original.dosage) return row.original.dosage;
           const m = row.original.morning_dosage;
           const a = row.original.afternoon_dosage;
           const n = row.original.night_dosage;
           if (!m && !a && !n) return "";
           return `${m || "0"}-${a || "0"}-${n || "0"}`;
         },
-        Edit: ({ cell, row, table }) => (
-          <TextField
-            fullWidth
-            size="small"
-            value={row.original.dosage ?? ""}
-            onChange={(e) => {
-              const formattedValue = formatDosage(e.target.value);
-              // Parse dosage and update individual fields
-              const parts = formattedValue.split("-");
-              table.options.meta.updateData(row.index, "dosage", formattedValue);
-              table.options.meta.updateData(row.index, "morning_dosage", parts[0] || "0");
-              table.options.meta.updateData(row.index, "afternoon_dosage", parts[1] || "0");
-              table.options.meta.updateData(row.index, "night_dosage", parts[2] || "0");
-            }}
-            placeholder="e.g. 1-0-1"
-          />
-        ),
+        Edit: ({ row, table }) => {
+          const currentDosage = row.original.dosage ?? "";
+          const isOther = currentDosage !== "" && !STANDARD_VALUES.has(currentDosage);
+          const selectValue = isOther ? "Other" : currentDosage;
+          return (
+            <Box>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={selectValue}
+                onChange={(e) => {
+                  const opt = DOSAGE_OPTIONS.find((o) => o.value === e.target.value);
+                  if (!opt) return;
+                  if (opt.value === "Other") {
+                    table.options.meta.updateData(row.index, "morning_dosage", "");
+                    table.options.meta.updateData(row.index, "afternoon_dosage", "");
+                    table.options.meta.updateData(row.index, "night_dosage", "");
+                  } else {
+                    table.options.meta.updateData(row.index, "dosage", opt.value);
+                    table.options.meta.updateData(row.index, "morning_dosage", opt.m);
+                    table.options.meta.updateData(row.index, "afternoon_dosage", opt.a);
+                    table.options.meta.updateData(row.index, "night_dosage", opt.n);
+                  }
+                }}
+              >
+                {DOSAGE_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {isOther && (
+                <TextField
+                  fullWidth
+                  size="small"
+                  sx={{ mt: 0.5 }}
+                  placeholder="Enter custom dosage"
+                  value={currentDosage}
+                  onChange={(e) =>
+                    table.options.meta.updateData(row.index, "dosage", e.target.value)
+                  }
+                />
+              )}
+            </Box>
+          );
+        },
       },
 
       // ---------- Food Timing ----------
