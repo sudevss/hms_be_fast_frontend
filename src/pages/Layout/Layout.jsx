@@ -10,9 +10,9 @@ const Layout = () => {
   const userObj = userLoginDetails.getState();
   const { access_token } = userObj || {};
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
-  const EXPANDED_WIDTH = "185px";
+  const EXPANDED_WIDTH = "220px";
   const COLLAPSED_WIDTH = "60px";
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);

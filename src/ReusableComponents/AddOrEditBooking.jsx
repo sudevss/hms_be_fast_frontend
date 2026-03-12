@@ -22,7 +22,6 @@ import {
   GENDER_DATA,
   INITIAL_SHOW_ALERT,
   PAYMENT_METHODS,
-  TIME_SLOTS_HOURS_OPTIONS,
   TOKEN_TYPES,
 } from "@data/staticData";
 import { bookingRequiredFileds, useBooking } from "@/stores/bookingStore";
@@ -203,7 +202,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
   const queryClient = useQueryClient();
 
   const parseSlotMinutes = (label) => {
-    const m = label.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
+    const m = String(label).match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
     if (!m) return 0;
     let h = parseInt(m[1], 10);
     const mins = m[2] ? parseInt(m[2], 10) : 0;
@@ -212,12 +211,18 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     return h * 60 + mins;
   };
 
+  /** Convert minutes-from-midnight to slot label e.g. 540 -> "9am", 544 -> "9:04am" */
+  const minutesToSlotLabel = (totalMinutes) => {
+    const h = Math.floor(totalMinutes / 60) % 24;
+    const m = totalMinutes % 60;
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const ampm = h < 12 ? "am" : "pm";
+    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${String(m).padStart(2, "0")}${ampm}`;
+  };
+
+  /** Generate time slot options from doctor schedule (start, end, slot duration) for the selected date. */
   const getFilteredTimeSlots = () => {
     if (!AppointmentDate || !doctor_id) return [];
-    const scheduleQuery = {
-      facility_id: facility_id || 1,
-      doctor_id,
-    };
     const cached = queryClient.getQueryData(["queryGetDoctorSheduleDetails", doctor_id]);
     const schedule = (cached?.payload || cached) || null;
     const leavePeriods = Array.isArray(schedule?.leavePeriods) ? schedule.leavePeriods : [];
@@ -232,18 +237,22 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     const weekdayName = dayjs(AppointmentDate).format("dddd");
     const weekDaysList = Array.isArray(schedule?.weekDaysList) ? schedule.weekDaysList : [];
     const dayObj = weekDaysList.find((d) => String(d?.weekDay || "").toLowerCase() === weekdayName.toLowerCase());
-    const windows = Array.isArray(dayObj?.slotWeeks) ? dayObj.slotWeeks.filter((s) => (s?.startTime && s?.endTime) || s?.windowNum || s?.window || s?.window_num) : [];
-    const allowedBySchedule = TIME_SLOTS_HOURS_OPTIONS.filter(({ value }) => {
-      const slotMin = parseSlotMinutes(value);
-      return windows.some((w) => {
-        const startStr = w.startTime || w.window || w.window_num || "";
-        const endStr = w.endTime || "";
-        const startMin = parseSlotMinutes(String(startStr).toLowerCase());
-        const endMin = parseSlotMinutes(String(endStr).toLowerCase());
-        if (!startMin || !endMin) return false;
-        return slotMin >= startMin && slotMin < endMin;
-      });
-    });
+    const windows = Array.isArray(dayObj?.slotWeeks) ? dayObj.slotWeeks.filter((s) => s?.startTime && s?.endTime) : [];
+    const slotLabelsSet = new Set();
+    for (const w of windows) {
+      const startStr = String(w.startTime || "").toLowerCase();
+      const endStr = String(w.endTime || "").toLowerCase();
+      const startMin = parseSlotMinutes(startStr);
+      const endMin = parseSlotMinutes(endStr);
+      const duration = Math.max(1, Number(w.slotDurationMinutes) || 15);
+      if (!startMin && startMin !== 0) continue;
+      if (!endMin || endMin <= startMin) continue;
+      for (let min = startMin; min < endMin; min += duration) {
+        slotLabelsSet.add(minutesToSlotLabel(min));
+      }
+    }
+    const sorted = Array.from(slotLabelsSet).sort((a, b) => parseSlotMinutes(a) - parseSlotMinutes(b));
+    const allowedBySchedule = sorted.map((value) => ({ value, label: value }));
     const todayStr = dayjs().format("YYYY-MM-DD");
     const selectedStr = dayjs(AppointmentDate).format("YYYY-MM-DD");
     if (todayStr !== selectedStr) return allowedBySchedule;
@@ -652,7 +661,6 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
             placeholderText="Time Slot"
             noDataText="no slots available"
             showMenuOptionsLoadingStatus={queryGetDoctorSchedule.isLoading}
-            //menuOptions={TIME_SLOTS_HOURS_OPTIONS}
             menuOptions={getFilteredTimeSlots()}
             onChangeHandler={
               (value) => onChangeBooking("AppointmentTime", value)
