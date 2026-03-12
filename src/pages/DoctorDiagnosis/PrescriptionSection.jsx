@@ -29,6 +29,58 @@ import { useQuery } from "@tanstack/react-query";
 import { usePrescriptionStore } from "@/stores/prescriptionStore";
 import { userLoginDetails } from "@/stores/LoginStore";
 
+// Defined OUTSIDE PrescriptionSection so React never remounts it on re-renders,
+// which would destroy useState and break the search filter.
+const MedicineEditCell = ({ cell, row, table }) => {
+  const { activeDrugOptions, handleMedicineSelect } = table.options.meta;
+  const [search, setSearch] = useState("");
+
+  const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
+  const selectedValue =
+    activeDrugOptions.find(
+      (m) => m.medicine_name?.trim().toLowerCase() === currentValue
+    ) || null;
+
+  const filteredOptions =
+    search.trim() === ""
+      ? activeDrugOptions
+      : activeDrugOptions.filter((o) =>
+          o.medicine_name?.toLowerCase().includes(search.toLowerCase())
+        );
+
+  return (
+    <Autocomplete
+      fullWidth
+      size="small"
+      options={filteredOptions}
+      filterOptions={(x) => x}
+      value={selectedValue}
+      getOptionLabel={(option) =>
+        typeof option === "string" ? option : option.medicine_name
+      }
+      isOptionEqualToValue={(option, value) =>
+        option?.medicine_name?.trim().toLowerCase() ===
+        value?.medicine_name?.trim().toLowerCase()
+      }
+      onInputChange={(_, newVal, reason) => {
+        if (reason === "input") setSearch(newVal);
+        if (reason === "clear") setSearch("");
+      }}
+      onChange={(_, selectedMedicine) => {
+        setSearch("");
+        if (!selectedMedicine) {
+          table.options.meta.updateData(row.index, "medicine_name", "");
+          return;
+        }
+        handleMedicineSelect(row.index, selectedMedicine);
+      }}
+      renderInput={(params) => (
+        <TextField {...params} placeholder="Search medicine..." />
+      )}
+    />
+  );
+};
+
 const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
   const prescriptionStore = usePrescriptionStore();
   const { prescriptions, setPrescriptions } = prescriptionStore;
@@ -251,53 +303,7 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
       {
         accessorKey: "medicine_name",
         header: "Medicine Name",
-        Edit: ({ cell, row, table }) => {
-          const currentValue = (cell.getValue() ?? "").trim().toLowerCase();
-          const selectedValue =
-            activeDrugOptions.find(
-              (m) => m.medicine_name?.trim().toLowerCase() === currentValue
-            ) || null;
-
-          const [inputValue, setInputValue] = useState("");
-
-          const filteredOptions = inputValue.trim() === ""
-            ? activeDrugOptions
-            : activeDrugOptions.filter((o) =>
-                o.medicine_name?.toLowerCase().includes(inputValue.toLowerCase())
-              );
-
-          return (
-            <Autocomplete
-              fullWidth
-              size="small"
-              options={filteredOptions}
-              filterOptions={(x) => x}
-              value={selectedValue}
-              inputValue={inputValue}
-              onInputChange={(e, newVal, reason) => {
-                if (reason === "input") setInputValue(newVal);
-                if (reason === "clear") setInputValue("");
-              }}
-              getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.medicine_name
-              }
-              isOptionEqualToValue={(option, value) =>
-                option?.medicine_name?.trim().toLowerCase() ===
-                value?.medicine_name?.trim().toLowerCase()
-              }
-              onChange={(event, selectedMedicine) => {
-                if (!selectedMedicine) {
-                  table.options.meta.updateData(row.index, "medicine_name", "");
-                  return;
-                }
-                handleMedicineSelect(row.index, selectedMedicine);
-              }}
-              renderInput={(params) => (
-                <TextField {...params} placeholder="Search medicine..." />
-              )}
-            />
-          );
-        },
+        Edit: MedicineEditCell,
       },
 
       // ---------- Generic Name ----------
@@ -728,6 +734,8 @@ const PrescriptionSection = ({ patientId, patientName, tokenNumber, appointmentD
                 index === rowIndex ? { ...row, [columnId]: value } : row
               )
             ),
+          activeDrugOptions,
+          handleMedicineSelect,
         }}
         onEditingRowSave={({ row }) => {
           const updated = data.map((r) =>
