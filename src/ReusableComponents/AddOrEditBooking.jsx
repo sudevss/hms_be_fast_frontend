@@ -165,6 +165,53 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     enabled: Boolean(doctor_id),
   });
 
+  const selectedAppointmentDate = AppointmentDate
+    ? dayjs(AppointmentDate).format("YYYY-MM-DD")
+    : "";
+
+  const queryGetBookedAppointments = useQuery({
+    queryKey: [
+      "queryGetAppointmentsAndBookings",
+      "occupiedSlots",
+      facility_id || 1,
+      doctor_id,
+      selectedAppointmentDate,
+    ],
+    queryFn: async () => {
+      const requestPayload = {
+        facility_id: facility_id || 1,
+        date: selectedAppointmentDate,
+        end_date: selectedAppointmentDate,
+        doctor_id,
+      };
+
+      const bookedAppointmentsByStatus = await Promise.all(
+        ["scheduled", "waiting", "completed"].map((appointment_status) =>
+          getAppointmentsAndBookings({
+            ...requestPayload,
+            appointment_status,
+          })
+        )
+      );
+
+      const seenAppointmentIds = new Set();
+
+      return bookedAppointmentsByStatus.flat().filter((appointment) => {
+        const appointmentKey =
+          appointment?.appointment_id ??
+          `${appointment?.doctor_id || ""}:${appointment?.appointment_date || ""}:${appointment?.time_slot || appointment?.appointment_time || appointment?.AppointmentTime || ""}`;
+
+        if (seenAppointmentIds.has(appointmentKey)) {
+          return false;
+        }
+
+        seenAppointmentIds.add(appointmentKey);
+        return true;
+      });
+    },
+    enabled: open && Boolean(doctor_id && selectedAppointmentDate),
+  });
+
   useEffect(() => {
     if (doctor_id && !doctorName && Array.isArray(doctorsData) && doctorsData.length > 0) {
       const found = doctorsData.find((d) => String(d.id) === String(doctor_id));
@@ -202,13 +249,31 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
   const queryClient = useQueryClient();
 
   const parseSlotMinutes = (label) => {
-    const m = String(label).match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
-    if (!m) return 0;
-    let h = parseInt(m[1], 10);
-    const mins = m[2] ? parseInt(m[2], 10) : 0;
-    const isPM = m[3].toLowerCase() === "pm";
-    h = h % 12 + (isPM ? 12 : 0);
-    return h * 60 + mins;
+    const normalized = String(label || "").trim().toLowerCase();
+    if (!normalized) return null;
+
+    const twelveHourMatch = normalized.match(
+      /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i
+    );
+    if (twelveHourMatch) {
+      let h = parseInt(twelveHourMatch[1], 10);
+      const mins = twelveHourMatch[2] ? parseInt(twelveHourMatch[2], 10) : 0;
+      const isPM = twelveHourMatch[3].toLowerCase() === "pm";
+      h = h % 12 + (isPM ? 12 : 0);
+      return h * 60 + mins;
+    }
+
+    const twentyFourHourMatch = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (twentyFourHourMatch) {
+      const hours = parseInt(twentyFourHourMatch[1], 10);
+      const mins = parseInt(twentyFourHourMatch[2], 10);
+      if (Number.isNaN(hours) || Number.isNaN(mins) || hours > 23 || mins > 59) {
+        return null;
+      }
+      return hours * 60 + mins;
+    }
+
+    return null;
   };
 
   /** Convert minutes-from-midnight to slot label e.g. 540 -> "9am", 544 -> "9:04am" */
@@ -219,6 +284,27 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
     const ampm = h < 12 ? "am" : "pm";
     return m === 0 ? `${hour12}${ampm}` : `${hour12}:${String(m).padStart(2, "0")}${ampm}`;
   };
+
+  const normalizeSlotLabel = (value) => {
+    const minutes = parseSlotMinutes(value);
+    return minutes == null ? null : minutesToSlotLabel(minutes);
+  };
+
+  const bookedSlotLabels = new Set(
+    (queryGetBookedAppointments.data || [])
+      .filter(
+        (appointment) =>
+          String(appointment?.appointment_id || "") !== String(appointmentId || "")
+      )
+      .map((appointment) =>
+        normalizeSlotLabel(
+          appointment?.time_slot ||
+            appointment?.appointment_time ||
+            appointment?.AppointmentTime
+        )
+      )
+      .filter(Boolean)
+  );
 
   /** Generate time slot options from doctor schedule (start, end, slot duration) for the selected date. */
   const getFilteredTimeSlots = () => {
@@ -245,21 +331,60 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
       const startMin = parseSlotMinutes(startStr);
       const endMin = parseSlotMinutes(endStr);
       const duration = Math.max(1, Number(w.slotDurationMinutes) || 15);
-      if (!startMin && startMin !== 0) continue;
-      if (!endMin || endMin <= startMin) continue;
+      if (startMin == null) continue;
+      if (endMin == null || endMin <= startMin) continue;
       for (let min = startMin; min < endMin; min += duration) {
         slotLabelsSet.add(minutesToSlotLabel(min));
       }
     }
-    const sorted = Array.from(slotLabelsSet).sort((a, b) => parseSlotMinutes(a) - parseSlotMinutes(b));
-    const allowedBySchedule = sorted.map((value) => ({ value, label: value }));
+    const sorted = Array.from(slotLabelsSet).sort(
+      (a, b) => (parseSlotMinutes(a) ?? 0) - (parseSlotMinutes(b) ?? 0)
+    );
+    const allowedBySchedule = sorted.map((value) => ({
+      value,
+      label: value,
+      disabled: bookedSlotLabels.has(value),
+    }));
     const todayStr = dayjs().format("YYYY-MM-DD");
     const selectedStr = dayjs(AppointmentDate).format("YYYY-MM-DD");
     if (todayStr !== selectedStr) return allowedBySchedule;
     const threshold = dayjs().subtract(15, "minute");
     const thresholdMin = threshold.hour() * 60 + threshold.minute();
-    return allowedBySchedule.filter(({ value }) => parseSlotMinutes(value) >= thresholdMin);
+    return allowedBySchedule.filter(
+      ({ value }) => (parseSlotMinutes(value) ?? -1) >= thresholdMin
+    );
   };
+
+  const timeSlotOptions = getFilteredTimeSlots();
+
+  useEffect(() => {
+    if (
+      !AppointmentTime ||
+      !AppointmentDate ||
+      !doctor_id ||
+      queryGetDoctorSchedule.isLoading ||
+      queryGetBookedAppointments.isLoading
+    ) {
+      return;
+    }
+
+    const selectedOption = timeSlotOptions.find(
+      (option) => option.value === AppointmentTime
+    );
+
+    if (!selectedOption || selectedOption.disabled) {
+      onChangeBooking("AppointmentTime", "");
+    }
+  }, [
+    AppointmentDate,
+    AppointmentTime,
+    doctor_id,
+    onChangeBooking,
+    queryGetBookedAppointments.dataUpdatedAt,
+    queryGetBookedAppointments.isLoading,
+    queryGetDoctorSchedule.dataUpdatedAt,
+    queryGetDoctorSchedule.isLoading,
+  ]);
 
   const mutationUpdateBooking = useMutation({
     mutationFn: (payload) => putUpdateBooking(appointmentId, payload),
@@ -660,8 +785,11 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
             width="100%"
             placeholderText="Time Slot"
             noDataText="no slots available"
-            showMenuOptionsLoadingStatus={queryGetDoctorSchedule.isLoading}
-            menuOptions={getFilteredTimeSlots()}
+            showMenuOptionsLoadingStatus={
+              queryGetDoctorSchedule.isLoading || queryGetBookedAppointments.isLoading
+            }
+            menuOptions={timeSlotOptions}
+            disableMenuOptionConditionValidator={(option) => Boolean(option.disabled)}
             onChangeHandler={
               (value) => onChangeBooking("AppointmentTime", value)
               //   onChangeDoctor("gender", value)
