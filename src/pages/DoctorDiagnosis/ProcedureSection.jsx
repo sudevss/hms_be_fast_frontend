@@ -79,7 +79,9 @@ const ProcedureSection = ({
   const { data: procedureOptions = [] } = useQuery({
     queryKey: ["queryGetProcedureMaster"],
     queryFn: () => getProcedureMasterList(),
-    enabled: true,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // When a master-list item or free-text is selected in the Autocomplete
@@ -424,7 +426,6 @@ const ProcedureSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
-                        syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
