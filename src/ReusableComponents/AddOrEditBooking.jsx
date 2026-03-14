@@ -645,7 +645,7 @@ const AddOrEditBooking = ({ open, setOpen, title, isEdit = false, appointmentId 
                 <DatePickerComponent
                   name="dob"
                   value={dob}
-                  required={true}
+                  required={false}
                   showInputLabel={true}
                   currentYear={null}
                   disableFuture
