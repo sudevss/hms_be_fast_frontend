@@ -370,7 +370,12 @@ export const getLabMasterList = async () =>
   api
   .get(`/templates/lab-master`)
   .then((response) => response.data);
-    
+
+export const getProcedureMasterList = async () =>
+  api
+    .get(`/templates/procedure-master`)
+    .then((response) => response.data);
+
 export const getSymptomMasterList = async () =>
   api
     .get(`/templates/symptom-master`)
