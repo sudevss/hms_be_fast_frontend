@@ -7,6 +7,10 @@ import {
   Stack,
   useMediaQuery,
   useTheme,
+  Autocomplete,
+  TextField,
+  Chip,
+  InputLabel,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -21,6 +25,14 @@ import { useDoctor, doctorRequiredFileds } from "@/stores/doctorStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postNewDoctor, putUpdateDoctor } from "@/serviceApis";
 import { useShowAlert } from "@/stores/showAlertStore";
+
+const QUALIFICATION_OPTIONS = [
+  "MBBS", "BDS", "BAMS", "BHMS", "BUMS",
+  "MD", "MS", "DNB", "DM", "MCh",
+  "MDS", "MPhil", "PhD",
+  "FCPS", "MRCP", "FRCS",
+  "Fellowship",
+];
 
 const AddDoctor = ({ open, setOpen }) => {
   const {
@@ -257,25 +269,65 @@ const AddDoctor = ({ open, setOpen }) => {
             onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
           />
 
-          {/* Qualification Section */}
-          <Stack direction={isMobile ? "column" : "row"} gap={2}>
-            <TextInputWithLabel
-              type="text"
-              name="qualification"
-              label="Qualification"
-              value={qualification}
-              placeholder="e.g. MBBS, MS (ENT)"
-              onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
-            />
-            <TextInputWithLabel
-              type="text"
-              name="registration_number"
-              label="Reg. No."
-              value={registration_number}
-              placeholder="e.g. 50047"
-              onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
+          {/* Qualification multi-select */}
+          <Stack spacing={0.75} alignItems="flex-start" sx={{ width: "100%" }}>
+            <InputLabel
+              sx={{
+                fontWeight: 500,
+                fontSize: "0.875rem",
+                lineHeight: "1.25rem",
+                color: theme.palette.text.primary,
+              }}
+            >
+              Qualification
+            </InputLabel>
+            <Autocomplete
+              multiple
+              freeSolo
+              fullWidth
+              id="qualification-autocomplete"
+              options={QUALIFICATION_OPTIONS}
+              value={qualification ? qualification.split(",").filter(Boolean) : []}
+              onChange={(_, newValues) =>
+                onChangeDoctor("qualification", newValues.join(","))
+              }
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option}
+                    size="small"
+                    {...getTagProps({ index })}
+                    key={option}
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder={qualification ? "" : "Select or type qualification"}
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      backgroundColor:
+                        theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+                      fontSize: "14px",
+                    },
+                  }}
+                />
+              )}
             />
           </Stack>
+
+          {/* Reg. No. */}
+          <TextInputWithLabel
+            type="text"
+            name="registration_number"
+            label="Reg. No."
+            value={registration_number}
+            placeholder="e.g. 50047"
+            onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
+          />
         </DialogContent>
 
         {/* FOOTER */}
