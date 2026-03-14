@@ -34,6 +34,8 @@ const AddDoctor = ({ open, setOpen }) => {
     gender,
     age,
     experience,
+    qualification,
+    registration_number,
     onChangeDoctor,
     onReset,
   } = useDoctor();
@@ -254,6 +256,26 @@ const AddDoctor = ({ open, setOpen }) => {
             placeholder="Enter ABDM NHPR ID"
             onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
           />
+
+          {/* Qualification Section */}
+          <Stack direction={isMobile ? "column" : "row"} gap={2}>
+            <TextInputWithLabel
+              type="text"
+              name="qualification"
+              label="Qualification"
+              value={qualification}
+              placeholder="e.g. MBBS, MS (ENT)"
+              onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
+            />
+            <TextInputWithLabel
+              type="text"
+              name="registration_number"
+              label="Reg. No."
+              value={registration_number}
+              placeholder="e.g. 50047"
+              onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
+            />
+          </Stack>
         </DialogContent>
 
         {/* FOOTER */}
