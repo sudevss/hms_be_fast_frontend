@@ -300,9 +300,9 @@ const AddDoctor = ({ open, setOpen }) => {
                 value.map((option, index) => (
                   <Chip
                     label={option}
-                    size="small"
                     {...getTagProps({ index })}
                     key={option}
+                    sx={{ height: 24, fontSize: "0.8rem", "& .MuiChip-deleteIcon": { fontSize: "1rem" } }}
                   />
                 ))
               }
