@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 const initialState = {
-  procedures: [], // Array of { procedure_text, price }
+  procedures: [], // Array of { procedure_text, price, procedure_id }
 };
 
 export const useProcedureStore = create((set) => ({
