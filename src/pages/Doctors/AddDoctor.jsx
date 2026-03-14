@@ -287,6 +287,11 @@ const AddDoctor = ({ open, setOpen }) => {
               fullWidth
               id="qualification-autocomplete"
               options={QUALIFICATION_OPTIONS}
+              filterOptions={(options, { inputValue }) =>
+                options.filter((option) =>
+                  option.toLowerCase().startsWith(inputValue.toLowerCase())
+                )
+              }
               value={qualification ? qualification.split(",").filter(Boolean) : []}
               onChange={(_, newValues) =>
                 onChangeDoctor("qualification", newValues.join(","))
