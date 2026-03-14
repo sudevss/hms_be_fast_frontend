@@ -63,7 +63,13 @@ export const useDoctorDiagnosisStore = create((set, get) => ({
         prescriptionStore.setPrescriptions(data.prescriptions);
       }
       if (data.procedures && Array.isArray(data.procedures)) {
-        procedureStore.setProcedures(data.procedures);
+        procedureStore.setProcedures(
+          data.procedures.map((proc) => ({
+            procedure_id: proc.procedure_id || null,
+            procedure_text: proc.procedure_name || proc.free_text_procedure || "",
+            price: proc.price || 0,
+          }))
+        );
       }
       if (data.lab_tests && Array.isArray(data.lab_tests)) {
         labTestStore.setLabTests(data.lab_tests);
@@ -109,11 +115,18 @@ export const useDoctorDiagnosisStore = create((set, get) => ({
           special_instructions: p.special_instructions || "",
         })),
       procedures: procedureStore.procedures
-        .filter((p) => p.procedure_text && String(p.procedure_text || "").trim().length >= 5) // Only include non-empty procedures of at least 5 chars
-        .map((p) => ({
-          price: p.price || 0,
-          procedure_text: p.procedure_text || "",
-        })),
+        .filter((p) => p.procedure_id || (p.procedure_text && String(p.procedure_text || "").trim().length >= 5))
+        .map((p) => {
+          if (p.procedure_id) {
+            const item = { procedure_id: p.procedure_id };
+            if (p.price) item.price = parseFloat(p.price);
+            return item;
+          }
+          return {
+            free_text_procedure: p.procedure_text,
+            price: parseFloat(p.price) || 0,
+          };
+        }),
       symptoms: diagnosisStore.symptoms
         .filter((s) => s.symptom_id || s.symptom_name) // Include both predefined and custom symptoms
         .map((s) => {
