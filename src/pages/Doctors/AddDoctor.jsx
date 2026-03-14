@@ -302,7 +302,7 @@ const AddDoctor = ({ open, setOpen }) => {
                     label={option}
                     {...getTagProps({ index })}
                     key={option}
-                    sx={{ height: 24, fontSize: "0.8rem", "& .MuiChip-deleteIcon": { fontSize: "1rem" } }}
+                    sx={{ fontSize: "0.8rem", height: 28, "& .MuiChip-label": { pr: 0.5 }, "& .MuiChip-deleteIcon": { fontSize: "0.9rem", ml: 0 } }}
                   />
                 ))
               }
