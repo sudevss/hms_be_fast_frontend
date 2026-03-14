@@ -48,6 +48,7 @@ const ProcedureSection = ({
   const [rowToDelete, setRowToDelete] = useState(null);
 
   const printRef = useRef();
+  const editingSnapshotRef = useRef(null);
   const { facility_id, FacilityName } = userLoginDetails();
   const logoFacilityId = facility_id || 1;
 
@@ -101,7 +102,7 @@ const ProcedureSection = ({
           return {
             ...row,
             procedure_text: selectedProcedure.procedure_name,
-            procedure_id: selectedProcedure.procedure_id || null,
+            procedure_id: selectedProcedure.procedure_id ?? null,
             price: selectedProcedure.price || 0,
           };
         }
@@ -181,7 +182,7 @@ const ProcedureSection = ({
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "price", e.target.value)
+              table.options.meta.updateData(row.index, "price", parseFloat(e.target.value) || 0)
             }
           />
         ),
@@ -414,6 +415,7 @@ const ProcedureSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
+                        editingSnapshotRef.current = null;
                         syncToStore();
                         table.setEditingRow(null);
                         setEditingRowId(null);
@@ -426,6 +428,13 @@ const ProcedureSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
+                        if (editingSnapshotRef.current) {
+                          const snapshot = editingSnapshotRef.current;
+                          setData((prev) =>
+                            prev.map((r) => (r.id === snapshot.id ? snapshot : r))
+                          );
+                          editingSnapshotRef.current = null;
+                        }
                         table.setEditingRow(null);
                         setEditingRowId(null);
                       }}
@@ -440,6 +449,7 @@ const ProcedureSection = ({
                     <IconButton
                       size="small"
                       onClick={() => {
+                        editingSnapshotRef.current = { ...row.original };
                         setEditingRowId(row.original.id);
                         table.setEditingRow(row);
                       }}
