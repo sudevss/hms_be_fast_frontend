@@ -143,7 +143,7 @@ export const QUALIFICATION_HIERARCHY = [
  * Unknown qualifications (free-text entries not in QUALIFICATION_HIERARCHY) are
  * appended after known degrees, preserving their relative order.
  *
- * @param {string|null} str - e.g. "MS,MBBS"  or  "PhD,CustomDeg,MBBS"
+ * @param {string|null|undefined} str - e.g. "MS,MBBS"  or  "PhD,CustomDeg,MBBS"
  * @returns {string|null}   - e.g. "MBBS, MS" or  "MBBS, PhD, CustomDeg"
  *
  * @example
@@ -162,7 +162,7 @@ export const sortQualifications = (str) => {
     const bi = QUALIFICATION_HIERARCHY.indexOf(b);
     const aRank = ai === -1 ? Infinity : ai;
     const bRank = bi === -1 ? Infinity : bi;
-    return aRank - bRank;
+    return aRank - bRank || parts.indexOf(a) - parts.indexOf(b);
   });
   return sorted.join(", ");
 };
