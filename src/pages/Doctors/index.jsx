@@ -202,6 +202,16 @@ function DoctorsPage() {
     showGlobalFilter: true,
     showColumnFilters: true,
     columnPinning: { right: ["actions"], left: ["id"] },
+    columnOrder: [
+      "id",
+      "doctor_name",
+      "phone_number",
+      "specialization",
+      "consultation_fee",
+      "registration_number",
+      "qualification",
+      "actions",
+    ],
   };
 
   return (
