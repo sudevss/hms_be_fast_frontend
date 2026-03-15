@@ -112,6 +112,7 @@ function LoginCardPanel() {
             textAlign="center"
             sx={{
               mb: 3,
+              width: "100%",
               fontSize: {
                 xs: "1.6rem",
                 sm: "1.8rem",
