@@ -5,15 +5,21 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useQuery } from "@tanstack/react-query";
 import { getDoctorSheduleDetails } from "@/serviceApis";
+import { sortQualifications } from "@data/staticData";
 
 const labelSx = { color: "#6b7280", fontWeight: 600, textTransform: "uppercase", textAlign: "center", fontSize: "0.95rem" };
 const valueSx = { color: "#111827", fontWeight: 600, textAlign: "center", fontSize: "1.05rem" };
 
-const Field = ({ label, value }) => (
+const Field = ({ label, value, isEmpty }) => (
   <Box>
     <Typography variant="caption" sx={labelSx}>{label}</Typography>
     <Box sx={{ height: 6 }} />
-    <Typography variant="body1" sx={valueSx}>{value ?? "-"}</Typography>
+    <Typography
+      variant="body1"
+      sx={isEmpty ? { ...valueSx, color: "text.disabled" } : valueSx}
+    >
+      {value ?? "-"}
+    </Typography>
   </Box>
 );
 
@@ -73,6 +79,20 @@ const DoctorDetailsDialog = ({ open, onClose, doctor, onEdit, onEditSchedule }) 
             <Grid item xs={6} md={3}><Field label="Consultation Fee" value={doctor.consultation_fee} /></Grid>
             <Grid item xs={6} md={3}><Field label="Experience" value={doctor.experience} /></Grid>
             <Grid item xs={6} md={3}><Field label="ABDM_NHPR_id" value={doctor.ABDM_NHPR_id} /></Grid>
+            <Grid item xs={6} md={3}>
+              <Field
+                label="Reg. No."
+                value={doctor.registration_number || "Enter details"}
+                isEmpty={!doctor.registration_number}
+              />
+            </Grid>
+            <Grid item xs={6} md={3}>
+              <Field
+                label="Qualification"
+                value={sortQualifications(doctor.qualification) || "Enter details"}
+                isEmpty={!sortQualifications(doctor.qualification)}
+              />
+            </Grid>
           </Grid>
         </Box>
 
