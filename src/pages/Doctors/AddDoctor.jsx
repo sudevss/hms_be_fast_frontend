@@ -20,19 +20,12 @@ import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import AlertSnackbar from "@components/AlertSnackbar";
 import PageLoader from "@pages/PageLoader";
 
-import { GENDER_DATA, INITIAL_SHOW_ALERT } from "@data/staticData";
+import { GENDER_DATA, INITIAL_SHOW_ALERT, QUALIFICATION_HIERARCHY } from "@data/staticData";
 import { useDoctor, doctorRequiredFileds } from "@/stores/doctorStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postNewDoctor, putUpdateDoctor } from "@/serviceApis";
 import { useShowAlert } from "@/stores/showAlertStore";
 
-const QUALIFICATION_OPTIONS = [
-  "MBBS", "BDS", "BAMS", "BHMS", "BUMS",
-  "MD", "MS", "DNB", "DM", "MCh",
-  "MDS", "MPhil", "PhD",
-  "FCPS", "MRCP", "FRCS",
-  "Fellowship",
-];
 
 const AddDoctor = ({ open, setOpen }) => {
   const {
@@ -286,7 +279,7 @@ const AddDoctor = ({ open, setOpen }) => {
               freeSolo
               fullWidth
               id="qualification-autocomplete"
-              options={QUALIFICATION_OPTIONS}
+              options={QUALIFICATION_HIERARCHY}
               filterOptions={(options, { inputValue }) =>
                 options.filter((option) =>
                   option.toLowerCase().startsWith(inputValue.toLowerCase())
