@@ -108,7 +108,7 @@ function DoctorsPage() {
       {
         accessorKey: "consultation_fee",
         header: "Consultation Fee",
-        size: 120,
+        size: 150,
       },
       {
         accessorKey: "registration_number",
