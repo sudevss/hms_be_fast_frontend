@@ -93,6 +93,11 @@ export const sortQualifications = (str) => {
 - Replace all references to `QUALIFICATION_OPTIONS` with `QUALIFICATION_HIERARCHY`.
 - No logic change — just de-duplication.
 
+> **Note on dual-use:** `QUALIFICATION_HIERARCHY` intentionally serves two roles:
+> 1. As the MUI Autocomplete `options` list in AddDoctor.
+> 2. As the sort-rank reference array inside `sortQualifications()`.
+> Both uses must stay in sync. Do not add rank-only internal markers or non-displayable entries to this array — they would appear as Autocomplete suggestions.
+
 ---
 
 ## 7. Doctors Table — `pages/Doctors/index.jsx`
@@ -146,7 +151,28 @@ import { sortQualifications } from "@data/staticData";
 import { sortQualifications } from "@data/staticData";
 ```
 
-### 8.2 Two new `<Field>` items in the Doctor Details grid
+### 8.2 Update the `Field` component — add `isEmpty` prop
+
+The existing `valueSx` hardcodes `color: "#111827"` (near-black). To render "Enter details" in a muted style without duplicating JSX, add an optional `isEmpty` boolean prop:
+
+```jsx
+const Field = ({ label, value, isEmpty }) => (
+  <Box>
+    <Typography variant="caption" sx={labelSx}>{label}</Typography>
+    <Box sx={{ height: 6 }} />
+    <Typography
+      variant="body1"
+      sx={isEmpty ? { ...valueSx, color: "text.disabled" } : valueSx}
+    >
+      {value ?? "-"}
+    </Typography>
+  </Box>
+);
+```
+
+This is a backward-compatible addition — all existing `<Field>` usages omit `isEmpty` and continue rendering with full-dark styling unchanged.
+
+### 8.3 Two new `<Field>` items in the Doctor Details grid
 
 Appended after the existing 10 fields (Experience, ABDM_NHPR_id):
 
@@ -155,17 +181,19 @@ Appended after the existing 10 fields (Experience, ABDM_NHPR_id):
   <Field
     label="Reg. No."
     value={doctor.registration_number || "Enter details"}
+    isEmpty={!doctor.registration_number}
   />
 </Grid>
 <Grid item xs={6} md={3}>
   <Field
     label="Qualification"
     value={sortQualifications(doctor.qualification) || "Enter details"}
+    isEmpty={!sortQualifications(doctor.qualification)}
   />
 </Grid>
 ```
 
-The existing `Field` component already renders `value ?? "-"` — but since we pass `"Enter details"` explicitly for empty, the dash fallback is bypassed. No change needed to `Field` itself.
+> **MRT version note:** Cell render callbacks (`Cell: ({ cell }) => …`, `cell.getValue()`) target **material-react-table v3** (`^3.2.1`). If the package is upgraded to a future major version, verify the Cell API has not changed.
 
 ---
 
@@ -176,7 +204,7 @@ The existing `Field` component already renders `value ?? "-"` — but since we p
 | `src/data/staticData.js` | Add `QUALIFICATION_HIERARCHY` + `sortQualifications` |
 | `src/pages/Doctors/AddDoctor.jsx` | Remove local constant, import from staticData |
 | `src/pages/Doctors/index.jsx` | Add 2 columns with placeholder + sort |
-| `src/ReusableComponents/DoctorDetailsDialog.jsx` | Add 2 fields with placeholder + sort |
+| `src/ReusableComponents/DoctorDetailsDialog.jsx` | Add import of `sortQualifications`; add `isEmpty` prop to `Field`; add 2 new fields |
 
 **No store, API, backend, or routing changes.**
 
@@ -186,22 +214,28 @@ The existing `Field` component already renders `value ?? "-"` — but since we p
 
 | Case | Behaviour |
 |---|---|
-| `qualification = ""` | `sortQualifications("")` returns `null` → "Enter details" shown |
+| `qualification = ""` | `sortQualifications("")` returns `null` → "Enter details" shown (muted) |
 | `qualification = null` | Same as above |
+| `qualification = ","` | After split+trim+filter, parts = [] → returns `null` → "Enter details" shown (muted) |
+| `qualification = "  "` | Trimmed to empty → returns `null` → "Enter details" shown (muted) |
 | `qualification = "MBBS"` | Single item, no sort needed → `"MBBS"` |
 | `qualification = "CustomDeg,MBBS"` | Known first, unknown last → `"MBBS, CustomDeg"` |
-| `registration_number = ""` | Falsy → "Enter details" shown |
+| `registration_number = ""` | Falsy → "Enter details" shown (muted) |
 | `registration_number = "0"` | Truthy string → shown as-is |
+
+> **Inconsistency acknowledged:** Existing `<Field>` usages fall back to `"-"` for `null`/`undefined` values (via `value ?? "-"`). The two new fields fall back to `"Enter details"` (muted). This asymmetry is intentional — the new fields are user-editable and the placeholder signals "this can be filled in", whereas legacy fields show `"-"` as a neutral empty state.
 
 ---
 
 ## 11. Testing Checklist
 
 - [ ] Doctor with no qualification → shows "Enter details" (muted) in table and dialog
+- [ ] Doctor with `qualification = ","` → shows "Enter details" (muted) — not an empty string artifact
 - [ ] Doctor with `qualification = "MS,MBBS"` → shows `"MBBS, MS"` in both places
 - [ ] Doctor with `qualification = "PhD,MBBS,MS"` → shows `"MBBS, MS, PhD"`
 - [ ] Doctor with custom qualification (not in hierarchy) → shown after known degrees
 - [ ] Doctor with no registration_number → shows "Enter details" (muted) in table and dialog
 - [ ] Doctor with registration_number set → shows value in both places
 - [ ] AddDoctor Autocomplete still works correctly after import refactor
-- [ ] Table column order: ID, Name, Mobile, Specialization, Consultation Fee, Reg. No., Qualification, Actions
+- [ ] Table column order: ID, Name, Mobile Number, Specialization, Consultation Fee, Reg. No., Qualification, Actions
+- [ ] Existing `<Field>` usages in DoctorDetailsDialog still render unchanged (no regressions from `isEmpty` prop addition)
