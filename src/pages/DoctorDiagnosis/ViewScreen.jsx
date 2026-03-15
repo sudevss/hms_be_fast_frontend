@@ -533,7 +533,7 @@ const ViewScreen = ({ open, onClose, appointment }) => {
     }
 
     const invalidProcedures = (submissionData.procedures || []).filter(
-      (p) => String(p.procedure_text || "").trim().length < 5
+      (p) => !p.procedure_id && String(p.free_text_procedure || "").trim().length < 5
     );
     if (invalidProcedures.length > 0) {
       setShowAlert({
