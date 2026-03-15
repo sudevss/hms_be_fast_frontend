@@ -125,3 +125,44 @@ export const INITIAL_SHOW_ALERT = {
   message: "",
   status: "",
 };
+
+// Ordered ascending by academic level (undergraduate → postgraduate → super-speciality).
+// IMPORTANT: This array doubles as the MUI Autocomplete options list in AddDoctor.jsx.
+// Do NOT add non-displayable rank markers — they would appear as dropdown suggestions.
+export const QUALIFICATION_HIERARCHY = [
+  "MBBS", "BDS", "BAMS", "BHMS", "BUMS",
+  "MD", "MS", "DNB", "DM", "MCh",
+  "MDS", "MPhil", "PhD",
+  "FCPS", "MRCP", "FRCS",
+  "Fellowship",
+];
+
+/**
+ * Sorts a comma-separated qualification string by academic hierarchy.
+ * Returns null if input is empty/null/whitespace-only (caller shows "Enter details").
+ * Unknown qualifications (free-text entries not in QUALIFICATION_HIERARCHY) are
+ * appended after known degrees, preserving their relative order.
+ *
+ * @param {string|null} str - e.g. "MS,MBBS"  or  "PhD,CustomDeg,MBBS"
+ * @returns {string|null}   - e.g. "MBBS, MS" or  "MBBS, PhD, CustomDeg"
+ *
+ * @example
+ * sortQualifications("MS,MBBS")        // → "MBBS, MS"
+ * sortQualifications("PhD,MBBS,MS")    // → "MBBS, MS, PhD"
+ * sortQualifications("")               // → null
+ * sortQualifications(",")              // → null
+ * sortQualifications(null)             // → null
+ */
+export const sortQualifications = (str) => {
+  if (!str) return null;
+  const parts = str.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  const sorted = [...parts].sort((a, b) => {
+    const ai = QUALIFICATION_HIERARCHY.indexOf(a);
+    const bi = QUALIFICATION_HIERARCHY.indexOf(b);
+    const aRank = ai === -1 ? Infinity : ai;
+    const bRank = bi === -1 ? Infinity : bi;
+    return aRank - bRank;
+  });
+  return sorted.join(", ");
+};
