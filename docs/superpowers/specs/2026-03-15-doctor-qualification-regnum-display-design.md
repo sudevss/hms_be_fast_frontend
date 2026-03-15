@@ -1,0 +1,207 @@
+# Design Spec: Doctor Registration Number & Qualification Display
+
+**Date:** 2026-03-15
+**Status:** Approved
+**Scope:** Frontend only — no store, API, or backend changes
+
+---
+
+## 1. Problem Statement
+
+The `qualification` and `registration_number` fields are already captured in the Add/Edit Doctor form and stored via the API, but they are invisible in:
+- The Doctors list table (`pages/Doctors/index.jsx`)
+- The View Doctor dialog (`ReusableComponents/DoctorDetailsDialog.jsx`)
+
+Additionally, qualifications are stored in selection order (e.g. `"MS,MBBS"`) but must always display in ascending academic hierarchy order (e.g. `"MBBS, MS"`).
+
+---
+
+## 2. Goals
+
+1. Show `registration_number` and `qualification` as columns in the Doctors table.
+2. Show the same two fields in the View Doctor dialog.
+3. Qualifications always render sorted by academic hierarchy regardless of selection order.
+4. Empty fields show `"Enter details"` in a visually muted style (not a hard "-").
+5. Share the hierarchy constant — one source of truth across AddDoctor, table, and dialog.
+
+---
+
+## 3. Approach: Sort on Display (Option A)
+
+Stored values are **never mutated**. Sorting and formatting happen purely at render time. This handles existing records in the database that may already have unsorted qualifications.
+
+---
+
+## 4. Data Shape
+
+`qualification` is a comma-separated string stored by the backend:
+- Example stored: `"MS,MBBS"` or `"MBBS,MS,PhD"`
+- Example displayed: `"MBBS, MS"` or `"MBBS, MS, PhD"`
+
+`registration_number` is a plain string (e.g. `"50047"`). May be empty string or null.
+
+---
+
+## 5. Shared Constant & Helper — `src/data/staticData.js`
+
+### 5.1 Add `QUALIFICATION_HIERARCHY`
+
+```js
+export const QUALIFICATION_HIERARCHY = [
+  "MBBS", "BDS", "BAMS", "BHMS", "BUMS",
+  "MD", "MS", "DNB", "DM", "MCh",
+  "MDS", "MPhil", "PhD",
+  "FCPS", "MRCP", "FRCS",
+  "Fellowship",
+];
+```
+
+Order is ascending by academic level: undergraduate degrees first, then postgraduate, then super-speciality/fellowships. Items not in this list (custom free-text) sort last, preserving their relative order.
+
+### 5.2 Add `sortQualifications(str)` helper
+
+```js
+/**
+ * Sorts a comma-separated qualification string by academic hierarchy.
+ * Returns null if input is empty/null (caller shows "Enter details").
+ * Unknown qualifications are appended after known ones.
+ *
+ * @param {string|null} str - e.g. "MS,MBBS"
+ * @returns {string|null}   - e.g. "MBBS, MS"
+ */
+export const sortQualifications = (str) => {
+  if (!str) return null;
+  const parts = str.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  const sorted = [...parts].sort((a, b) => {
+    const ai = QUALIFICATION_HIERARCHY.indexOf(a);
+    const bi = QUALIFICATION_HIERARCHY.indexOf(b);
+    const aRank = ai === -1 ? Infinity : ai;
+    const bRank = bi === -1 ? Infinity : bi;
+    return aRank - bRank;
+  });
+  return sorted.join(", ");
+};
+```
+
+---
+
+## 6. AddDoctor.jsx Changes
+
+- Remove the local `QUALIFICATION_OPTIONS` constant (lines 29–35).
+- Import `QUALIFICATION_HIERARCHY` from `@data/staticData`.
+- Replace all references to `QUALIFICATION_OPTIONS` with `QUALIFICATION_HIERARCHY`.
+- No logic change — just de-duplication.
+
+---
+
+## 7. Doctors Table — `pages/Doctors/index.jsx`
+
+### 7.1 New imports
+```js
+import { sortQualifications } from "@data/staticData";
+```
+
+### 7.2 Two new columns inserted after `consultation_fee`, before `actions`
+
+```js
+{
+  accessorKey: "registration_number",
+  header: "Reg. No.",
+  size: 130,
+  Cell: ({ cell }) => {
+    const val = cell.getValue();
+    return val ? (
+      <Typography variant="body2">{val}</Typography>
+    ) : (
+      <Typography variant="body2" sx={{ color: "text.disabled" }}>
+        Enter details
+      </Typography>
+    );
+  },
+},
+{
+  accessorKey: "qualification",
+  header: "Qualification",
+  size: 160,
+  Cell: ({ cell }) => {
+    const val = sortQualifications(cell.getValue());
+    return val ? (
+      <Typography variant="body2">{val}</Typography>
+    ) : (
+      <Typography variant="body2" sx={{ color: "text.disabled" }}>
+        Enter details
+      </Typography>
+    );
+  },
+},
+```
+
+---
+
+## 8. View Doctor Dialog — `ReusableComponents/DoctorDetailsDialog.jsx`
+
+### 8.1 New imports
+```js
+import { sortQualifications } from "@data/staticData";
+```
+
+### 8.2 Two new `<Field>` items in the Doctor Details grid
+
+Appended after the existing 10 fields (Experience, ABDM_NHPR_id):
+
+```jsx
+<Grid item xs={6} md={3}>
+  <Field
+    label="Reg. No."
+    value={doctor.registration_number || "Enter details"}
+  />
+</Grid>
+<Grid item xs={6} md={3}>
+  <Field
+    label="Qualification"
+    value={sortQualifications(doctor.qualification) || "Enter details"}
+  />
+</Grid>
+```
+
+The existing `Field` component already renders `value ?? "-"` — but since we pass `"Enter details"` explicitly for empty, the dash fallback is bypassed. No change needed to `Field` itself.
+
+---
+
+## 9. Files Changed
+
+| File | Type of change |
+|---|---|
+| `src/data/staticData.js` | Add `QUALIFICATION_HIERARCHY` + `sortQualifications` |
+| `src/pages/Doctors/AddDoctor.jsx` | Remove local constant, import from staticData |
+| `src/pages/Doctors/index.jsx` | Add 2 columns with placeholder + sort |
+| `src/ReusableComponents/DoctorDetailsDialog.jsx` | Add 2 fields with placeholder + sort |
+
+**No store, API, backend, or routing changes.**
+
+---
+
+## 10. Edge Cases
+
+| Case | Behaviour |
+|---|---|
+| `qualification = ""` | `sortQualifications("")` returns `null` → "Enter details" shown |
+| `qualification = null` | Same as above |
+| `qualification = "MBBS"` | Single item, no sort needed → `"MBBS"` |
+| `qualification = "CustomDeg,MBBS"` | Known first, unknown last → `"MBBS, CustomDeg"` |
+| `registration_number = ""` | Falsy → "Enter details" shown |
+| `registration_number = "0"` | Truthy string → shown as-is |
+
+---
+
+## 11. Testing Checklist
+
+- [ ] Doctor with no qualification → shows "Enter details" (muted) in table and dialog
+- [ ] Doctor with `qualification = "MS,MBBS"` → shows `"MBBS, MS"` in both places
+- [ ] Doctor with `qualification = "PhD,MBBS,MS"` → shows `"MBBS, MS, PhD"`
+- [ ] Doctor with custom qualification (not in hierarchy) → shown after known degrees
+- [ ] Doctor with no registration_number → shows "Enter details" (muted) in table and dialog
+- [ ] Doctor with registration_number set → shows value in both places
+- [ ] AddDoctor Autocomplete still works correctly after import refactor
+- [ ] Table column order: ID, Name, Mobile, Specialization, Consultation Fee, Reg. No., Qualification, Actions
