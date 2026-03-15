@@ -7,6 +7,10 @@ import {
   Stack,
   useMediaQuery,
   useTheme,
+  Autocomplete,
+  TextField,
+  Chip,
+  InputLabel,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -16,11 +20,12 @@ import SelectWithLabel from "@components/inputs/SelectWithLabel";
 import AlertSnackbar from "@components/AlertSnackbar";
 import PageLoader from "@pages/PageLoader";
 
-import { GENDER_DATA, INITIAL_SHOW_ALERT } from "@data/staticData";
+import { GENDER_DATA, INITIAL_SHOW_ALERT, QUALIFICATION_HIERARCHY } from "@data/staticData";
 import { useDoctor, doctorRequiredFileds } from "@/stores/doctorStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postNewDoctor, putUpdateDoctor } from "@/serviceApis";
 import { useShowAlert } from "@/stores/showAlertStore";
+
 
 const AddDoctor = ({ open, setOpen }) => {
   const {
@@ -34,6 +39,8 @@ const AddDoctor = ({ open, setOpen }) => {
     gender,
     age,
     experience,
+    qualification,
+    registration_number,
     onChangeDoctor,
     onReset,
   } = useDoctor();
@@ -252,6 +259,71 @@ const AddDoctor = ({ open, setOpen }) => {
             // error={!ABDM_NHPR_id}
             // helperText={!ABDM_NHPR_id && "ABDM NHPR ID required"}
             placeholder="Enter ABDM NHPR ID"
+            onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
+          />
+
+          {/* Qualification multi-select */}
+          <Stack spacing={0.75} alignItems="flex-start" sx={{ width: "100%" }}>
+            <InputLabel
+              sx={{
+                fontWeight: 500,
+                fontSize: "0.875rem",
+                lineHeight: "1.25rem",
+                color: theme.palette.text.primary,
+              }}
+            >
+              Qualification
+            </InputLabel>
+            <Autocomplete
+              multiple
+              freeSolo
+              fullWidth
+              id="qualification-autocomplete"
+              options={QUALIFICATION_HIERARCHY}
+              filterOptions={(options, { inputValue }) =>
+                options.filter((option) =>
+                  option.toLowerCase().startsWith(inputValue.toLowerCase())
+                )
+              }
+              value={qualification ? qualification.split(",").filter(Boolean) : []}
+              onChange={(_, newValues) =>
+                onChangeDoctor("qualification", newValues.join(","))
+              }
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option}
+                    {...getTagProps({ index })}
+                    key={option}
+                    sx={{ fontSize: "0.8rem", height: 28, "& .MuiChip-label": { pr: 0.5 }, "& .MuiChip-deleteIcon": { fontSize: "0.9rem", ml: 0 } }}
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder={qualification ? "" : "Select or type qualification"}
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      backgroundColor:
+                        theme.palette.mode === "dark" ? "#1E1E1E" : "#F6F6F6",
+                      fontSize: "14px",
+                    },
+                  }}
+                />
+              )}
+            />
+          </Stack>
+
+          {/* Reg. No. */}
+          <TextInputWithLabel
+            type="text"
+            name="registration_number"
+            label="Reg. No."
+            value={registration_number}
+            placeholder="e.g. 50047"
             onChange={(e) => onChangeDoctor(e.target.name, e.target.value)}
           />
         </DialogContent>

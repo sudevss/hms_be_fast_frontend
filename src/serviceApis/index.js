@@ -140,10 +140,14 @@ export const getAppointmentsAndBookings = async ({
   appointment_status,
   end_date,
   patient_id,
+  doctor_id,
 }) => {
   let url = `${`/appointments/?facility_id=${facility_id}&date=${date}&end_date=${end_date}&appointment_status=${appointment_status}`}`;
   if (patient_id) {
     url += `&patient_id=${patient_id}`;
+  }
+  if (doctor_id) {
+    url += `&doctor_id=${doctor_id}`;
   }
   try {
     const response = await api.get(url);
@@ -366,7 +370,12 @@ export const getLabMasterList = async () =>
   api
   .get(`/templates/lab-master`)
   .then((response) => response.data);
-    
+
+export const getProcedureMasterList = async () =>
+  api
+    .get(`/templates/procedure-master`)
+    .then((response) => response.data);
+
 export const getSymptomMasterList = async () =>
   api
     .get(`/templates/symptom-master`)

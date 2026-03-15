@@ -21,6 +21,8 @@ const initialStateDoctor = {
   gender: "",
   age: "",
   experience: "",
+  qualification: "",
+  registration_number: "",
   is_active: true,
   doctor_id: "",
 };

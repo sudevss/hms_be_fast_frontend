@@ -1,5 +1,15 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Box, IconButton, Tooltip, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  TextField,
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 import StyledButton from "@components/StyledButton";
 import { MaterialReactTable } from "material-react-table";
 import AlertSnackbar from "@components/AlertSnackbar";
@@ -9,22 +19,39 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useProcedureStore } from "@/stores/procedureStore";
 import { useQuery } from "@tanstack/react-query";
-import { getFacilityLogo, getFacilityDetail } from "@/serviceApis";
+import {
+  getFacilityLogo,
+  getFacilityDetail,
+  getProcedureMasterList,
+} from "@/serviceApis";
 import { userLoginDetails } from "@/stores/LoginStore";
 
-const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate, appointmentId, doctorName }) => {
+const ProcedureSection = ({
+  patientId,
+  patientName,
+  tokenNumber,
+  appointmentDate,
+  appointmentId,
+  doctorName,
+}) => {
   const procedureStore = useProcedureStore();
   const { procedures, setProcedures } = procedureStore;
-  
+
   const [data, setData] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
-  const [procedureError, setProcedureError] = useState({ show: false, message: "", status: "error" });
+  const [procedureError, setProcedureError] = useState({
+    show: false,
+    message: "",
+    status: "error",
+  });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
-  
+
   const printRef = useRef();
+  const editingSnapshotRef = useRef(null);
   const { facility_id, FacilityName } = userLoginDetails();
   const logoFacilityId = facility_id || 1;
+
   const { data: logoBlob } = useQuery({
     queryKey: ["facilityLogo", logoFacilityId],
     queryFn: () => getFacilityLogo(logoFacilityId),
@@ -32,6 +59,7 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
     retry: false,
     refetchOnWindowFocus: false,
   });
+
   const [logoBase64, setLogoBase64] = useState(null);
   useEffect(() => {
     if (logoBlob && logoBlob.size > 0) {
@@ -40,7 +68,7 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
       reader.readAsDataURL(logoBlob);
     }
   }, [logoBlob]);
-  
+
   const { data: facilityDetail } = useQuery({
     queryKey: ["facilityDetail", logoFacilityId],
     queryFn: () => getFacilityDetail(logoFacilityId),
@@ -48,15 +76,48 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
     retry: false,
     refetchOnWindowFocus: false,
   });
-  
-  // Sync store with local data when procedures change externally
+
+  const { data: procedureOptions = [] } = useQuery({
+    queryKey: ["queryGetProcedureMaster"],
+    queryFn: () => getProcedureMasterList(),
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // When a master-list item or free-text is selected in the Autocomplete
+  const handleProcedureSelect = (rowIndex, selectedProcedure) => {
+    setData((prev) =>
+      prev.map((row, idx) => {
+        if (idx !== rowIndex) return row;
+        if (typeof selectedProcedure === "string") {
+          // freeSolo — user typed a custom name
+          return {
+            ...row,
+            procedure_text: selectedProcedure,
+            procedure_id: null,
+          };
+        } else if (selectedProcedure) {
+          // Master-list item selected — auto-fill name and price
+          return {
+            ...row,
+            procedure_text: selectedProcedure.procedure_name,
+            procedure_id: selectedProcedure.procedure_id ?? null,
+            price: selectedProcedure.price || 0,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  // Sync store → local table on initial load (guard: only when table is empty)
   useEffect(() => {
     if (procedures.length > 0 && data.length === 0) {
-      // Only sync if data is empty (initial load)
       const tableData = procedures.map((procedure, index) => ({
         id: `procedure-${index}-${Date.now()}`,
-        procedure_name: procedure.procedure_text || "",
         procedure_text: procedure.procedure_text || "",
+        procedure_id: procedure.procedure_id || null,
         description: "",
         price: procedure.price || 0,
       }));
@@ -66,21 +127,54 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
 
   const columns = useMemo(
     () => [
-      { 
-        accessorKey: "procedure_text", 
+      {
+        accessorKey: "procedure_text",
         header: "Procedure Name",
-        Edit: ({ cell, row, table }) => (
-          <TextField
-            fullWidth
-            value={cell.getValue() ?? ""}
-            onChange={(e) =>
-              table.options.meta.updateData(row.index, "procedure_text", e.target.value)
-            }
-          />
-        ),
+        Edit: ({ cell, row, table }) => {
+          const selected =
+            procedureOptions.find(
+              (p) => p.procedure_name === cell.getValue()
+            ) || null;
+          return (
+            <Autocomplete
+              fullWidth
+              size="small"
+              freeSolo
+              options={procedureOptions}
+              filterOptions={(options, state) =>
+                options.filter((opt) =>
+                  opt.procedure_name
+                    ?.toLowerCase()
+                    .includes(state.inputValue.toLowerCase())
+                )
+              }
+              getOptionLabel={(option) =>
+                typeof option === "string"
+                  ? option
+                  : option.procedure_name || ""
+              }
+              isOptionEqualToValue={(option, value) => {
+                const valName =
+                  typeof value === "string" ? value : value?.procedure_name;
+                return option.procedure_name === valName;
+              }}
+              value={selected || cell.getValue() || ""}
+              inputValue={cell.getValue() || ""}
+              onInputChange={(event, value) => {
+                table.options.meta.updateData(row.index, "procedure_text", value);
+              }}
+              onChange={(event, selectedProcedure) => {
+                handleProcedureSelect(row.index, selectedProcedure);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} placeholder="Search procedure..." />
+              )}
+            />
+          );
+        },
       },
-      { 
-        accessorKey: "price", 
+      {
+        accessorKey: "price",
         header: "Price",
         Edit: ({ cell, row, table }) => (
           <TextField
@@ -88,19 +182,20 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
             fullWidth
             value={cell.getValue() ?? ""}
             onChange={(e) =>
-              table.options.meta.updateData(row.index, "price", e.target.value)
+              table.options.meta.updateData(row.index, "price", parseFloat(e.target.value) || 0)
             }
           />
         ),
       },
     ],
-    []
+    [procedureOptions]
   );
 
   const handleAddRow = () => {
-    const newRow = { 
-      id: Date.now(), 
-      procedure_text: "", 
+    const newRow = {
+      id: Date.now(),
+      procedure_text: "",
+      procedure_id: null,
       description: "",
       price: 0,
     };
@@ -109,7 +204,8 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
 
   const handlePrint = () => {
     const printContent = printRef.current.innerHTML;
-    const logoSrc = logoBase64 || (logoBlob ? URL.createObjectURL(logoBlob) : null);
+    const logoSrc =
+      logoBase64 || (logoBlob ? URL.createObjectURL(logoBlob) : null);
     const win = window.open("", "_blank", "width=900,height=650");
     win.document.write(`
       <html>
@@ -139,11 +235,7 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               gap: 4px;
               text-align: center;
             }
-            .logo {
-              max-height: 160px;
-              max-width: 320px;
-              object-fit: contain;
-            }
+            .logo { max-height: 160px; max-width: 320px; object-fit: contain; }
             .center-heading {
               text-align: center;
               color: #0f766e;
@@ -178,9 +270,7 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               font-size: 0.9rem;
               background-color: #ffffff;
             }
-            table thead {
-              background-color: #f9fafb;
-            }
+            table thead { background-color: #f9fafb; }
             table th {
               padding: 8px 10px;
               border: 1px solid #e5e7eb;
@@ -193,50 +283,25 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               border: 1px solid #e5e7eb;
               color: #000000;
             }
-            table tbody tr:nth-child(even) {
-              background-color: #f9fafb;
-            }
-            .section-title {
-              font-weight: 700;
-              font-size: 1.05rem;
-              margin-top: 20px;
-              margin-bottom: 8px;
-              color: #0f766e;
-              text-transform: uppercase;
-              letter-spacing: 0.06em;
-              page-break-after: avoid;
-            }
-            .section-block {
-              page-break-inside: avoid;
-              break-inside: avoid;
-              padding: 6px 0 10px;
-            }
-            thead {
-              display: table-header-group;
-            }
+            table tbody tr:nth-child(even) { background-color: #f9fafb; }
+            thead { display: table-header-group; }
             @media print {
-              body {
-                background-color: #ffffff;
-                padding: 0;
-              }
-              .page {
-                box-shadow: none;
-                margin: 0;
-                border-radius: 0;
-                padding: 16px 18px 24px;
-              }
-              .center-heading {
-                font-size: 1.4rem;
-              }
+              body { background-color: #ffffff; padding: 0; }
+              .page { box-shadow: none; margin: 0; border-radius: 0; padding: 16px 18px 24px; }
+              .center-heading { font-size: 1.4rem; }
             }
           </style>
         </head>
         <body>
           <div class="page">
             <div class="header-container">
-              ${logoSrc 
-                ? `<img src="${logoSrc}" class="logo" alt="Logo" />` 
-                : (FacilityName ? `<div class="center-heading">${FacilityName}</div>` : "")}
+              ${
+                logoSrc
+                  ? `<img src="${logoSrc}" class="logo" alt="Logo" />`
+                  : FacilityName
+                  ? `<div class="center-heading">${FacilityName}</div>`
+                  : ""
+              }
               ${
                 facilityDetail
                   ? `<div style="font-size: 13px; color: #111827; margin-top: 6px; text-align: center;">
@@ -261,44 +326,56 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
     win.document.close();
     win.onload = () => {
       setTimeout(() => {
-        try { win.print(); } catch (e) {}
+        try {
+          win.print();
+        } catch (e) {}
       }, 300);
     };
   };
 
   const handleDeleteRow = ({ row } = {}) => {
-    // Allow passing row.original directly or the row wrapper
     const id = row?.original?.id ?? row?.id ?? null;
     if (!id) return;
-
     const filtered = data.filter((r) => r.id !== id);
     setData(filtered);
-    // Update store
     setProcedures(
       filtered.map((r) => ({
         procedure_text: r.procedure_text || "",
         price: r.price || 0,
+        procedure_id: r.procedure_id || null,
       }))
     );
   };
-  
-  // Sync data to store when editing is saved
+
+  // Push current local state into the Zustand store
   const syncToStore = () => {
     setProcedures(
       data.map((r) => ({
         procedure_text: r.procedure_text || "",
         price: r.price || 0,
+        procedure_id: r.procedure_id || null,
       }))
     );
   };
 
   return (
     <Box sx={{ borderRadius: 2, border: "1px solid #e5e7eb", p: 2, mt: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+        }}
+      >
         <Box sx={{ fontWeight: 700, fontSize: "1.0rem" }}>Procedure</Box>
         <Box sx={{ display: "flex", gap: 1 }}>
-          <StyledButton variant="outlined" onClick={handlePrint}>Print</StyledButton>
-          <StyledButton variant="contained" onClick={handleAddRow}>Add</StyledButton>
+          <StyledButton variant="outlined" onClick={handlePrint}>
+            Print
+          </StyledButton>
+          <StyledButton variant="contained" onClick={handleAddRow}>
+            Add
+          </StyledButton>
         </Box>
       </Box>
 
@@ -324,15 +401,7 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               )
             ),
         }}
-        onEditingRowSave={({ row, values }) => {
-          // Validate procedure text length
-          const text = String(values.procedure_text || "").trim();
-          if (text.length > 0 && text.length < 5) {
-            setProcedureError({ show: true, message: "Procedure text must have at least 5 characters", status: "error" });
-            return;
-          }
-
-          setData((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, ...values } : r)));
+        onEditingRowSave={() => {
           syncToStore();
           setEditingRowId(null);
         }}
@@ -343,12 +412,33 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               {isEditing ? (
                 <>
                   <Tooltip title="Save" arrow>
-                    <IconButton size="small" onClick={() => { syncToStore(); table.setEditingRow(null); setEditingRowId(null); }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        editingSnapshotRef.current = null;
+                        syncToStore();
+                        table.setEditingRow(null);
+                        setEditingRowId(null);
+                      }}
+                    >
                       <SaveIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Cancel" arrow>
-                    <IconButton size="small" onClick={() => { syncToStore(); table.setEditingRow(null); setEditingRowId(null); }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        if (editingSnapshotRef.current) {
+                          const snapshot = editingSnapshotRef.current;
+                          setData((prev) =>
+                            prev.map((r) => (r.id === snapshot.id ? snapshot : r))
+                          );
+                          editingSnapshotRef.current = null;
+                        }
+                        table.setEditingRow(null);
+                        setEditingRowId(null);
+                      }}
+                    >
                       <CancelIcon sx={{ color: "#dc2626", fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
@@ -356,12 +446,28 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
               ) : (
                 <>
                   <Tooltip title="Edit" arrow>
-                    <IconButton size="small" onClick={() => { setEditingRowId(row.original.id); table.setEditingRow(row); }}>
-                      <EditOutlinedIcon sx={{ color: "#115E59", fontSize: "1.25rem" }} />
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        editingSnapshotRef.current = { ...row.original };
+                        setEditingRowId(row.original.id);
+                        table.setEditingRow(row);
+                      }}
+                    >
+                      <EditOutlinedIcon
+                        sx={{ color: "#115E59", fontSize: "1.25rem" }}
+                      />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete" arrow>
-                    <IconButton color="error" size="small" onClick={() => { setRowToDelete(row.original); setDeleteConfirmOpen(true); }}>
+                    <IconButton
+                      color="error"
+                      size="small"
+                      onClick={() => {
+                        setRowToDelete(row.original);
+                        setDeleteConfirmOpen(true);
+                      }}
+                    >
                       <DeleteForeverIcon sx={{ fontSize: "1.25rem" }} />
                     </IconButton>
                   </Tooltip>
@@ -404,19 +510,27 @@ const ProcedureSection = ({ patientId, patientName, tokenNumber, appointmentDate
         showAlert={procedureError.show}
         message={procedureError.message}
         severity={procedureError.status}
-        onClose={() => setProcedureError({ show: false, message: "", status: "error" })}
+        onClose={() =>
+          setProcedureError({ show: false, message: "", status: "error" })
+        }
       />
 
       {/* DELETE CONFIRMATION */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
-
         <DialogContent>
           Are you sure you want to delete this procedure?
         </DialogContent>
-
         <DialogActions>
-          <StyledButton variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>Cancel</StyledButton>
+          <StyledButton
+            variant="outlined"
+            onClick={() => setDeleteConfirmOpen(false)}
+          >
+            Cancel
+          </StyledButton>
           <StyledButton
             variant="contained"
             color="error"

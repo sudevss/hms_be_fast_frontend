@@ -13,6 +13,7 @@ import ModeEditOutlineOutlinedIcon from "@mui/icons-material/ModeEditOutlineOutl
 import WorkHistoryOutlinedIcon from "@mui/icons-material/WorkHistoryOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
+import { sortQualifications } from "@data/staticData";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getAllDoctorsDetails,
@@ -107,7 +108,37 @@ function DoctorsPage() {
       {
         accessorKey: "consultation_fee",
         header: "Consultation Fee",
-        size: 120,
+        size: 150,
+      },
+      {
+        accessorKey: "registration_number",
+        header: "Reg. No.",
+        size: 130,
+        Cell: ({ cell }) => {
+          const val = cell.getValue();
+          return val ? (
+            <Typography variant="body2">{val}</Typography>
+          ) : (
+            <Typography variant="body2" sx={{ color: "text.disabled" }}>
+              Enter details
+            </Typography>
+          );
+        },
+      },
+      {
+        accessorKey: "qualification",
+        header: "Qualification",
+        size: 160,
+        Cell: ({ cell }) => {
+          const val = sortQualifications(cell.getValue());
+          return val ? (
+            <Typography variant="body2">{val}</Typography>
+          ) : (
+            <Typography variant="body2" sx={{ color: "text.disabled" }}>
+              Enter details
+            </Typography>
+          );
+        },
       },
       {
         accessorKey: "actions",
@@ -171,6 +202,16 @@ function DoctorsPage() {
     showGlobalFilter: true,
     showColumnFilters: true,
     columnPinning: { right: ["actions"], left: ["id"] },
+    columnOrder: [
+      "id",
+      "doctor_name",
+      "phone_number",
+      "specialization",
+      "consultation_fee",
+      "registration_number",
+      "qualification",
+      "actions",
+    ],
   };
 
   return (
